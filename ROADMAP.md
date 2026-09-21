@@ -89,6 +89,13 @@ Dylan's ask: connect Google Calendar and show a daily agenda on the new tab. Tha
 
 ## Later, if asked
 
+- **One shared model instance across tabs** through an offscreen document, so several open new tabs do not each hold 0.5 to 2.7 GB. The most likely cause of uninstalls once people keep several new tabs open; the highest-value engineering item left. **Spiked on branch `spike/offscreen-model` (2026-09-21): an offscreen document gets WebGPU (Apple, metal-3), SharedArrayBuffer, and cross-origin isolation, and loads and generates. What remains is the plumbing: a port-based provider in the page, load/ask/abort messages, progress and token events, and an idle unload.**
+- `storage.sync` for todos and reminders across a Chrome profile. Recipes may exceed the 8 KB per-item quota, so they stay local unless chunked.
+- Ollama auto-detect on localhost as a one-click cloud option.
+- Firefox. It builds today, but extension pages lack SharedArrayBuffer there, so it would be single-threaded. Ship only if the WebGPU path makes that irrelevant.
+- Tab search from the ask bar. Needs the `tabs` permission and its install warning, so only with a clear ask.
+- More widget types: Countdown, Clock, an RSS reading list, GitHub notifications with a personal token.
+
 ## Decided against
 
 - **User-authored widgets as code.** Manifest V3 bars it; recipes and declarative widgets cover the real need.

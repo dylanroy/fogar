@@ -56,6 +56,8 @@ node scripts/store-assets.mjs     # store screenshots and promo tiles into store
 
 Load the unpacked extension from `.output/chrome-mv3` at `chrome://extensions` with Developer mode on. Open a new tab.
 
+After rebuilding, click Reload on the extension card (or bump the version). Chrome keeps the background service worker of an installed extension until the version changes or it is reloaded, so a rebuilt background script is otherwise ignored while pages load fresh. The same applies to persistent Playwright profiles: the eval profile runs an old background script; the e2e suite uses a fresh profile every run.
+
 Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL=qwen3-0.6b` to use the real 400 MB model, `VERBOSE=1` for every console line. The test also covers a warm OPFS reload and cloud mode against a local mock OpenAI server.
 
 `npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
