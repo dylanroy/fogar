@@ -191,6 +191,68 @@ const finderLabel = await text('answer-label');
 const finderHits = await page.evaluate(() => [...document.querySelectorAll('#answer-links .hit .t')].map((n) => n.textContent));
 check('bookmark question routes to the finder and returns links', finderLabel === 'Bookmarks' && finderHits.includes('Job posting: Data Analyst') && finderHits.length === 3, `${finderHits.length} hits: ${finderHits.join(' | ')}`);
 
+// 10. widgets: add Links from the menu, add a site, persists
+await page.goto(`${base}?e2e=1`);
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item:has-text("Links")');
+await page.waitForSelector('.widget[data-type="links"] .add-link input');
+await page.fill('.widget[data-type="links"] .add-link input:first-of-type', 'example.com');
+await page.press('.widget[data-type="links"] .add-link input:first-of-type', 'Enter');
+await page.waitForSelector('.widget[data-type="links"] .tile');
+await page.reload();
+await page.waitForSelector('.widget[data-type="links"] .tile');
+const tileText = await page.evaluate(() => document.querySelector('.widget[data-type="links"] .tile .t')?.textContent);
+check('links widget: add from menu, add a site, persists', tileText === 'example.com', `${tileText}`);
+
+// 10b. notes widget saves as you type
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item:has-text("Notes")');
+await page.waitForSelector('.widget[data-type="notes"] textarea');
+await page.fill('.widget[data-type="notes"] textarea', 'ship it');
+await page.waitForTimeout(700);
+await page.reload();
+await page.waitForSelector('.widget[data-type="notes"] textarea');
+const noteText = await page.evaluate(() => document.querySelector('.widget[data-type="notes"] textarea')?.value);
+check('notes widget persists', noteText === 'ship it', `${noteText}`);
+
+// 10c. agenda from an iCal feed (recurring standup expands, cancelled event hidden, all-day tomorrow)
+await page.evaluate(async (port) => {
+  const got = await chrome.storage.local.get('fogar.layout');
+  const layout = got['fogar.layout'];
+  layout.widgets.push({ id: 'agenda-test', type: 'agenda', config: { url: `http://127.0.0.1:${port}/agenda.ics` } });
+  layout.widgets.push({ id: 'weather-test', type: 'weather', config: { place: { name: 'Testville', region: '', country: '', lat: 1, lon: 2 }, unit: 'f', endpoint: `http://127.0.0.1:${port}/weather` } });
+  layout.widgets.push({ id: 'recipe-test', type: 'recipe', config: { recipeId: 'rewrite', recipeName: 'Draft & rewrite' } });
+  await chrome.storage.local.set({ 'fogar.layout': layout });
+}, mock.port);
+await page.reload();
+await page.waitForSelector('.widget[data-type="agenda"] .event');
+const agendaText = await page.evaluate(() => document.querySelector('.widget[data-type="agenda"] .agenda')?.textContent ?? '');
+check('agenda widget renders today and tomorrow from iCal', agendaText.includes('Design review') && agendaText.includes('Standup') && agendaText.includes('Dentist') && !agendaText.includes('Cancelled thing') && agendaText.includes('All day'), agendaText.slice(0, 140));
+
+// 10d. weather and pinned recipe widgets render
+await page.waitForSelector('.widget[data-type="weather"] .temp');
+const temp = await page.evaluate(() => document.querySelector('.widget[data-type="weather"] .temp')?.textContent);
+const recipeForm = await page.evaluate(() => document.querySelector('.widget[data-type="recipe"] textarea') !== null);
+const weatherTitle = await page.evaluate(() => document.querySelector('.widget[data-type="weather"] h2')?.textContent);
+check('weather and pinned recipe widgets render', temp === '71°' && recipeForm && weatherTitle === 'Weather · Testville', `${temp}, ${weatherTitle}`);
+
+// 10e. reorder, remove, focus
+const firstBefore = await page.evaluate(() => document.querySelector('#widgets .widget')?.dataset.type);
+await page.hover('#widgets .widget');
+await page.click('#widgets .widget .ctl[title="Move down"]');
+const firstAfter = await page.evaluate(() => document.querySelector('#widgets .widget')?.dataset.type);
+await page.hover('.widget[data-type="notes"]');
+await page.click('.widget[data-type="notes"] .ctl[title="Remove from page"]');
+const notesGone = await page.evaluate(() => document.querySelector('.widget[data-type="notes"]') === null);
+await page.click('#focus-toggle');
+const cornerHidden = await page.evaluate(() => getComputedStyle(document.getElementById('corner')).display === 'none' && getComputedStyle(document.querySelector('.recipes')).display === 'none');
+await page.reload();
+await page.waitForSelector('#focus-toggle');
+const focusPersists = await page.evaluate(() => document.body.classList.contains('focus') && document.getElementById('focus-toggle').textContent === 'Show everything');
+await page.click('#focus-toggle');
+const cornerBack = await page.evaluate(() => getComputedStyle(document.getElementById('corner')).display !== 'none');
+check('widgets reorder, remove, and focus mode persists', firstBefore !== firstAfter && notesGone && cornerHidden && focusPersists && cornerBack, `${firstBefore}→${firstAfter}`);
+
 // 9. share link offers the recipe
 const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
 await page.goto(`${base}?e2e=1&recipe=${shared}`);

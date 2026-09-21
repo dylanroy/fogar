@@ -11,6 +11,8 @@ export interface RecipesUI {
   offerShared(encoded: string): void;
   /** Open a recipe's form by id and scroll to it. */
   open(id: string): Promise<void>;
+  /** A run form without the panel chrome, for the recipe widget. Output still goes to the conversation. */
+  buildRunForm(recipe: Recipe, prefill?: Record<string, string>): HTMLElement;
 }
 
 export function initRecipes(app: App): RecipesUI {
@@ -44,14 +46,24 @@ export function initRecipes(app: App): RecipesUI {
     return { node: el('label', { class: 'field' }, i.label, control), read: () => control.value };
   }
 
+  function buildRunForm(recipe: Recipe, prefill: Record<string, string> = {}): HTMLElement {
+    const fields = recipe.inputs.map((i) => inputField(i, prefill[i.key]));
+    const values = () => Object.fromEntries(fields.map((f, idx) => [recipe.inputs[idx]!.key, f.read()]));
+    const run = el('button', { class: 'primary', type: 'button', disabled: !app.isReady(), onclick: () => void app.ask(recipeMessages(recipe, values(), SYSTEM_PROMPT), { label: recipe.name }) }, 'Run');
+    const hint = el('span', { class: 'hint' }, app.isReady() ? '' : 'Load a model or set a cloud endpoint to run recipes.');
+    app.onReadyChange(() => { run.disabled = !app.isReady(); hint.textContent = app.isReady() ? '' : 'Load a model or set a cloud endpoint to run recipes.'; });
+    const textareas = fields.filter((_, idx) => recipe.inputs[idx]!.type === 'textarea').map((f) => f.node);
+    const others = fields.filter((_, idx) => recipe.inputs[idx]!.type !== 'textarea').map((f) => f.node);
+    const form = el('div', { class: 'recipe-run' }, ...textareas);
+    if (others.length) form.append(el('div', { class: 'grid-2' }, ...others));
+    form.append(el('div', { class: 'row-actions' }, run, hint));
+    return form;
+  }
+
   async function openRun(recipe: Recipe, prefill: Record<string, string> = {}) {
     active = recipe.id;
     await renderChips();
     clear(panel); panel.hidden = false;
-    const fields = recipe.inputs.map((i) => inputField(i, prefill[i.key]));
-    const values = () => Object.fromEntries(fields.map((f, idx) => [recipe.inputs[idx]!.key, f.read()]));
-    const run = el('button', { class: 'primary', type: 'button', disabled: !app.isReady(), onclick: () => void app.ask(recipeMessages(recipe, values(), SYSTEM_PROMPT), { label: recipe.name }) }, 'Run');
-    app.onReadyChange(() => { run.disabled = !app.isReady(); });
     const actions: HTMLElement[] = [];
     if (!recipe.builtin) {
       actions.push(el('button', { class: 'ghost small', type: 'button', onclick: () => void openEditor(recipe) }, 'Edit'));
@@ -71,17 +83,14 @@ export function initRecipes(app: App): RecipesUI {
     } }, 'Copy JSON'));
     actions.push(el('button', { class: 'ghost small', type: 'button', onclick: close }, 'Close'));
 
-    const textareas = fields.filter((_, idx) => recipe.inputs[idx]!.type === 'textarea').map((f) => f.node);
-    const others = fields.filter((_, idx) => recipe.inputs[idx]!.type !== 'textarea').map((f) => f.node);
+    const form = buildRunForm(recipe, prefill);
     panel.append(
       el('div', { class: 'recipe-head' },
         el('div', {}, el('h3', {}, `${recipe.emoji ?? ''} ${recipe.name}`.trim()), el('p', { class: 'muted' }, recipe.description)),
         el('span', { class: 'row-actions' }, ...actions)),
-      ...textareas,
+      form,
     );
-    if (others.length) panel.append(el('div', { class: 'grid-2' }, ...others));
-    panel.append(el('div', { class: 'row-actions' }, run, el('span', { class: 'hint' }, app.isReady() ? '' : 'Load a model or set a cloud endpoint to run recipes.')));
-    (textareas[0]?.querySelector('textarea') as HTMLTextAreaElement | undefined)?.focus();
+    (form.querySelector('textarea') as HTMLTextAreaElement | null)?.focus();
   }
 
   async function openEditor(recipe: Recipe) {
@@ -173,6 +182,7 @@ export function initRecipes(app: App): RecipesUI {
   void renderChips();
 
   return {
+    buildRunForm,
     async open(id) {
       const r = (await allRecipes()).find((x) => x.id === id);
       if (!r) return;

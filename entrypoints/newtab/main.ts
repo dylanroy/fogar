@@ -1,8 +1,9 @@
 import { App } from './app';
 import { initAskBar } from './ui/askbar';
 import { initRecipes } from './ui/recipes';
-import { initTodos } from './ui/todos';
-import { initReminders } from './ui/reminders';
+import { createTodosUI } from './ui/todos';
+import { createRemindersUI } from './ui/reminders';
+import { initWidgets } from './widgets';
 import { initSettings } from './ui/settings';
 import { initFirstRun } from './ui/firstrun';
 import { $, el } from '@/lib/dom';
@@ -52,8 +53,9 @@ async function main() {
 
   initSettings(app);
   const recipes = initRecipes(app);
-  const todos = initTodos(app);
-  const reminders = initReminders(app);
+  const todos = createTodosUI(app);
+  const reminders = createRemindersUI(app);
+  await initWidgets(app, { recipes, todos, reminders });
   initAskBar(app, { todos, reminders, recipes });
   initFirstRun(app);
   app.setMode(s.mode);
@@ -82,7 +84,7 @@ async function main() {
 async function runEval(app: App) {
   const s = app.settings;
   s.onboarded = true; s.mode = 'local'; s.modelId = params.get('model') ?? 'qwen3.5-0.8b'; s.gpu = params.get('gpu') === '1';
-  initSettings(app); const recipes = initRecipes(app); const todos = initTodos(app); const reminders = initReminders(app); initAskBar(app, { todos, reminders, recipes }); app.setMode('local');
+  initSettings(app); const recipes = initRecipes(app); const todos = createTodosUI(app); const reminders = createRemindersUI(app); await initWidgets(app, { recipes, todos, reminders }); initAskBar(app, { todos, reminders, recipes }); app.setMode('local');
   const out: any = { model: s.modelId, gpu: s.gpu, results: [] as any[] };
   const t0 = performance.now();
   const ok = await app.loadModel();

@@ -13,6 +13,8 @@
           <div class="brand">Fogar</div>
           <div id="today" class="today"></div>
         </div>
+        <div class="top-actions">
+        <button id="focus-toggle" class="ghost small" type="button" aria-pressed="false" title="Hide everything except the ask box and the conversation">Focus</button>
         <div class="mode" role="radiogroup" aria-label="Where answers come from">
           <button id="mode-local" class="mode-btn" role="radio" aria-checked="true" aria-label="On this device" title="On this device. Nothing you type leaves this browser.">
             <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5"/><path d="M1 13h14"/></svg><span>Device</span>
@@ -20,6 +22,7 @@
           <button id="mode-cloud" class="mode-btn" role="radio" aria-checked="false" aria-label="Cloud, with your own key" title="Cloud, with your own key. Sent only to the endpoint you set.">
             <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z"/></svg><span>Cloud</span>
           </button>
+        </div>
         </div>
       </header>
 
@@ -77,22 +80,16 @@
         <div id="recipe-panel" class="card" hidden></div>
       </section>
 
-      <section class="panels">
-        <div class="card panel" id="todos-card">
-          <div class="row-head"><h2>Todos</h2><button id="todo-clear" class="ghost small" type="button" hidden>Clear done</button></div>
-          <form id="todo-form"><input id="todo-input" class="line-input" placeholder="Add a todo and press Enter" autocomplete="off" /></form>
-          <ul id="todo-list" class="list"></ul>
-          <p id="todo-empty" class="muted empty">Nothing here yet.</p>
+      <section class="corner" id="corner">
+        <div class="row-head">
+          <h2>Your corner</h2>
+          <span class="row-actions menu-wrap">
+            <button id="widget-add" class="ghost small" type="button" aria-haspopup="menu" aria-expanded="false">Add widget</button>
+            <div id="widget-menu" class="menu" role="menu" hidden></div>
+          </span>
         </div>
-        <div class="card panel" id="reminders-card">
-          <div class="row-head"><h2>Reminders</h2></div>
-          <form id="reminder-form"><input id="reminder-input" class="line-input" placeholder="Call the dentist tomorrow at 9" autocomplete="off" /></form>
-          <div id="reminder-confirm" class="confirm" hidden></div>
-          <ul id="reminder-list" class="list"></ul>
-          <p id="reminder-empty" class="muted empty">Try “in 20 minutes”, “friday at 10”, or “tonight”.</p>
-          <p id="notif-warning" class="muted small-note warn" hidden></p>
-          <p class="muted small-note">Reminders fire while Chrome is open. Anything missed shows the next time it starts. <a id="notif-test" class="link" href="#">Send a test notification</a></p>
-        </div>
+        <div id="widgets" class="panels"></div>
+        <p id="corner-empty" class="muted empty" hidden>Nothing pinned. Add a widget to make this tab yours.</p>
       </section>
 
       <details id="settings" class="settings">

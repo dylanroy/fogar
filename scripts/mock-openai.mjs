@@ -12,6 +12,30 @@ export function startMockServer(port = 0) {
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     const url = new URL(req.url, 'http://localhost');
 
+    if (req.method === 'GET' && url.pathname === '/agenda.ics') {
+      const pad = (n) => String(n).padStart(2, '0');
+      const local = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+      const today = new Date(); today.setHours(14, 0, 0, 0);
+      const todayEnd = new Date(today.getTime() + 3600e3);
+      const tomorrow = new Date(today.getTime() + 86400e3);
+      const ymd = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+      const weekAgo = new Date(today.getTime() - 7 * 86400e3); weekAgo.setHours(9, 30, 0, 0);
+      res.writeHead(200, { 'Content-Type': 'text/calendar' });
+      res.end(['BEGIN:VCALENDAR', 'VERSION:2.0',
+        'BEGIN:VEVENT', 'UID:one', `DTSTART:${local(today)}`, `DTEND:${local(todayEnd)}`, 'SUMMARY:Design review', 'LOCATION:Room 4', 'END:VEVENT',
+        'BEGIN:VEVENT', 'UID:standup', `DTSTART:${local(weekAgo)}`, 'DURATION:PT15M', 'RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR,SA,SU', 'SUMMARY:Standup', 'END:VEVENT',
+        'BEGIN:VEVENT', 'UID:dentist', `DTSTART;VALUE=DATE:${ymd(tomorrow)}`, 'SUMMARY:Dentist', 'END:VEVENT',
+        'BEGIN:VEVENT', 'UID:gone', `DTSTART:${local(today)}`, `DTEND:${local(todayEnd)}`, 'SUMMARY:Cancelled thing', 'STATUS:CANCELLED', 'END:VEVENT',
+        'END:VCALENDAR'].join('\r\n'));
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/weather') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      const day = (i) => new Date(Date.now() + i * 86400e3).toISOString().slice(0, 10);
+      res.end(JSON.stringify({ current: { temperature_2m: 71.4, weather_code: 2, wind_speed_10m: 6.2 }, daily: { time: [day(0), day(1), day(2), day(3)], temperature_2m_max: [78, 80, 66, 70], temperature_2m_min: [55, 57, 48, 50], weather_code: [2, 0, 61, 3] } }));
+      return;
+    }
+
     if (req.method === 'GET' && url.pathname === '/brave') {
       server.lastSearch = { q: url.searchParams.get('q'), token: req.headers['x-subscription-token'] };
       res.writeHead(200, { 'Content-Type': 'application/json' });
