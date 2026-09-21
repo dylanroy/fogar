@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Fogar privacy policy</title>
+<meta name="description" content="What Fogar collects (nothing), what leaves your browser in each mode, and which permissions it asks for." />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Source+Serif+4:opsz,wght@8..60,400;8..60,500&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+<style>
+  :root { color-scheme: dark; --ground: #14100d; --surface: #1d1712; --line: #33291f; --ink: #efe6da; --ink-2: #c9bba9; --ash: #9b8e80; --ember: #ff6a2b;
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif; --serif: "Source Serif 4", Georgia, serif; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  @media (prefers-color-scheme: light) { :root { color-scheme: light; --ground: #f3ebdf; --surface: #fbf6ee; --line: #e2d6c4; --ink: #201812; --ink-2: #4e4034; --ash: #8a7b6c; --ember: #d24a12; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--serif); font-size: 17px; line-height: 1.6; }
+  .wrap { width: min(760px, calc(100vw - 48px)); margin: 0 auto; padding: 40px 0 80px; }
+  a { color: inherit; }
+  .brand { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; text-decoration: none; }
+  h1 { font-family: var(--display); font-weight: 800; font-size: clamp(34px, 5vw, 48px); letter-spacing: -0.02em; line-height: 1; margin: 40px 0 8px; }
+  h2 { font-family: var(--display); font-weight: 700; font-size: 22px; letter-spacing: -0.01em; margin: 40px 0 10px; }
+  p, li { color: var(--ink-2); }
+  .mono { font-family: var(--mono); font-size: 13px; color: var(--ash); }
+  table { border-collapse: collapse; width: 100%; font-size: 15px; margin: 12px 0; }
+  th, td { text-align: left; padding: 10px 12px 10px 0; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--ink-2); }
+  th { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash); font-weight: 500; }
+  td:first-child { color: var(--ink); font-weight: 500; }
+  .zero { font-family: var(--mono); color: var(--ember); font-weight: 500; }
+  code { font-family: var(--mono); font-size: 0.9em; background: var(--surface); padding: 1px 6px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="brand" href="/">Fogar</a>
+  <h1>Privacy policy</h1>
+  <p class="mono">Effective 2026-09-21 · applies to the Fogar browser extension</p>
+
+  <p>Fogar is a new tab page that answers questions using a language model running inside your browser, or a cloud model you connect with your own key. It has no server, no accounts, and no analytics. This page says exactly what leaves your browser and when.</p>
+
+  <h2>What Fogar collects</h2>
+  <p>Nothing. Fogar does not collect, transmit, or store any personal data on any server, because it has no server. There is no telemetry, no crash reporting, no usage analytics, and no identifiers.</p>
+
+  <h2>What leaves your browser</h2>
+  <table>
+    <thead><tr><th>Feature</th><th>What is sent</th><th>To whom</th></tr></thead>
+    <tbody>
+      <tr><td>Answers, on this device</td><td><span class="zero">Nothing.</span> The model file is downloaded once from Hugging Face (huggingface.co) and cached in your browser. Your questions are processed locally.</td><td>Hugging Face, once, for the model file only</td></tr>
+      <tr><td>Answers, cloud with your key</td><td>Your prompt, the conversation in this tab, and your API key</td><td>Only the endpoint you typed in Settings</td></tr>
+      <tr><td>Web grounding (off by default)</td><td>Your question, as a search query</td><td>Only the search provider you chose and gave a key for</td></tr>
+      <tr><td>Agenda widget (optional)</td><td>A request for the calendar address you pasted</td><td>Your calendar provider</td></tr>
+      <tr><td>Weather widget (optional)</td><td>The city you typed, then its coordinates</td><td>Open-Meteo (open-meteo.com), which needs no account</td></tr>
+      <tr><td>Everything else</td><td><span class="zero">Nothing.</span> Todos, reminders, recipes, notes, links, bookmarks search, and settings all stay in your browser.</td><td>Nobody</td></tr>
+    </tbody>
+  </table>
+  <p>The new tab page shows a live count of every network request it has made, by host, in Settings under “Network, this tab”. It is read from the browser's own timeline. If the count says zero, zero requests were made.</p>
+
+  <h2>Where your data lives</h2>
+  <p>Everything Fogar remembers, including your API keys, is stored in Chrome's extension storage on your device and, for model files, in the browser's private file storage. Removing the extension deletes it. Settings has a button to download a complete backup and one to delete the cached models.</p>
+
+  <h2>Permissions and why</h2>
+  <table>
+    <thead><tr><th>Permission</th><th>Used for</th></tr></thead>
+    <tbody>
+      <tr><td>storage</td><td>Saving your settings, todos, reminders, recipes, notes, and widget layout on this device.</td></tr>
+      <tr><td>alarms, notifications</td><td>Firing reminders at the time you set, as a Chrome notification.</td></tr>
+      <tr><td>bookmarks</td><td>Searching your bookmarks as you type, and removing one when you ask.</td></tr>
+      <tr><td>contextMenus</td><td>The right-click “Ask Fogar about …” item.</td></tr>
+      <tr><td>favicon</td><td>Showing site icons next to bookmarks and links.</td></tr>
+      <tr><td>huggingface.co</td><td>Downloading the model file, once.</td></tr>
+      <tr><td>Optional: any site you add</td><td>Requested one at a time when you save a cloud endpoint, a search key, or a calendar address, so the extension can reach that address and no other.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Third parties</h2>
+  <p>Hugging Face hosts the model files. Open-Meteo provides weather if you add the widget. Your chosen model, search, and calendar providers receive what the table above says and are governed by their own policies. Fogar has no relationship with any of them and receives nothing from them.</p>
+
+  <h2>Children</h2>
+  <p>Fogar is not directed at children under 13 and, collecting nothing, holds no data about anyone.</p>
+
+  <h2>Changes</h2>
+  <p>If this policy changes, the new version appears here with a new effective date, and the extension's store listing links to it. A change that sends more data than described above would also be announced in the extension itself before it took effect.</p>
+
+  <h2>Contact</h2>
+  <p>Fogar is made by Dylan Roy. Reach out through <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a>.</p>
+</div>
+</body>
+</html>

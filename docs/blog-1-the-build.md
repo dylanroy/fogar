@@ -37,6 +37,13 @@ Every new tab I open is a blank page asking me what I want. Fogar makes it answe
 - Second click on "Download and load" while the first download was running. wllama's OPFS writer runs in its own worker holding a sync access handle. Tearing down the instance did not release it before the retry tried `removeEntry` on the partial file. `NoModificationAllowedError`.
 - Fix is boring: one load at a time, button disabled while in flight. Lesson: the first manual test finds the thing the automated test cannot, because the automated test never double clicks.
 
+### 5. The model I should have started with
+
+- Started on Qwen3 0.6B because it was small. It said Obama was president and that 18% of 240 is 432.
+- Wrote a 40-line eval harness: load the extension in Playwright, run six prompts per model, record first token, tokens per second, and the text. Ran Qwen3.5 0.8B, 2B, and 4B in an hour.
+- Table from the README. The 4B is the first one that rewrites instead of replying, does the percentage, sorts the bookmarks, and extracts a date. 44 tokens a second on WebGPU. The 2.7 GB single file loaded without splitting.
+- Lesson: pick the model from measurements on the actual runtime, not from the download size. And compute arithmetic yourself; no small model should be asked what 18% of 240 is.
+
 ## What did not break
 
 - Fetching 400 MB of weights from Hugging Face from an extension page. Weights are data, not code. `host_permissions` for huggingface.co and it just works, including under COEP `require-corp`, because Hugging Face sends CORS headers.
@@ -64,9 +71,14 @@ Add WebGPU numbers from a manual run in real Chrome before publishing.
 - Reload once and count Hugging Face responses to prove the cache. Point cloud mode at a 40-line mock OpenAI server to prove the SSE parser.
 - The whole thing runs in under three seconds with a 1 MB test model, and about 40 with the real one.
 
+## Widgets without code
+
+- Manifest V3 forbids user code, so "let people build widgets" became "let people configure typed panels with data". Agenda is a pasted iCal URL and a 200-line RFC 5545 subset (recurrence expansion is the fun part). Weather is Open-Meteo, which needs no key. Recipes are prompt forms as JSON, shareable as a link.
+- The constraint produced a better product: nothing on the page can phone home unless the user typed the address, and the network ledger in Settings proves it.
+
 ## What is next
 
-Bookmarks search from the ask bar, todos and reminders in extension storage, a disclosed sponsor slot if anyone ever installs it. Link to fogar.ai. Link to the repo if it is public by then.
+Store submission, the recipe gallery once people make recipes worth sharing, Google Calendar read-only OAuth after the store review, one shared model instance across tabs. Link to fogar.ai. Link to the repo.
 
 ## Title options
 

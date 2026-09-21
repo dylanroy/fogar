@@ -184,9 +184,9 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .tile .x { position: absolute; top: 2px; right: 2px; border: 0; background: transparent; color: var(--muted); font-size: 14px; opacity: 0; border-radius: 6px; padding: 1px 5px; }
 .tile:hover .x { opacity: 1; }
 .tile .x:hover { color: var(--accent); }
-.add-link { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
-.add-link input + input { grid-column: 1; }
-.add-link button { grid-column: 2; grid-row: 1 / span 2; }
+.add-link { display: grid; grid-template-columns: 1fr 1fr auto; gap: 6px; align-items: center; }
+.add-link input { min-width: 0; }
+@media (max-width: 900px) { .add-link { grid-template-columns: 1fr auto; } .add-link input + input { grid-column: 1 / -1; } }
 .notes { min-height: 96px; resize: none; line-height: 1.5; font-size: 15px; }
 .agenda { display: grid; gap: 4px; }
 .agenda h4 { margin: 8px 0 4px; font-family: var(--serif); font-weight: 500; font-size: 15px; color: var(--muted); }

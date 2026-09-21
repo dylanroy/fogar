@@ -8,17 +8,31 @@ Live at [fogar.ai](https://fogar.ai). Built by [Dylan Roy](https://dylanroy.com)
 
 ## Status
 
-Phase 2 feature-complete for a first release candidate. Everything below works end to end and is covered by `npm run test:spike`, which loads the built extension into Chromium and drives nine flows against local mock servers.
+Release candidate v0.1.0. Everything below works end to end and is covered by `npm run test:spike`, which loads the built extension into Chromium and drives 23 flows against local mock servers.
 
-- Ask bar with streaming answers from a local model (wllama, WebGPU or CPU) or any OpenAI-compatible endpoint with your own key.
-- Opt-in web grounding with a Brave Search or Tavily key: five snippets in front of the question, citations in the answer, sources under it.
-- Recipes: data-only prompt forms. Four built-ins (Draft & rewrite, Reply to a message, Summarize, Explain simply). Users create, edit, import, export, and share theirs as a link.
-- Todos and reminders panels. Reminders parse plain phrasing, always confirm before saving, fire through `chrome.alarms` and notifications, and offer a one-click Google Calendar link with no OAuth.
-- Bookmark search as you type, with remove.
-- Right-click "Ask Fogar about …" on any page.
-- First-run chooser, cached model auto-loads on every new tab, stop button, plain web search before a model is ready.
+- Ask bar with streaming, Markdown-rendered answers and follow-ups, from a local model (wllama, WebGPU or CPU) or any OpenAI-compatible endpoint with your own key.
+- Model tiers: Qwen3.5 0.8B (533 MB), 2B (1.3 GB), 4B (2.7 GB). First run recommends a tier from the GPU vendor and device memory. Thinking mode is off. WebGPU failures fall back to the CPU.
+- One box, several outcomes: URLs open, `?` searches, "remind me…" sets a reminder, "todo: …" adds a todo, arithmetic is computed locally, bookmark questions go to a finder that has the model sort your bookmarks, everything else goes to the model. Cmd/Ctrl+Enter always searches.
+- Opt-in web grounding with a Brave Search or Tavily key: five snippets, citations, sources.
+- Recipes: data-only prompt forms. Four built-ins. Create, edit, import, export, share as a link, pin to the page.
+- Widgets, as data: Agenda (any iCal feed, recurring events included), Todos, Reminders (plain-language parser, confirm, `chrome.alarms`, notifications, Google Calendar link), Links, Notes, Weather (Open-Meteo, no key), Recipe. Reorder, configure, remove, add. Focus mode.
+- Right-click "Ask Fogar about …". Bookmark search as you type.
+- A network ledger that counts every request this tab made, by host. Backup and restore of everything.
+- Landing page and privacy policy in `site/`. Store listing copy and generated assets in `store/`.
 
-Not yet: store listing, real-Chrome WebGPU numbers in the README, Firefox. The landing page draft for fogar.ai is in `site/`.
+Not yet: store submission, public repo, domains. See [ROADMAP.md](ROADMAP.md).
+
+## Measured
+
+`scripts/eval-models.mjs` runs a fixed prompt set per model in Chromium with WebGPU on an M-series Mac. Warm load is from the OPFS cache.
+
+| Model | Download | Warm load | Speed | Rewrite | Fact | 18% of 240 | Sort 6 bookmarks | Extract date |
+|---|---|---|---|---|---|---|---|---|
+| Qwen3.5 0.8B Q4 | 533 MB | 1.3 s | 92 tok/s | replied instead of rewriting | right | wrong | 1 of 3 wrong | wrong |
+| Qwen3.5 2B Q4 | 1.3 GB | 1.8 s | 71 tok/s | replied instead of rewriting | right | wrong | missed 1 | label right, date wrong |
+| Qwen3.5 4B Q4 | 2.7 GB | 3.2 s | 44 tok/s | right | right | right | right | right |
+
+The 4B is the first tier that behaves like an assistant, which is why it is recommended wherever the GPU can carry it. The rewrite template now carries a one-shot example so the smaller tiers rewrite instead of reply, and arithmetic never reaches the model.
 
 ## Stack
 
@@ -35,6 +49,9 @@ npm run dev          # generate worker files, then WXT dev server with an unpack
 npm run build        # production build to .output/chrome-mv3
 npm run test:spike   # build first; end-to-end test of all nine flows in Chromium
 npm run shots        # light and dark screenshots to .output/shots
+npm run zip          # store-ready zip in .output/
+node scripts/eval-models.mjs      # model quality and speed, see Measured
+node scripts/store-assets.mjs     # store screenshots and promo tiles into store/
 ```
 
 Load the unpacked extension from `.output/chrome-mv3` at `chrome://extensions` with Developer mode on. Open a new tab.

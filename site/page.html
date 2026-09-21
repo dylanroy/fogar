@@ -195,7 +195,7 @@
         <a class="btn btn-ember" href="#install">Add to Chrome</a>
         <a class="btn btn-quiet" href="https://dylanroy.com/?ref=fogar">Read how it was built</a>
       </div>
-      <p class="cta-note">Free. Open source. 397 MB model, downloaded once, cached on your machine.</p>
+      <p class="cta-note">Free. Open source. One model download, 533 MB to 2.7 GB, sized to your machine and cached for good.</p>
     </div>
 
     <div class="stage" aria-label="Fogar new tab, live demonstration">
@@ -258,10 +258,11 @@
     <div class="features">
       <div class="feature"><span class="eyebrow">Recipes</span><div><h3>Prompt forms you can share</h3><p>Draft and rewrite, reply to a message, summarize, explain simply. Make your own with a small form builder, then share it as a link. Recipes are data, never code.</p></div></div>
       <div class="feature"><span class="eyebrow">Reminders</span><div><h3>"Call the dentist tomorrow at 9"</h3><p>Plain words in, a confirmed time out. Fires as a Chrome notification. One click adds it to Google Calendar, with no account connection needed.</p></div></div>
-      <div class="feature"><span class="eyebrow">Todos</span><div><h3>A short list, always in front of you</h3><p>Every new tab. Stored in this browser. Nothing to sign in to.</p></div></div>
+      <div class="feature"><span class="eyebrow">Agenda</span><div><h3>Today and tomorrow, from any calendar</h3><p>Paste your calendar’s private iCal address. Google, Outlook, iCloud, anything. Recurring events included, no account connection.</p></div></div>
+      <div class="feature"><span class="eyebrow">Widgets</span><div><h3>Pin the panels you want</h3><p>Todos, links, notes, weather with no API key, a favorite recipe. Order them, hide them, or hit Focus and keep only the ask box.</p></div></div>
       <div class="feature"><span class="eyebrow">Bookmarks</span><div><h3>Search as you type</h3><p>Start typing in the ask box and matching bookmarks appear underneath. Open one, or remove it.</p></div></div>
       <div class="feature"><span class="eyebrow">Right-click</span><div><h3>"Ask Fogar about …"</h3><p>Select text on any page, right-click, and get an explanation in a new tab.</p></div></div>
-      <div class="feature"><span class="eyebrow">Grounding</span><div><h3>Facts, when you ask for them</h3><p>A small local model is a good writer and a poor encyclopedia. Turn on web grounding for the questions where that matters, and see the sources it used.</p></div></div>
+      <div class="feature"><span class="eyebrow">Grounding</span><div><h3>Facts, when you ask for them</h3><p>A small local model is a good writer and a poor encyclopedia. Turn on web grounding for the questions where that matters, and see the sources it used. Arithmetic is computed, not guessed.</p></div></div>
     </div>
   </section>
 
@@ -307,8 +308,8 @@
     </div>
     <div class="steps">
       <div class="step"><h3>Pick how it answers</h3><p>On this device, cloud with your own key, or just a search box for now. You can change your mind any time.</p></div>
-      <div class="step"><h3>Fetch the model once</h3><p>Qwen3 0.6B, quantized, from Hugging Face. It lands in your browser's private file storage and never downloads again.</p><span class="mono">397 MB · about 40 s on a normal connection</span></div>
-      <div class="step"><h3>Open a new tab</h3><p>The model wakes from disk, runs on your GPU through WebGPU or on your CPU across all its cores, and starts answering.</p><span class="mono">warm start 1.3 s · first token 355 ms · 104 tok/s on CPU, M-series Mac</span></div>
+      <div class="step"><h3>Fetch the model once</h3><p>Qwen3.5, quantized, from Hugging Face, in the size your machine can carry: 0.8B, 2B, or 4B. It lands in your browser's private file storage and never downloads again.</p><span class="mono">533 MB · 1.3 GB · 2.7 GB</span></div>
+      <div class="step"><h3>Open a new tab</h3><p>The model wakes from disk, runs on your GPU through WebGPU or on your CPU across all its cores, and starts answering. Follow-ups keep the thread.</p><span class="mono">warm start 1.3 to 3.2 s · 44 to 92 tok/s · Apple silicon, WebGPU</span></div>
     </div>
   </section>
 
@@ -337,9 +338,9 @@
     </div>
     <div class="faq">
       <details><summary>Does it work offline?</summary><p>Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web grounding and cloud mode need a connection, by definition.</p></details>
-      <details><summary>How good is a 0.6B model, honestly?</summary><p>Good at rewriting, summarizing, explaining, and answering from text you give it. Poor at trivia and recent events. That is why recipes lead with writing tasks and why grounding exists for facts. There is a 1.7B option in Settings if your machine has the headroom.</p></details>
+      <details><summary>How good is a small model, honestly?</summary><p>Depends on the size. In our tests the 0.8B and 2B models rewrite and summarize well but stumble on facts and arithmetic. The 4B gets the president, the percentage, and the sorting task right and still runs at 44 tokens a second on an Apple laptop. Fogar recommends the largest size your machine can run well, computes arithmetic itself, and offers web grounding for facts.</p></details>
       <details><summary>Where is my API key stored?</summary><p>In Chrome's extension storage on this profile, and it is sent only to the endpoint you typed. Fogar has no server that could see it.</p></details>
-      <details><summary>What permissions does it ask for?</summary><p>Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click, and access to huggingface.co to fetch the model. Cloud and search endpoints are requested one at a time, when you add them.</p></details>
+      <details><summary>What permissions does it ask for?</summary><p>Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click, favicons for site icons, and access to huggingface.co to fetch the model. Cloud endpoints, search keys, and calendar addresses are requested one at a time, when you add them. The full list with reasons is in the <a href="privacy.html">privacy policy</a>.</p></details>
       <details><summary>Will it slow down my browser?</summary><p>The model loads only on the new tab page and is released when you navigate away. Loading takes about a second from disk. On a machine without WebGPU it falls back to the CPU and is slower but works.</p></details>
       <details><summary>Firefox? Safari?</summary><p>Chrome and Chromium browsers first. Firefox builds, but its extension pages lack the shared-memory feature the multi-threaded engine needs, so it would be much slower. Not shipping it half-baked.</p></details>
     </div>
@@ -366,7 +367,7 @@ npm run build
 
   <footer>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
-    <span><a href="#top">Top</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="#honest">Sponsorship</a></span>
+    <span><a href="#top">Top</a> · <a href="privacy.html">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="#honest">Sponsorship</a></span>
   </footer>
 </div>
 
