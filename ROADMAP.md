@@ -64,25 +64,30 @@ This is the answer to "should we build a widget marketplace". Yes, in this shape
 
 Recipes are one widget type: a prompt form. The same data-only approach extends to panels on the page.
 
-- Widget types as a fixed set the extension knows how to render: Links, Note, Countdown, Clock, Recipe shortcut. Users configure instances, arrange and hide panels, and share a panel's JSON the same way as a recipe.
+- Widget types as a fixed set the extension knows how to render: Agenda, Links, Note, Countdown, Clock, Recipe shortcut. Users configure instances, arrange and hide panels, and share a panel's JSON the same way as a recipe.
 - Todos and Reminders become the first two panels in the system, so the layout is user-controlled from the start.
 - The builder is the same form approach as recipes. Still no user code.
 
 **Gate.** People asking for layout control or a way to pin a recipe to the page.
 
-## Later, if asked
+## Later: integrations and the agenda widget
 
-- `storage.sync` for todos and reminders across a Chrome profile. Recipes may exceed the 8 KB per-item quota, so they stay local unless chunked.
-- Natural-language todo capture from the ask bar ("todo: send the invoice").
-- Ollama auto-detect on localhost as a one-click cloud option.
-- One shared model instance across tabs through an offscreen document, so several open new tabs do not each hold 400 MB.
-- Firefox. It builds today, but extension pages lack SharedArrayBuffer there, so it would be single-threaded. Ship only if the WebGPU path makes that irrelevant.
-- Tab search from the ask bar. Needs the `tabs` permission and its install warning, so only with a clear ask.
+Dylan's ask: connect Google Calendar and show a daily agenda on the new tab. That is one of the best things a new tab can do, and it fits the filter as long as the connection is explicit and read-only. Two steps.
+
+**Step 1, agenda from a calendar feed (no OAuth).** Every major calendar publishes a private iCal (ICS) URL: Google's "Secret address in iCal format", Outlook's "Publish calendar", iCloud's public sharing. The user pastes the URL, Fogar requests that one origin as an optional host permission, fetches and parses the feed, and renders today and tomorrow as a panel. Works for every provider on day one, needs no Google review, and the URL lives in extension storage like an API key. Feeds refresh on the provider's schedule, so events can lag by minutes to an hour, which is fine for an agenda and wrong for alarms.
+
+**Step 2, Google Calendar OAuth, read-only.** `chrome.identity` with the `calendar.readonly` scope. That scope is "sensitive", which means Google's OAuth verification (privacy policy, homepage, a demo video, a scope justification; usually weeks) but not the annual third-party security assessment that "restricted" scopes like Gmail require. Verification can run in parallel with the store review. Once approved: live data, no URL to paste, and the option to write reminders into the calendar instead of the template link. The connect button is opt-in and the event data never goes anywhere but the page.
+
+**The pattern for everything else.** An integration is a URL or a token the user pastes, stored locally, sent only to its own origin, requested as an optional permission at save time. Cloud mode and grounding already work this way. Candidates that fit: RSS feeds as a reading panel, weather from Open-Meteo (no key needed), GitHub notifications with a personal token. Each is a declarative widget type with a config form, same as recipes.
+
+**Gate.** Agenda ships with declarative widgets, since it is a panel. Step 2 starts the day the store listing is submitted, because the verification clock is the long one.
+
+## Later, if asked
 
 ## Decided against
 
 - **User-authored widgets as code.** Manifest V3 bars it; recipes and declarative widgets cover the real need.
-- **Google Calendar or Gmail OAuth.** Gmail scopes need an annual third-party security assessment; Calendar scopes need Google's verification review and a heavier store disclosure. Reminders link to a prefilled Google Calendar event instead.
+- **Gmail.** Its scopes are "restricted", which means an annual third-party security assessment on top of verification, and reading mail is the opposite of the pitch. Calendar is different and is on the roadmap above.
 - **Paid tiers or lifetime deals.** Zero marginal cost, no server, no accounts.
 - **Analytics in the extension.** Contradicts the pitch and complicates the listing.
 - **Scraping a search engine for grounding.** Breaks, violates terms, and gets store listings pulled. Bring-your-own key or nothing.
