@@ -1,0 +1,9 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "strict": true,
+    // WXT turns this on. @wllama/wllama ships TypeScript source as its entry point and does not compile under it.
+    "noUncheckedIndexedAccess": false
+  },
+  "exclude": ["node_modules", ".output", "scripts"]
+}

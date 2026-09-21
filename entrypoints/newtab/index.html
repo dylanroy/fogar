@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>New Tab</title>
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body data-status="idle">
+    <main class="page">
+      <header class="top">
+        <div class="brand">Fogar</div>
+        <div class="mode" role="radiogroup" aria-label="Answer source">
+          <button id="mode-local" class="mode-btn" role="radio" aria-checked="true">On this device</button>
+          <button id="mode-cloud" class="mode-btn" role="radio" aria-checked="false">Cloud (your key)</button>
+        </div>
+      </header>
+
+      <section class="ask">
+        <form id="ask-form">
+          <textarea id="prompt" rows="2" placeholder="Ask anything. Nothing leaves this browser in local mode." autofocus></textarea>
+          <div class="ask-row">
+            <span id="status" class="status">Loading settings…</span>
+            <button id="ask-btn" type="submit" disabled>Ask</button>
+          </div>
+        </form>
+        <div id="progress" class="progress" hidden><div id="progress-bar" class="progress-bar"></div><span id="progress-text"></span></div>
+        <article id="answer" class="answer" hidden></article>
+        <div id="stats" class="stats" hidden></div>
+      </section>
+
+      <details id="settings" class="settings">
+        <summary>Settings</summary>
+        <fieldset id="local-settings">
+          <legend>Local model</legend>
+          <label>Model <select id="model"></select></label>
+          <label class="inline"><input type="checkbox" id="gpu" /> Use WebGPU <span id="gpu-note" class="muted"></span></label>
+          <button id="load-btn" type="button">Download and load</button>
+          <p id="model-note" class="muted"></p>
+        </fieldset>
+        <fieldset id="cloud-settings">
+          <legend>Cloud endpoint (OpenAI-compatible)</legend>
+          <label>Base URL <input id="cloud-endpoint" type="url" placeholder="https://api.openai.com/v1" /></label>
+          <label>API key <input id="cloud-key" type="password" autocomplete="off" placeholder="sk-…" /></label>
+          <label>Model <input id="cloud-model" type="text" placeholder="gpt-4o-mini" /></label>
+          <button id="cloud-save" type="button">Save</button>
+          <p class="muted">Works with OpenAI, OpenRouter, Groq, or Ollama at http://localhost:11434/v1. The key is stored only in this browser's extension storage.</p>
+        </fieldset>
+      </details>
+
+      <footer class="foot">
+        <span id="promo"></span>
+        <a class="muted" href="https://fogar.ai" target="_blank" rel="noopener">fogar.ai</a>
+      </footer>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

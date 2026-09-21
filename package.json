@@ -1,0 +1,23 @@
+{
+  "name": "fogar",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "Fogar: a private new tab that answers from a model running in your browser, or from a cloud endpoint you bring your own key for.",
+  "scripts": {
+    "gen:wllama": "node scripts/gen-wllama-workers.mjs",
+    "dev": "npm run gen:wllama && wxt",
+    "build": "npm run gen:wllama && wxt build",
+    "zip": "npm run gen:wllama && wxt zip",
+    "postinstall": "wxt prepare",
+    "test:spike": "node scripts/spike-smoke.mjs"
+  },
+  "dependencies": {
+    "@wllama/wllama": "3.6.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "wxt": "^0.21.4",
+    "playwright": "^1.50.0"
+  }
+}
