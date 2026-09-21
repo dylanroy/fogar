@@ -67,6 +67,11 @@ try { await waitDone(30000); } catch { /* fall through */ }
 const cloudAnswer = await text('answer');
 check('cloud mode streams via SSE with bearer auth', (await status()) === 'done' && cloudAnswer.includes('mock cloud says hello') && mock.server.lastRequest?.auth === 'Bearer test-key' && mock.server.lastRequest?.stream === true, cloudAnswer);
 
+// 3a. the network ledger saw exactly the cloud host, and the prompt cleared
+const ledger = await page.evaluate(() => [...document.querySelectorAll('#ledger-list li')].map((li) => li.textContent));
+const pill = await text('ledger-pill');
+check('network ledger counts the cloud host', ledger.some((l) => l.includes('127.0.0.1')) && /network: [1-9]/.test(pill), `${pill}; ${ledger.join(' | ')}`);
+
 // 3b. follow-up: the second question carries the first exchange
 await page.fill('#prompt', 'Say it again');
 await page.press('#prompt', 'Enter');

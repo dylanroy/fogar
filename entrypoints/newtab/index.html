@@ -126,15 +126,25 @@
           <div class="row-actions"><button id="ground-save" class="primary" type="button">Save</button><span id="ground-note" class="muted"></span></div>
         </fieldset>
         <fieldset>
+          <legend>Network, this tab</legend>
+          <p class="muted">Every request this page has made since it opened, counted by host from the browser's own timeline. Nothing inferred.</p>
+          <ul id="ledger-list" class="ledger-list"><li class="muted">No requests yet.</li></ul>
+        </fieldset>
+        <fieldset>
           <legend>Your data</legend>
-          <p class="muted">Todos, reminders, recipes, and settings live in this browser's extension storage. Nothing is sent anywhere unless you set a cloud endpoint or a search key, and then only to the address you typed.</p>
-          <div class="row-actions"><button id="export-btn" class="ghost small" type="button">Export recipes as JSON</button></div>
+          <p class="muted">Todos, reminders, recipes, notes, and settings live in this browser's extension storage. Nothing is sent anywhere unless you set a cloud endpoint or a search key, and then only to the address you typed.</p>
+          <div class="row-actions">
+            <button id="backup-btn" class="ghost small" type="button">Download a backup</button>
+            <button id="restore-btn" class="ghost small" type="button">Restore from a backup</button>
+            <button id="export-btn" class="ghost small" type="button">Copy recipes as JSON</button>
+            <input id="restore-file" type="file" accept="application/json,.json" hidden />
+          </div>
         </fieldset>
       </details>
 
       <footer class="foot">
         <span id="promo"></span>
-        <a class="muted link" href="https://fogar.ai" target="_blank" rel="noopener">fogar.ai</a>
+        <span class="foot-right"><a id="ledger-pill" class="ledger-pill" href="#ledger-list" title="Open the network ledger">network: 0 requests</a><a class="muted link" href="https://fogar.ai" target="_blank" rel="noopener">fogar.ai</a></span>
       </footer>
     </main>
     <div id="toast" class="toast" hidden></div>

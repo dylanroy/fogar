@@ -5,7 +5,9 @@ import { MODELS, modelById } from '@/lib/llm/models';
 import { groundingApiUrl } from '@/lib/grounding';
 import type { GroundingProvider } from '@/lib/llm/types';
 import { ensureOriginPermission } from '@/lib/settings';
-import { fmtBytes } from '@/lib/dom';
+import { fmtBytes, el, clear } from '@/lib/dom';
+import { installLedger, ledgerSnapshot, ledgerTotal, onLedgerChange } from '@/lib/ledger';
+import { downloadJson, exportBackup, importBackup } from '@/lib/backup';
 
 export function initSettings(app: App): void {
   const s = app.settings;
@@ -62,6 +64,35 @@ export function initSettings(app: App): void {
     $<HTMLInputElement>('ground').checked = s.grounding.byDefault;
     $('ground-note').textContent = note;
     app.refreshReadiness();
+  };
+
+  // Network ledger
+  installLedger();
+  const paintLedger = () => {
+    const total = ledgerTotal();
+    const pill = $('ledger-pill');
+    pill.textContent = `network: ${total} request${total === 1 ? '' : 's'}`;
+    pill.classList.toggle('busy', total > 0);
+    const list = $('ledger-list'); clear(list);
+    const rows = ledgerSnapshot();
+    if (!rows.length) list.append(el('li', { class: 'muted' }, 'No requests yet.'));
+    for (const r of rows) list.append(el('li', {}, el('span', {}, r.host), el('span', { class: 'muted' }, `${r.count} request${r.count === 1 ? '' : 's'}${r.bytes ? ` · ${fmtBytes(r.bytes)}` : ''}`)));
+  };
+  onLedgerChange(paintLedger); paintLedger();
+  $('ledger-pill').onclick = () => { $<HTMLDetailsElement>('settings').open = true; };
+
+  // Backup and restore
+  $('backup-btn').onclick = async () => { downloadJson(`fogar-backup-${new Date().toISOString().slice(0, 10)}.json`, await exportBackup()); app.toast('Backup downloaded'); };
+  const file = $<HTMLInputElement>('restore-file');
+  $('restore-btn').onclick = () => file.click();
+  file.onchange = async () => {
+    const f = file.files?.[0]; if (!f) return;
+    try {
+      const result = await importBackup(JSON.parse(await f.text()));
+      app.toast(`Restored ${result.recipes} recipes, ${result.todos} todos, ${result.reminders} reminders. Reloading…`);
+      setTimeout(() => location.reload(), 900);
+    } catch (err) { app.toast((err as Error).message); }
+    file.value = '';
   };
 
   // Mode toggle

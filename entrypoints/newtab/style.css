@@ -170,6 +170,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 
 .foot { display: flex; justify-content: space-between; gap: 16px; color: var(--muted); font-size: 12px; border-top: 1px solid var(--line); padding-top: 14px; flex-wrap: wrap; }
 .foot a { color: inherit; }
+.foot-right { display: inline-flex; gap: 16px; align-items: center; }
+.ledger-pill { text-decoration: none; font-variant-numeric: tabular-nums; display: inline-flex; align-items: center; gap: 6px; }
+.ledger-pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #3f9d5a; }
+.ledger-pill.busy::before { background: var(--accent); }
+.ledger-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.ledger-list li { display: flex; justify-content: space-between; gap: 12px; }
 .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); background: var(--fg); color: var(--bg); padding: 9px 16px; border-radius: 999px; font-size: 13px; box-shadow: var(--shadow); }
 
 @media (max-width: 640px) {

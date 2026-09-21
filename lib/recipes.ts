@@ -41,8 +41,8 @@ export const BUILTIN_RECIPES: Recipe[] = [
       { key: 'length', label: 'Length', type: 'select', options: ['Shorter', 'About the same', 'Longer'], default: 'About the same' },
       { key: 'format', label: 'Format', type: 'select', options: ['Keep as is', 'Email', 'Bullet points', 'One sentence', 'Chat message'], default: 'Keep as is' },
     ],
-    system: 'You are a careful writing assistant. Return only the rewritten text, with no preamble and no commentary.',
-    template: 'Rewrite the text below.\nTone: {{tone}}. Length: {{length}}. Format: {{format}}.\nKeep the meaning and any specific facts, names, and numbers.\n\nText:\n{{text}}',
+    system: 'You are a careful writing assistant. You rewrite the user\'s own words; you never reply to them. Return only the rewritten text, with no preamble and no commentary.',
+    template: 'Rewrite the text below so it says the same thing, better.\nTone: {{tone}}. Length: {{length}}. Format: {{format}}.\nKeep the meaning and any specific facts, names, and numbers. Do not answer or respond to the text; rewrite it.\n\nExample:\nText: cant come tmrw, sick\nRewritten: I\'m sorry, I won\'t be able to come tomorrow. I\'m not feeling well.\n\nText: {{text}}\nRewritten:',
   },
   {
     version: 1, id: 'reply', builtin: true, emoji: '↩️',
