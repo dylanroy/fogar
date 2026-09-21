@@ -56,6 +56,16 @@ export default defineBackground(() => {
   });
   browser.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
     if (msg?.type === 'reminders.changed') { void reconcile().then(() => sendResponse({ ok: true })); return true; }
+    if (msg?.type === 'offscreen.ensure') {
+      // Spike: one offscreen document hosts the model for every tab. See scripts/offscreen-spike.mjs.
+      (async () => {
+        const offscreen = (globalThis as any).chrome.offscreen;
+        const has = await offscreen.hasDocument();
+        if (!has) await offscreen.createDocument({ url: (globalThis as any).chrome.runtime.getURL('/offscreen.html'), reasons: ['WORKERS'], justification: 'Run the local language model once and share it across new tab pages.' });
+        sendResponse({ ok: true, created: !has });
+      })().catch((err) => sendResponse({ ok: false, error: String(err) }));
+      return true;
+    }
     return false;
   });
 

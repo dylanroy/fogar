@@ -10,7 +10,7 @@ export default defineConfig({
     short_name: 'Fogar',
     description:
       'A private new tab. Ask anything; answers come from a model running in your browser, or from a cloud endpoint you bring your own key for.',
-    permissions: ['storage', 'contextMenus', 'alarms', 'notifications', 'bookmarks', 'favicon'],
+    permissions: ['storage', 'contextMenus', 'alarms', 'notifications', 'bookmarks', 'favicon', 'offscreen'],
     // Cloud endpoints are user-chosen; their origin is requested at save time, never up front.
     optional_host_permissions: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'],
     // Model weights are data, not code. They are fetched from Hugging Face and cached in OPFS.
