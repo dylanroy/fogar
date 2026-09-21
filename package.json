@@ -11,7 +11,8 @@
     "build": "npm run gen:wllama && wxt build",
     "zip": "npm run gen:wllama && wxt zip",
     "postinstall": "wxt prepare",
-    "test:spike": "node scripts/spike-smoke.mjs"
+    "test:spike": "node scripts/spike-smoke.mjs",
+    "shots": "node scripts/screenshot.mjs"
   },
   "dependencies": {
     "@wllama/wllama": "3.6.1"

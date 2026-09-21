@@ -8,7 +8,17 @@ Live at [fogar.ai](https://fogar.ai). Built by [Dylan Roy](https://dylanroy.com)
 
 ## Status
 
-Phase 1 spike. The goal of this phase is a single yes/no: **can wllama run inside a Manifest V3 extension page with weights cached in OPFS?** See "Spike checklist" below.
+Phase 2 feature-complete for a first release candidate. Everything below works end to end and is covered by `npm run test:spike`, which loads the built extension into Chromium and drives nine flows against local mock servers.
+
+- Ask bar with streaming answers from a local model (wllama, WebGPU or CPU) or any OpenAI-compatible endpoint with your own key.
+- Opt-in web grounding with a Brave Search or Tavily key: five snippets in front of the question, citations in the answer, sources under it.
+- Recipes: data-only prompt forms. Four built-ins (Draft & rewrite, Reply to a message, Summarize, Explain simply). Users create, edit, import, export, and share theirs as a link.
+- Todos and reminders panels. Reminders parse plain phrasing, always confirm before saving, fire through `chrome.alarms` and notifications, and offer a one-click Google Calendar link with no OAuth.
+- Bookmark search as you type, with remove.
+- Right-click "Ask Fogar about …" on any page.
+- First-run chooser, cached model auto-loads on every new tab, stop button, plain web search before a model is ready.
+
+Not yet: store listing, real-Chrome WebGPU numbers in the README, Firefox.
 
 ## Stack
 
@@ -23,7 +33,8 @@ Phase 1 spike. The goal of this phase is a single yes/no: **can wllama run insid
 npm install          # also runs `wxt prepare`
 npm run dev          # generate worker files, then WXT dev server with an unpacked extension
 npm run build        # production build to .output/chrome-mv3
-npm run test:spike   # build first; loads the extension into Chromium and streams from a 1 MB model
+npm run test:spike   # build first; end-to-end test of all nine flows in Chromium
+npm run shots        # light and dark screenshots to .output/shots
 ```
 
 Load the unpacked extension from `.output/chrome-mv3` at `chrome://extensions` with Developer mode on. Open a new tab.
@@ -65,17 +76,20 @@ Known fix from the first manual run: clicking "Download and load" twice mid-down
 
 ## Roadmap
 
-1. **Spike** (this phase). Prove the pipeline. Draft blog post one while the gotchas are fresh.
-2. **Product.** Done so far: cached model auto-loads on every new tab, stop button, plain web search before a model is ready, right-click "Ask Fogar about …", model cache size and clear, icons. Still to do: first-run chooser, a real design pass, WebGPU numbers in real Chrome.
-2b. **Web grounding, opt-in.** A 0.6B model is a summarizer, not an encyclopedia; asked who the US president is it says Obama. Add an optional search step (bring-your-own Brave Search or Tavily key, both have free tiers) that fetches a handful of snippets and has the local model answer from them with citations. Off by default so the "nothing leaves this browser" promise holds unless the user turns it on.
-3. **Your corner.** Bookmarks search from the ask bar (`bookmarks` permission, local only). Todos and reminders in extension storage with `chrome.alarms` and notifications. Natural-language create/remove via wllama tool calling, with confirmation before anything is deleted.
-4. **Promo surface and sponsor slot.** Footer rotates own products with `ref=fogar`. "Sponsor this slot" page on fogar.ai. Sell nothing until a few thousand weekly actives; label anything sponsored.
-5. **Store and launch.** Single-purpose statement, privacy policy that says "we store nothing", Show HN.
-6. **Write-ups on dylanroy.com.** The build, the launch numbers, the sponsor experiment.
+1. ~~Spike.~~ Done. wllama runs under MV3; see the constraints table.
+2. ~~Product.~~ Done: first run, auto-load, stop, search fallback, context menu, cache controls, icons, redesign.
+3. ~~Your corner.~~ Done: recipes, todos, reminders, bookmark search, opt-in grounding.
+4. **Release candidate.** WebGPU numbers from real Chrome in this README, a privacy policy page, store listing copy and screenshots, `wxt zip`.
+5. **Promo surface and sponsor slot.** Footer rotates own products with `ref=fogar`. "Sponsor this slot" page on fogar.ai. Sell nothing until a few thousand weekly actives; label anything sponsored.
+6. **Launch.** Show HN, local-LLM communities. Then the write-ups on dylanroy.com: the build, the launch numbers, the sponsor experiment.
+
+Later, if people ask: a shared reminder/todo panel across devices via `storage.sync`, natural-language todo capture from the ask bar, Ollama auto-detect, Firefox.
 
 ## Decided against, for now
 
-- **User-authored widgets.** Manifest V3 bars arbitrary code in extension pages, so user JavaScript could only run in a sandboxed iframe with message passing. That is a platform, not a feature, and the store treats "runs user code" with suspicion. A fixed set of toggleable built-in panels (todos, bookmarks, reminders, clock) covers most of the value.
+- **User-authored widgets as code.** Manifest V3 bars arbitrary code in extension pages. Recipes cover the real ask: users make and share prompt forms as data, never JavaScript.
+- **Google Calendar or Gmail OAuth.** Gmail scopes are "restricted" and need an annual third-party security assessment; Calendar scopes need Google's verification review and a heavier store disclosure. Reminders link to a prefilled Google Calendar event instead, which needs nothing.
+- **Paid tiers or lifetime deals.** Zero marginal cost, no accounts, no server. Charging would need licensing and support that contradict the product. Free; the footer and a disclosed sponsor slot are the business model.
 - **Analytics inside the extension.** Cuts against the privacy pitch and complicates the store listing.
 
 ## Privacy stance

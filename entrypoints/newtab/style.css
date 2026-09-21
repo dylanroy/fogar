@@ -15,6 +15,7 @@
   }
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html, body { margin: 0; background: var(--bg); color: var(--fg); }
 body { min-height: 100vh; line-height: 1.45; }
 a.link { color: inherit; text-decoration: underline; text-decoration-color: var(--line); text-underline-offset: 3px; }
@@ -89,6 +90,8 @@ textarea:focus, input:focus, select:focus { outline: none; border-color: var(--a
 .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
 #recipe-panel { margin-top: 12px; padding: 18px 20px; display: grid; gap: 14px; }
 .recipe-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.recipe-head .row-actions { flex: 0 0 auto; flex-wrap: nowrap; }
+.recipe-head p { margin-top: 4px; }
 .recipe-head h3 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 18px; }
 .field { display: grid; gap: 5px; font-size: 13px; color: var(--muted); }
 .field > input, .field > textarea, .field > select { color: var(--fg); font-size: 15px; }
@@ -116,13 +119,12 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .item:hover .x, .item:hover .cal { opacity: 1; }
 .item .x:hover { color: var(--accent); }
 .empty { padding: 4px; }
-.empty[hidden] { display: none; }
 .confirm { display: grid; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); font-size: 14px; }
 .confirm .row-actions { justify-content: flex-end; }
 
 /* settings */
 .settings summary { cursor: pointer; color: var(--muted); font-size: 13px; list-style: none; }
-.settings summary::before { content: "›  "; display: inline-block; transition: transform 0.15s; }
+.settings summary::before { content: "›"; display: inline-block; margin-right: 8px; transition: transform 0.15s; }
 .settings[open] summary::before { transform: rotate(90deg); }
 .settings fieldset { border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin: 14px 0; display: grid; gap: 12px; background: var(--card); }
 .settings legend { color: var(--muted); font-size: 12px; padding: 0 6px; }
@@ -138,5 +140,6 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 @media (max-width: 640px) {
   .page { padding-top: 6vh; gap: 28px; }
   .top { flex-direction: column; align-items: flex-start; }
+  .recipe-head { flex-direction: column; }
   .input-row { grid-template-columns: 1fr 1fr; }
 }

@@ -16,6 +16,8 @@ const extId = new URL(sw.url()).host;
 const page = await context.newPage();
 for (const scheme of ['light', 'dark']) {
   await page.emulateMedia({ colorScheme: scheme });
+  await page.goto(`chrome-extension://${extId}/newtab.html?e2e=1`);
+  await page.evaluate(() => chrome.storage.local.clear()); // fresh profile state for each scheme
   await page.goto(`chrome-extension://${extId}/newtab.html`);
   await page.waitForSelector('#firstrun:not([hidden])');
   await page.screenshot({ path: join(out, `firstrun-${scheme}.png`) });
