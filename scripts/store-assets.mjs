@@ -71,8 +71,9 @@ await page.selectOption('#recipe-panel select >> nth=0', 'Friendly');
 await page.selectOption('#recipe-panel select >> nth=2', 'Chat message');
 await page.click('#recipe-panel .primary');
 await waitDone();
-await page.evaluate(() => document.querySelector('.recipes').scrollIntoView({ block: 'start' }));
-await page.evaluate(() => window.scrollBy(0, -40));
+// Show the rewritten output (labelled with the recipe name) with the open form beneath it.
+await page.evaluate(() => document.getElementById('thread').scrollIntoView({ block: 'start' }));
+await page.evaluate(() => window.scrollBy(0, -90));
 await shot('02-recipe');
 
 // 3. widgets
@@ -98,7 +99,8 @@ const tile = (w, h, big) => `<!doctype html><html><head><meta charset="utf-8"><l
   .tag em{font-style:normal;color:#ff6a2b}
 </style></head><body><div class="glow"></div><div class="in"><div class="brand"><span class="dot"></span>Fogar</div><div class="tag">A new tab that answers from a model in your browser. <em>Nothing leaves the room.</em></div></div></body></html>`;
 for (const [name, w, h, big] of [['promo-440x280', 440, 280, false], ['marquee-1400x560', 1400, 560, true]]) {
-  const p = await context.newPage({ viewport: { width: w, height: h } });
+  const p = await context.newPage();
+  await p.setViewportSize({ width: w, height: h });
   await p.setContent(tile(w, h, big), { waitUntil: 'networkidle' });
   await p.waitForTimeout(600);
   await p.screenshot({ path: `store/${name}.png` });
