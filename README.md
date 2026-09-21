@@ -18,7 +18,7 @@ Phase 2 feature-complete for a first release candidate. Everything below works e
 - Right-click "Ask Fogar about …" on any page.
 - First-run chooser, cached model auto-loads on every new tab, stop button, plain web search before a model is ready.
 
-Not yet: store listing, real-Chrome WebGPU numbers in the README, Firefox.
+Not yet: store listing, real-Chrome WebGPU numbers in the README, Firefox. The landing page draft for fogar.ai is in `site/`.
 
 ## Stack
 
@@ -42,6 +42,8 @@ Load the unpacked extension from `.output/chrome-mv3` at `chrome://extensions` w
 Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL=qwen3-0.6b` to use the real 400 MB model, `VERBOSE=1` for every console line. The test also covers a warm OPFS reload and cloud mode against a local mock OpenAI server.
 
 `npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
+
+`npm run site` wraps `site/page.html` into the deployable `site/index.html` for fogar.ai. The page body is kept separate so the same file can be previewed as a Claude artifact.
 
 ## Manifest V3 constraints, and how each is handled
 

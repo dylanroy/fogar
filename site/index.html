@@ -1,0 +1,431 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta property="og:title" content="Fogar" />
+<meta property="og:description" content="A new tab for Chrome that answers from a model running inside your browser. Nothing leaves the room." />
+<meta property="og:url" content="https://fogar.ai/" />
+<meta name="theme-color" content="#14100d" />
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+</head>
+<body>
+<title>Fogar</title>
+<meta name="description" content="Fogar is a new tab for Chrome that answers from a model running inside your browser. No account, no key, no server. Recipes, todos, reminders, bookmark search." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+<style>
+  :root {
+    color-scheme: dark;
+    --ground: #14100d; --surface: #1d1712; --surface-2: #26201a; --line: #33291f; --line-2: #443728;
+    --ink: #efe6da; --ink-2: #c9bba9; --ash: #9b8e80;
+    --ember: #ff6a2b; --ember-2: #ffb380; --coal: #b23a12; --ember-ink: #1a0e07;
+    --glow: rgba(255, 106, 43, 0.32); --glow-2: rgba(255, 179, 128, 0.12);
+    --display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+    --serif: "Source Serif 4", "Iowan Old Style", Georgia, serif;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  @media (prefers-color-scheme: light) {
+    :root:not([data-theme="dark"]) {
+      color-scheme: light;
+      --ground: #f3ebdf; --surface: #fbf6ee; --surface-2: #efe5d6; --line: #e2d6c4; --line-2: #d1c2ac;
+      --ink: #201812; --ink-2: #4e4034; --ash: #8a7b6c;
+      --ember: #d24a12; --ember-2: #b23a12; --coal: #8f2e0c; --ember-ink: #fff4ec;
+      --glow: rgba(210, 74, 18, 0.2); --glow-2: rgba(210, 74, 18, 0.08);
+    }
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --ground: #f3ebdf; --surface: #fbf6ee; --surface-2: #efe5d6; --line: #e2d6c4; --line-2: #d1c2ac;
+    --ink: #201812; --ink-2: #4e4034; --ash: #8a7b6c;
+    --ember: #d24a12; --ember-2: #b23a12; --coal: #8f2e0c; --ember-ink: #fff4ec;
+    --glow: rgba(210, 74, 18, 0.2); --glow-2: rgba(210, 74, 18, 0.08);
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: var(--serif); font-size: 17px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+  a { color: inherit; }
+  :focus-visible { outline: 2px solid var(--ember); outline-offset: 3px; border-radius: 4px; }
+  ::selection { background: var(--ember); color: var(--ember-ink); }
+  h1, h2, h3 { font-family: var(--display); font-weight: 800; letter-spacing: -0.02em; line-height: 1; margin: 0; text-wrap: balance; font-variation-settings: "opsz" 96; }
+  h1 { font-size: clamp(40px, 5.4vw, 66px); line-height: 0.98; }
+  h2 { font-size: clamp(30px, 4vw, 44px); }
+  h3 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; }
+  p { margin: 0; }
+  .measure { max-width: 62ch; }
+  .lead { font-size: 20px; line-height: 1.5; color: var(--ink-2); }
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ember); font-weight: 500; }
+  .mono { font-family: var(--mono); font-size: 13px; color: var(--ash); font-variant-numeric: tabular-nums; }
+  .wrap { width: min(1100px, calc(100vw - 48px)); margin: 0 auto; }
+  section { padding: 96px 0; }
+  section + section { border-top: 1px solid var(--line); }
+  .section-head { display: grid; gap: 14px; margin-bottom: 48px; }
+
+  /* nav */
+  .nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .brand { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
+  .brand i { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, var(--ember-2), var(--ember) 55%, var(--coal)); box-shadow: 0 0 18px var(--glow); }
+  .nav-links { display: flex; gap: 22px; font-family: var(--mono); font-size: 13px; }
+  .nav-links a { text-decoration: none; color: var(--ink-2); }
+  .nav-links a:hover { color: var(--ink); }
+
+  /* buttons */
+  .btn { font-family: var(--display); font-weight: 700; font-size: 16px; letter-spacing: -0.01em; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; padding: 14px 22px; border-radius: 10px; border: 1px solid transparent; transition: transform 0.15s, box-shadow 0.15s; }
+  .btn-ember { background: var(--ember); color: var(--ember-ink); box-shadow: 0 0 0 0 var(--glow); }
+  .btn-ember:hover { transform: translateY(-1px); box-shadow: 0 10px 30px -10px var(--glow); }
+  .btn-quiet { border-color: var(--line-2); color: var(--ink); background: transparent; }
+  .btn-quiet:hover { border-color: var(--ash); }
+
+  /* hero */
+  .hero { padding: 48px 0 96px; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: center; }
+  .hero-copy { display: grid; gap: 26px; }
+  .hero-copy h1 em { font-style: normal; color: var(--ember); }
+  .cta-row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .cta-note { font-family: var(--mono); font-size: 12px; color: var(--ash); }
+
+  /* the new tab, faithfully */
+  .stage { position: relative; }
+  .stage::before { content: ""; position: absolute; inset: -6% -10% -16% -10%; background: radial-gradient(ellipse at 50% 75%, var(--glow) 0%, var(--glow-2) 45%, transparent 72%); filter: blur(18px); z-index: 0; pointer-events: none; }
+  .tab { position: relative; z-index: 1; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.6); overflow: hidden; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+  .tab-chrome { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
+  .tab-chrome span { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); }
+  .tab-chrome .url { margin-left: 10px; flex: 1; font-family: var(--mono); font-size: 11px; color: var(--ash); background: var(--surface); border-radius: 6px; padding: 5px 10px; }
+  .tab-body { padding: 26px 26px 22px; display: grid; gap: 16px; }
+  .tab-top { display: flex; justify-content: space-between; align-items: center; }
+  .tab-brand { font-family: var(--serif); font-weight: 600; font-size: 20px; }
+  .tab-mode { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; font-size: 11px; }
+  .tab-mode span { padding: 5px 10px; color: var(--ash); }
+  .tab-mode span.on { background: var(--ink); color: var(--ground); }
+  .tab-ask { border: 1px solid var(--line-2); border-radius: 12px; padding: 14px 16px; min-height: 58px; font-size: 17px; color: var(--ink); background: var(--ground); }
+  .tab-ask .caret { display: inline-block; width: 2px; height: 1.1em; background: var(--ember); vertical-align: text-bottom; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+  .tab-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--ash); gap: 12px; }
+  .tab-row b { font-weight: 500; color: var(--ink-2); }
+  .tab-answer { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 15px; line-height: 1.55; min-height: 92px; color: var(--ink); white-space: pre-wrap; }
+  .tab-answer:empty::before { content: "…"; color: var(--ash); }
+  .ledger { display: flex; gap: 18px; font-family: var(--mono); font-size: 11.5px; color: var(--ash); flex-wrap: wrap; }
+  .ledger b { color: var(--ember-2); font-weight: 500; }
+  .ledger .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); box-shadow: 0 0 10px var(--glow); margin-right: 6px; vertical-align: middle; }
+  .replay { align-self: flex-start; font-family: var(--mono); font-size: 11.5px; color: var(--ash); background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .replay:hover { color: var(--ink); border-color: var(--ash); }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ledger table */
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 16px; }
+  th, td { text-align: left; padding: 16px 18px 16px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ash); font-weight: 500; }
+  td.k { font-family: var(--display); font-weight: 700; font-size: 18px; white-space: nowrap; }
+  td .zero { font-family: var(--mono); color: var(--ember); font-weight: 500; }
+  td small { display: block; color: var(--ash); font-size: 14px; margin-top: 4px; }
+
+  /* features as a ledger list */
+  .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 0 56px; }
+  .feature { display: grid; grid-template-columns: 110px 1fr; gap: 18px; padding: 26px 0; border-bottom: 1px solid var(--line); align-items: start; }
+  .feature .eyebrow { padding-top: 6px; }
+  .feature h3 { margin-bottom: 8px; }
+  .feature p { color: var(--ink-2); font-size: 16px; }
+
+  /* recipe showcase */
+  .split { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 56px; align-items: start; }
+  .recipe { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; padding: 22px 24px; display: grid; gap: 14px; font-family: ui-sans-serif, system-ui, sans-serif; }
+  .recipe h4 { margin: 0; font-family: var(--serif); font-weight: 500; font-size: 19px; }
+  .recipe .field { display: grid; gap: 5px; font-size: 12px; color: var(--ash); }
+  .recipe .box { border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--ink); background: var(--ground); }
+  .recipe .box.tall { min-height: 78px; }
+  .recipe .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .recipe .out { border-top: 1px dashed var(--line-2); padding-top: 14px; font-size: 14px; line-height: 1.55; color: var(--ink); }
+  .recipe .out .eyebrow { display: block; margin-bottom: 8px; }
+  .recipe-json { margin-top: 14px; font-family: var(--mono); font-size: 12px; color: var(--ash); white-space: pre; overflow-x: auto; background: var(--surface-2); border-radius: 10px; padding: 14px 16px; line-height: 1.6; }
+  .recipe-json b { color: var(--ember-2); font-weight: 500; }
+
+  /* steps: a real sequence */
+  .steps { counter-reset: step; display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 40px 48px; }
+  .step { display: grid; gap: 10px; }
+  .step::before { counter-increment: step; content: counter(step); font-family: var(--display); font-weight: 800; font-size: 54px; line-height: 1; color: var(--ember); letter-spacing: -0.03em; }
+  .step p { color: var(--ink-2); font-size: 16px; }
+  .step .mono { margin-top: 4px; }
+
+  /* honesty */
+  .honest { background: var(--surface); border: 1px solid var(--line-2); border-radius: 16px; padding: 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 40px; }
+  .honest ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; font-size: 16px; }
+  .honest li { display: flex; gap: 12px; align-items: baseline; }
+  .honest li::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ember); flex: 0 0 auto; transform: translateY(-2px); }
+  .honest .mono a { color: var(--ink-2); }
+
+  /* faq */
+  .faq { display: grid; gap: 0; max-width: 760px; }
+  details { border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; list-style: none; padding: 20px 0; font-family: var(--display); font-weight: 700; font-size: 20px; letter-spacing: -0.01em; display: flex; justify-content: space-between; gap: 20px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; color: var(--ember); font-weight: 500; flex: 0 0 auto; }
+  details[open] summary::after { content: "–"; }
+  details p { padding: 0 0 22px; color: var(--ink-2); max-width: 62ch; }
+
+  /* install */
+  .install { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; align-items: start; }
+  pre.cmd { margin: 0; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; padding: 18px 20px; font-family: var(--mono); font-size: 13.5px; line-height: 1.7; color: var(--ink); overflow-x: auto; }
+  pre.cmd .c { color: var(--ash); }
+
+  footer { border-top: 1px solid var(--line); padding: 36px 0 60px; display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--ash); }
+  footer a { color: var(--ink-2); text-decoration: none; }
+  footer a:hover { color: var(--ink); }
+
+  @media (max-width: 880px) {
+    .hero, .split, .honest, .install { grid-template-columns: 1fr; }
+    .hero { padding-top: 24px; gap: 40px; }
+    section { padding: 72px 0; }
+    .nav-links { display: none; }
+    .feature { grid-template-columns: 1fr; gap: 8px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .tab-ask .caret { animation: none; }
+    .btn { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <nav class="nav">
+    <a class="brand" href="#top"><i aria-hidden="true"></i>Fogar</a>
+    <div class="nav-links">
+      <a href="#ledger">What leaves</a>
+      <a href="#features">Features</a>
+      <a href="#recipes">Recipes</a>
+      <a href="#faq">FAQ</a>
+      <a href="#install">Install</a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">A new tab for Chrome</span>
+      <h1>Ask your new tab.<br /><em>Nothing leaves the room.</em></h1>
+      <p class="lead measure">Fogar answers from a language model that runs inside your browser. No account, no key, no server. When you want a bigger brain, bring your own key and it uses that instead. Either way the choice is yours, and visible.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="#install">Add to Chrome</a>
+        <a class="btn btn-quiet" href="https://dylanroy.com/?ref=fogar">Read how it was built</a>
+      </div>
+      <p class="cta-note">Free. Open source. 397 MB model, downloaded once, cached on your machine.</p>
+    </div>
+
+    <div class="stage" aria-label="Fogar new tab, live demonstration">
+      <div class="tab">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="tab-top">
+            <div class="tab-brand">Fogar</div>
+            <div class="tab-mode"><span class="on">On this device</span><span>Cloud, your key</span></div>
+          </div>
+          <div class="tab-ask" id="demo-ask" aria-live="polite"></div>
+          <div class="tab-row"><span><b>Ready</b> · Qwen3 0.6B · WebGPU</span><span id="demo-stats"></span></div>
+          <div class="tab-answer" id="demo-answer" aria-live="polite"></div>
+          <div class="ledger" id="demo-ledger"><span><span class="dot"></span>network <b>0 requests</b></span><span>model <b>cached on this device</b></span><span>key <b>none</b></span></div>
+          <button class="replay" id="demo-replay" type="button">Ask something else</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="ledger">
+    <div class="section-head">
+      <span class="eyebrow">The network ledger</span>
+      <h2 class="measure">Three modes. You can see exactly what each one sends.</h2>
+      <p class="lead measure">Most "private AI" claims are a paragraph in a policy. This one is a table you can verify in the Network panel.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Mode</th><th>What leaves your browser</th><th>Where it goes</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="k">On this device</td>
+            <td><span class="zero">0 requests</span> once the model is cached<small>The model file is fetched once from Hugging Face. Your questions never go anywhere.</small></td>
+            <td>Nowhere</td>
+            <td>Free</td>
+          </tr>
+          <tr>
+            <td class="k">Cloud, your key</td>
+            <td>Your prompt and your key<small>Sent only to the OpenAI-compatible endpoint you typed. OpenAI, OpenRouter, Groq, or Ollama on localhost.</small></td>
+            <td>The address you chose</td>
+            <td>Your provider's rates</td>
+          </tr>
+          <tr>
+            <td class="k">Web grounding</td>
+            <td>Your question, as a search query<small>Off by default. Turn it on with a Brave Search or Tavily key; five results come back and the model answers from them, with citations.</small></td>
+            <td>The search API you chose</td>
+            <td>Free tiers cover most people</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">No analytics. No telemetry. Nothing to opt out of.</p>
+  </section>
+
+  <section id="features">
+    <div class="section-head">
+      <span class="eyebrow">Your corner</span>
+      <h2 class="measure">A new tab you would keep even without the model.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Recipes</span><div><h3>Prompt forms you can share</h3><p>Draft and rewrite, reply to a message, summarize, explain simply. Make your own with a small form builder, then share it as a link. Recipes are data, never code.</p></div></div>
+      <div class="feature"><span class="eyebrow">Reminders</span><div><h3>"Call the dentist tomorrow at 9"</h3><p>Plain words in, a confirmed time out. Fires as a Chrome notification. One click adds it to Google Calendar, with no account connection needed.</p></div></div>
+      <div class="feature"><span class="eyebrow">Todos</span><div><h3>A short list, always in front of you</h3><p>Every new tab. Stored in this browser. Nothing to sign in to.</p></div></div>
+      <div class="feature"><span class="eyebrow">Bookmarks</span><div><h3>Search as you type</h3><p>Start typing in the ask box and matching bookmarks appear underneath. Open one, or remove it.</p></div></div>
+      <div class="feature"><span class="eyebrow">Right-click</span><div><h3>"Ask Fogar about …"</h3><p>Select text on any page, right-click, and get an explanation in a new tab.</p></div></div>
+      <div class="feature"><span class="eyebrow">Grounding</span><div><h3>Facts, when you ask for them</h3><p>A small local model is a good writer and a poor encyclopedia. Turn on web grounding for the questions where that matters, and see the sources it used.</p></div></div>
+    </div>
+  </section>
+
+  <section id="recipes">
+    <div class="split">
+      <div class="section-head" style="margin-bottom: 0">
+        <span class="eyebrow">Recipes</span>
+        <h2>The prompt is a form. The form is a file.</h2>
+        <p class="lead">A recipe declares its inputs and a template. Fogar draws the form, fills the template, and hands it to whichever model you are using. Because a recipe is plain JSON, you can paste one to a friend, post it on a blog, or open a share link and add it in one click.</p>
+        <p class="lead">Rewriting is the thing a small local model does best, so the first built-in recipe is for exactly that.</p>
+        <pre class="recipe-json">{
+  <b>"name"</b>: "Draft &amp; rewrite",
+  <b>"inputs"</b>: [
+    { "key": "text",   "type": "textarea" },
+    { "key": "tone",   "type": "select",
+      "options": ["Neutral","Friendly","Formal","Direct"] },
+    { "key": "length", "type": "select",
+      "options": ["Shorter","About the same","Longer"] }
+  ],
+  <b>"template"</b>: "Rewrite the text below.
+    Tone: {{tone}}. Length: {{length}}.
+
+    {{text}}"
+}</pre>
+      </div>
+      <div class="recipe" aria-label="Draft and rewrite recipe, example">
+        <h4>✍️ Draft &amp; rewrite</h4>
+        <div class="field">Your text or notes<div class="box tall">cant make 3pm, thurs instead? sorry</div></div>
+        <div class="grid3">
+          <div class="field">Tone<div class="box">Friendly</div></div>
+          <div class="field">Length<div class="box">Longer</div></div>
+          <div class="field">Format<div class="box">Chat message</div></div>
+        </div>
+        <div class="out"><span class="eyebrow">Output · Qwen3 0.6B · on this device</span>Sorry, I can't make 3 pm today after all. Would Thursday work instead? Happy to fit around whatever time suits you.</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">One download. Then it is just a file on your disk.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Pick how it answers</h3><p>On this device, cloud with your own key, or just a search box for now. You can change your mind any time.</p></div>
+      <div class="step"><h3>Fetch the model once</h3><p>Qwen3 0.6B, quantized, from Hugging Face. It lands in your browser's private file storage and never downloads again.</p><span class="mono">397 MB · about 40 s on a normal connection</span></div>
+      <div class="step"><h3>Open a new tab</h3><p>The model wakes from disk, runs on your GPU through WebGPU or on your CPU across all its cores, and starts answering.</p><span class="mono">warm start 1.3 s · first token 355 ms · 104 tok/s on CPU, M-series Mac</span></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Free, and here is how it pays for itself.</h2>
+      </div>
+      <div>
+        <ul>
+          <li>Fogar is free and stays free. No tiers, no trial, no lifetime deal.</li>
+          <li>The footer of the new tab rotates links to the other things its author builds. That is the business model.</li>
+          <li>If enough people use it, one small sponsor line may appear there. It will say "Sponsored". It will never be an ad network.</li>
+          <li>The code is open, so you can read exactly what the page does.</li>
+        </ul>
+        <p class="mono" style="margin-top: 22px">Built by <a href="https://dylanroy.com/?ref=fogar">Dylan Roy</a>, who also makes <a href="https://www.usesql.com/?ref=fogar">UseSQL</a>, <a href="https://tickerpal.com/?ref=fogar">TickerPal</a>, and <a href="https://kumkuat.ai/?ref=fogar">Kumkuat</a>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Does it work offline?</summary><p>Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web grounding and cloud mode need a connection, by definition.</p></details>
+      <details><summary>How good is a 0.6B model, honestly?</summary><p>Good at rewriting, summarizing, explaining, and answering from text you give it. Poor at trivia and recent events. That is why recipes lead with writing tasks and why grounding exists for facts. There is a 1.7B option in Settings if your machine has the headroom.</p></details>
+      <details><summary>Where is my API key stored?</summary><p>In Chrome's extension storage on this profile, and it is sent only to the endpoint you typed. Fogar has no server that could see it.</p></details>
+      <details><summary>What permissions does it ask for?</summary><p>Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click, and access to huggingface.co to fetch the model. Cloud and search endpoints are requested one at a time, when you add them.</p></details>
+      <details><summary>Will it slow down my browser?</summary><p>The model loads only on the new tab page and is released when you navigate away. Loading takes about a second from disk. On a machine without WebGPU it falls back to the CPU and is slower but works.</p></details>
+      <details><summary>Firefox? Safari?</summary><p>Chrome and Chromium browsers first. Firefox builds, but its extension pages lack the shared-memory feature the multi-threaded engine needs, so it would be much slower. Not shipping it half-baked.</p></details>
+    </div>
+  </section>
+
+  <section id="install">
+    <div class="install">
+      <div class="section-head" style="margin-bottom: 0">
+        <span class="eyebrow">Install</span>
+        <h2>Add to Chrome</h2>
+        <p class="lead">Fogar is on its way to the Chrome Web Store. Until the listing is live, it installs from source in two commands and a drag-and-drop. This page will update the moment the store link exists.</p>
+        <div class="cta-row" style="margin-top: 10px">
+          <a class="btn btn-ember" href="https://github.com/dylanroy">Get the source</a>
+          <a class="btn btn-quiet" href="https://dylanroy.com/?ref=fogar">Get notified when it ships</a>
+        </div>
+      </div>
+      <pre class="cmd"><span class="c"># clone, then:</span>
+npm install
+npm run build
+<span class="c"># chrome://extensions → Developer mode → Load unpacked</span>
+<span class="c"># → pick .output/chrome-mv3, then open a new tab</span></pre>
+    </div>
+  </section>
+
+  <footer>
+    <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
+    <span><a href="#top">Top</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="#honest">Sponsorship</a></span>
+  </footer>
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var ask = document.getElementById('demo-ask');
+    var out = document.getElementById('demo-answer');
+    var stats = document.getElementById('demo-stats');
+    var replay = document.getElementById('demo-replay');
+    var demos = [
+      ['Rewrite this politely: can’t make the 3pm, thursday instead?', 'I’m sorry, I won’t be able to make 3 pm today. Could we move it to Thursday? Happy to work around your schedule.'],
+      ['What is 18% of 240?', '18% of 240 is 43.2.'],
+      ['Explain OPFS in one sentence.', 'OPFS, the Origin Private File System, is a fast private storage area a site or extension can use to keep large files on your device without asking you to pick a folder.'],
+      ['Three bullet summary: we shipped the spike, WebGPU works, model caching works, next is the store listing.', '• The spike shipped and proved the approach.\n• WebGPU and model caching both work.\n• Next up: the Chrome Web Store listing.'],
+    ];
+    var i = 0, timer = 0, token = 0;
+    function clear() { clearTimeout(timer); token++; }
+    function finish(q, a) {
+      ask.textContent = q; out.textContent = a;
+      stats.textContent = a.split(/\s+/).length * 1.3 | 0;
+      stats.textContent += ' tokens · first token 340 ms · 0 requests';
+    }
+    function run(idx) {
+      clear(); var my = token;
+      var pair = demos[idx % demos.length], q = pair[0], a = pair[1];
+      if (reduce) { finish(q, a); return; }
+      ask.innerHTML = '<span class="caret"></span>'; out.textContent = ''; stats.textContent = '';
+      var qi = 0, words = a.split(' '), wi = 0;
+      function typeQ() {
+        if (my !== token) return;
+        qi++; ask.innerHTML = q.slice(0, qi).replace(/</g, '&lt;') + '<span class="caret"></span>';
+        if (qi < q.length) timer = setTimeout(typeQ, 28 + Math.random() * 40);
+        else { ask.textContent = q; stats.textContent = 'thinking…'; timer = setTimeout(stream, 420); }
+      }
+      function stream() {
+        if (my !== token) return;
+        wi++; out.textContent = words.slice(0, wi).join(' ');
+        if (wi < words.length) timer = setTimeout(stream, 55 + Math.random() * 60);
+        else finish(q, a);
+      }
+      timer = setTimeout(typeQ, 500);
+    }
+    replay.addEventListener('click', function () { i++; run(i); });
+    run(0);
+  })();
+</script>
+
+</body>
+</html>
