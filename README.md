@@ -28,7 +28,9 @@ npm run test:spike   # build first; loads the extension into Chromium and stream
 
 Load the unpacked extension from `.output/chrome-mv3` at `chrome://extensions` with Developer mode on. Open a new tab.
 
-Smoke test variants: `HEADED=1 npm run test:spike` to watch it, `GPU=1 npm run test:spike` to try the WebGPU path.
+Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL=qwen3-0.6b` to use the real 400 MB model, `VERBOSE=1` for every console line. The test also covers a warm OPFS reload and cloud mode against a local mock OpenAI server.
+
+`npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
 
 ## Manifest V3 constraints, and how each is handled
 
@@ -54,7 +56,7 @@ Results from 2026-09-21 on an M-series Mac, Playwright Chromium 153 (new headles
 - [x] WebGPU path works: adapter reported `vendor: apple, architecture: metal-3`, all layers offloaded (`GPU=1`)
 - [x] Multi-thread CPU path works: `Multithread enabled: true, pthreadPoolSize: 8`, so the COOP/COEP manifest keys do their job
 - [x] Qwen3 0.6B Q4 answers a real question. Headless Chromium, CPU, 8 threads: 397 MB cold download and load in about 40 s, warm reload in 1.3 s, first token 355 ms, 104 tokens/s. Also confirmed manually in Chrome with WebGPU
-- [ ] Cloud mode streams from an OpenAI-compatible endpoint after the optional permission prompt
+- [x] Cloud mode streams from an OpenAI-compatible endpoint. The smoke test runs a local mock server and checks the SSE parser, the bearer header, and `stream: true`. The optional permission prompt is exercised manually
 - [ ] Firefox: single-thread only (extension pages get no SharedArrayBuffer there); decide whether to ship
 
 Exit criterion for Phase 1 was a warm start of Qwen3 0.6B to first token in under two seconds. Measured: about 1.7 s on CPU. **Phase 1 is done.**
@@ -64,11 +66,17 @@ Known fix from the first manual run: clicking "Download and load" twice mid-down
 ## Roadmap
 
 1. **Spike** (this phase). Prove the pipeline. Draft blog post one while the gotchas are fresh.
-2. **Product.** First-run chooser, model tiers (fast / balanced / cloud), progress that tells the truth, usable as a plain search box before the model is warm. Right-click "explain this selection".
+2. **Product.** Done so far: cached model auto-loads on every new tab, stop button, plain web search before a model is ready, right-click "Ask Fogar about …", model cache size and clear, icons. Still to do: first-run chooser, a real design pass, WebGPU numbers in real Chrome.
+2b. **Web grounding, opt-in.** A 0.6B model is a summarizer, not an encyclopedia; asked who the US president is it says Obama. Add an optional search step (bring-your-own Brave Search or Tavily key, both have free tiers) that fetches a handful of snippets and has the local model answer from them with citations. Off by default so the "nothing leaves this browser" promise holds unless the user turns it on.
 3. **Your corner.** Bookmarks search from the ask bar (`bookmarks` permission, local only). Todos and reminders in extension storage with `chrome.alarms` and notifications. Natural-language create/remove via wllama tool calling, with confirmation before anything is deleted.
 4. **Promo surface and sponsor slot.** Footer rotates own products with `ref=fogar`. "Sponsor this slot" page on fogar.ai. Sell nothing until a few thousand weekly actives; label anything sponsored.
 5. **Store and launch.** Single-purpose statement, privacy policy that says "we store nothing", Show HN.
 6. **Write-ups on dylanroy.com.** The build, the launch numbers, the sponsor experiment.
+
+## Decided against, for now
+
+- **User-authored widgets.** Manifest V3 bars arbitrary code in extension pages, so user JavaScript could only run in a sandboxed iframe with message passing. That is a platform, not a feature, and the store treats "runs user code" with suspicion. A fixed set of toggleable built-in panels (todos, bookmarks, reminders, clock) covers most of the value.
+- **Analytics inside the extension.** Cuts against the privacy pitch and complicates the store listing.
 
 ## Privacy stance
 

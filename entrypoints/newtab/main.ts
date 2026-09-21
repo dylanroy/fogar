@@ -8,6 +8,8 @@ const $ = <T extends HTMLElement>(id: string) => document.getElementById(id) as 
 const body = document.body;
 const params = new URLSearchParams(location.search);
 const SMOKE = params.get('smoke') === '1';
+const INITIAL_QUESTION = params.get('q');
+const SEARCH_URL = 'https://duckduckgo.com/?q=';
 
 const SYSTEM_PROMPT =
   'You are Fogar, a concise assistant running in the user\'s browser. Answer directly, in plain language, in a few sentences unless asked for more.';
@@ -37,6 +39,7 @@ function setMode(mode: Mode) {
 function refreshReadiness() {
   const ready = settings.mode === 'cloud' ? Boolean(settings.cloud.endpoint && settings.cloud.model) : local.loaded !== null;
   ($('ask-btn') as HTMLButtonElement).disabled = !ready;
+  $('web-search').hidden = ready;
   if (settings.mode === 'local') {
     setStatus(local.loaded ? `Ready · ${local.loaded.label} · ${settings.gpu && LocalProvider.hasWebGPU() ? 'WebGPU' : 'CPU'}` : 'No model loaded. Open Settings to download one.');
   } else {
@@ -69,6 +72,9 @@ async function loadModel() {
     $('stats').hidden = false;
     $('stats').textContent = `Model ready in ${ms} ms`;
     body.dataset.status = 'ready';
+    settings.autoLoad = true;
+    void saveSettings(settings);
+    void refreshCacheLine();
   } catch (err) {
     body.dataset.status = 'error';
     setStatus(`Load failed: ${(err as Error).message}`);
@@ -89,6 +95,7 @@ async function ask(prompt: string) {
   const messages: Message[] = [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: prompt }];
   const answer = $('answer'); answer.hidden = false; answer.textContent = '';
   body.dataset.status = 'answering';
+  $('stop-btn').hidden = false; ($('ask-btn') as HTMLButtonElement).disabled = true;
   const t0 = performance.now(); let tokens = 0; let firstAt = 0;
   try {
     for await (const token of provider.ask(messages, abort.signal)) {
@@ -101,15 +108,35 @@ async function ask(prompt: string) {
     $('stats').textContent = `${tokens} tokens · first token ${Math.round(firstAt - t0)} ms · ${(tokens / ((total - (firstAt - t0)) / 1000)).toFixed(1)} tok/s`;
     body.dataset.status = 'done';
   } catch (err) {
-    body.dataset.status = 'error';
-    answer.textContent = `Error: ${(err as Error).message}`;
-    console.error('[fogar] ask failed', err);
+    if (abort.signal.aborted) {
+      body.dataset.status = 'done';
+    } else {
+      body.dataset.status = 'error';
+      answer.textContent = `Error: ${(err as Error).message}`;
+      console.error('[fogar] ask failed', err);
+    }
+  } finally {
+    $('stop-btn').hidden = true;
+    refreshReadiness();
   }
+}
+
+async function refreshCacheLine() {
+  const bytes = await LocalProvider.cacheSize();
+  $('cache-line').textContent = bytes ? `Cached models: ${(bytes / 1e6).toFixed(0)} MB` : 'Cached models: none';
+}
+
+function webSearch(query: string) {
+  location.href = SEARCH_URL + encodeURIComponent(query);
 }
 
 async function init() {
   settings = await loadSettings();
-  if (SMOKE) { settings.mode = 'local'; settings.modelId = params.get('model') ?? 'smoke'; settings.gpu = params.get('gpu') === '1'; }
+  if (SMOKE) {
+    settings.mode = 'local'; settings.modelId = params.get('model') ?? 'smoke'; settings.gpu = params.get('gpu') === '1';
+    const cloudPort = params.get('cloud');
+    if (cloudPort) { settings.mode = 'cloud'; settings.cloud = { endpoint: `http://127.0.0.1:${cloudPort}/v1`, apiKey: 'test-key', model: 'mock-model' }; }
+  }
 
   const modelSel = $('model') as HTMLSelectElement;
   for (const m of MODELS) modelSel.add(new Option(`${m.label} · ~${m.approxMB} MB`, m.id));
@@ -140,14 +167,39 @@ async function init() {
 
   $('mode-local').onclick = () => setMode('local');
   $('mode-cloud').onclick = () => setMode('cloud');
-  $('ask-form').onsubmit = (e) => { e.preventDefault(); const p = ($('prompt') as HTMLTextAreaElement).value.trim(); if (p) void ask(p); };
+  $('ask-form').onsubmit = (e) => {
+    e.preventDefault();
+    const p = ($('prompt') as HTMLTextAreaElement).value.trim();
+    if (!p) return;
+    // Before a model is ready the box still does something useful: a plain web search.
+    if (($('ask-btn') as HTMLButtonElement).disabled && body.dataset.status !== 'answering') webSearch(p);
+    else void ask(p);
+  };
+  $('web-search').onclick = (e) => { e.preventDefault(); const p = ($('prompt') as HTMLTextAreaElement).value.trim(); if (p) webSearch(p); };
+  $('stop-btn').onclick = () => abort?.abort();
+  $('clear-cache').onclick = async (e) => {
+    e.preventDefault();
+    await local.unload();
+    await LocalProvider.clearCache();
+    settings.autoLoad = false; await saveSettings(settings);
+    await refreshCacheLine(); refreshReadiness();
+  };
+  void refreshCacheLine();
   $('prompt').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); $('ask-form').dispatchEvent(new Event('submit')); } });
 
   const [label, href] = PROMO[Math.floor(Math.random() * PROMO.length)]!;
   $('promo').innerHTML = `<a href="${href}" target="_blank" rel="noopener">${label}</a>`;
 
   setMode(settings.mode);
-  if (SMOKE) { await loadModel(); if (local.loaded) await ask('Once upon a time'); }
+  if (INITIAL_QUESTION) ($('prompt') as HTMLTextAreaElement).value = `Explain this: “${INITIAL_QUESTION}”`;
+
+  if (SMOKE) {
+    if (settings.mode === 'cloud') { await ask('Say hello'); return; }
+    await loadModel(); if (local.loaded) await ask('Once upon a time'); return;
+  }
+  // New tab after the first successful load: bring the cached model up without a click.
+  if (settings.mode === 'local' && settings.autoLoad) await loadModel();
+  if (INITIAL_QUESTION && !($('ask-btn') as HTMLButtonElement).disabled) void ask(($('prompt') as HTMLTextAreaElement).value);
 }
 
 void init();

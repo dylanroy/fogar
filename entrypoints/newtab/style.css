@@ -19,6 +19,8 @@ textarea, input, select { font: inherit; color: inherit; background: var(--card)
 textarea { resize: vertical; font-size: 18px; line-height: 1.4; }
 .ask-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
 .status { color: var(--muted); font-size: 13px; }
+.ask-actions { display: inline-flex; align-items: center; gap: 14px; }
+#stop-btn { font: inherit; border: 1px solid var(--line); background: transparent; color: var(--fg); border-radius: 999px; padding: 7px 16px; cursor: pointer; }
 button[type="submit"], #load-btn, #cloud-save { font: inherit; border: 0; border-radius: 999px; padding: 8px 18px; background: var(--accent); color: var(--accent-fg); cursor: pointer; }
 button:disabled { opacity: 0.4; cursor: default; }
 .progress { position: relative; height: 22px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 12px; font-size: 12px; }

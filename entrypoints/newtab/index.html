@@ -21,7 +21,11 @@
           <textarea id="prompt" rows="2" placeholder="Ask anything. Nothing leaves this browser in local mode." autofocus></textarea>
           <div class="ask-row">
             <span id="status" class="status">Loading settings…</span>
-            <button id="ask-btn" type="submit" disabled>Ask</button>
+            <span class="ask-actions">
+              <a id="web-search" class="muted" href="#" hidden>Search the web instead</a>
+              <button id="stop-btn" type="button" hidden>Stop</button>
+              <button id="ask-btn" type="submit" disabled>Ask</button>
+            </span>
           </div>
         </form>
         <div id="progress" class="progress" hidden><div id="progress-bar" class="progress-bar"></div><span id="progress-text"></span></div>
@@ -37,6 +41,7 @@
           <label class="inline"><input type="checkbox" id="gpu" /> Use WebGPU <span id="gpu-note" class="muted"></span></label>
           <button id="load-btn" type="button">Download and load</button>
           <p id="model-note" class="muted"></p>
+          <p class="muted"><span id="cache-line">Cached models: checking…</span> · <a id="clear-cache" href="#">Clear</a></p>
         </fieldset>
         <fieldset id="cloud-settings">
           <legend>Cloud endpoint (OpenAI-compatible)</legend>

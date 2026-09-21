@@ -6,6 +6,7 @@
   "description": "Fogar: a private new tab that answers from a model running in your browser, or from a cloud endpoint you bring your own key for.",
   "scripts": {
     "gen:wllama": "node scripts/gen-wllama-workers.mjs",
+    "gen:icons": "node scripts/gen-icons.mjs",
     "dev": "npm run gen:wllama && wxt",
     "build": "npm run gen:wllama && wxt build",
     "zip": "npm run gen:wllama && wxt zip",

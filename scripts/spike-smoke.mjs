@@ -5,6 +5,7 @@ import { chromium } from 'playwright';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { startMockOpenAI } from './mock-openai.mjs';
 
 const ext = resolve('.output/chrome-mv3');
 const userDataDir = mkdtempSync(join(tmpdir(), 'fogar-smoke-'));
@@ -57,6 +58,18 @@ try {
 } catch { warmStatus = 'timeout'; }
 const warmMs = Date.now() - t1;
 const warmRequests = hfRequests; const warmDownloads = ggufDownloads;
+
+// Cloud mode: point the page at a local OpenAI-compatible mock and check the SSE parser end to end.
+const mock = await startMockOpenAI();
+let cloudAnswer = ''; let cloudStatus = 'n/a';
+try {
+  await page.goto(`chrome-extension://${extId}/newtab.html?smoke=1&cloud=${mock.port}`);
+  await page.waitForFunction(() => ['done', 'error'].includes(document.body.dataset.status ?? ''), null, { timeout: 30000 });
+  cloudStatus = await page.evaluate(() => document.body.dataset.status);
+  cloudAnswer = await page.evaluate(() => document.getElementById('answer')?.textContent ?? '');
+} catch { cloudStatus = 'timeout'; }
+mock.server.close();
+const cloudOk = cloudStatus === 'done' && cloudAnswer.includes('mock cloud says hello') && mock.server.lastRequest?.auth === 'Bearer test-key' && mock.server.lastRequest?.stream === true;
 await context.close();
 
 console.log(`status: ${status}  (${Date.now() - t0} ms wall)`);
@@ -65,6 +78,7 @@ console.log(`stats: ${stats}`);
 console.log(`answer: ${answer.slice(0, 200).replace(/\n/g, ' ')}`);
 console.log(`cold: ${coldRequests} Hugging Face responses (${coldDownloads} GGUF downloads) · warm reload: ${warmStatus} in ${warmMs} ms, ${warmRequests} responses (${warmDownloads} GGUF downloads)`);
 if (warmUrls.length) console.log('warm requests:\n  ' + warmUrls.join('\n  '));
+console.log(`cloud: ${cloudStatus} · answer "${cloudAnswer}" · auth header ${mock.server.lastRequest?.auth ?? 'missing'} · ${cloudOk ? 'OK' : 'FAILED'}`);
 const interesting = logs.filter((l) => process.env.VERBOSE === '1' || /error|refused|csp|fogar|wllama|worker|gpu|multithread|thread|removeEntry|opfs|blocked/i.test(l)).slice(-40);
 if (interesting.length) console.log('console:\n  ' + interesting.join('\n  '));
-process.exit(status === 'done' && answer.length > 0 && warmStatus === 'done' && warmDownloads === 0 ? 0 : 1);
+process.exit(status === 'done' && answer.length > 0 && warmStatus === 'done' && warmDownloads === 0 && cloudOk ? 0 : 1);

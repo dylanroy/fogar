@@ -1,4 +1,4 @@
-import { Wllama } from '@wllama/wllama';
+import { CacheManager, Wllama } from '@wllama/wllama';
 import { browser } from 'wxt/browser';
 import type { Message, Provider } from './types';
 import type { ModelSpec } from './models';
@@ -41,17 +41,33 @@ export class LocalProvider implements Provider {
     const withSuffix = suffix
       ? messages.map((m, i) => (i === 0 && m.role === 'system' ? { ...m, content: m.content + suffix } : m))
       : messages;
-    const stream = await this.wllama.createChatCompletion({
+    // The stream:true overload's type omits abortSignal, but the implementation honours it.
+    const stream = (await this.wllama.createChatCompletion({
       messages: withSuffix,
       stream: true,
       max_tokens: 512,
       temperature: 0.4,
-    });
-    for await (const chunk of stream as AsyncIterable<any>) {
+      abortSignal: signal,
+    } as any)) as unknown as AsyncIterable<any>;
+    for await (const chunk of stream) {
       if (signal.aborted) break;
       const token: string | undefined = chunk?.choices?.[0]?.delta?.content;
       if (token) yield token;
     }
+  }
+
+  /** Total bytes of model files cached in OPFS, and a way to clear them. */
+  static async cacheSize(): Promise<number> {
+    try {
+      const entries = await new CacheManager().list();
+      return entries.reduce((sum, e) => sum + (e.size ?? 0), 0);
+    } catch {
+      return 0;
+    }
+  }
+
+  static async clearCache(): Promise<void> {
+    await new CacheManager().clear();
   }
 
   async unload(): Promise<void> {

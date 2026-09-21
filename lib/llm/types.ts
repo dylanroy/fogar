@@ -18,6 +18,8 @@ export interface Settings {
   mode: Mode;
   modelId: string;
   gpu: boolean;
+  /** Set after the first successful local load; new tabs then load the cached model without a click. */
+  autoLoad: boolean;
   cloud: CloudSettings;
 }
 
@@ -25,5 +27,6 @@ export const DEFAULT_SETTINGS: Settings = {
   mode: 'local',
   modelId: 'qwen3-0.6b',
   gpu: true,
+  autoLoad: false,
   cloud: { endpoint: 'https://api.openai.com/v1', apiKey: '', model: 'gpt-4o-mini' },
 };
