@@ -13,9 +13,13 @@
           <div class="brand">Fogar</div>
           <div id="today" class="today"></div>
         </div>
-        <div class="mode" role="radiogroup" aria-label="Answer source">
-          <button id="mode-local" class="mode-btn" role="radio" aria-checked="true">On this device</button>
-          <button id="mode-cloud" class="mode-btn" role="radio" aria-checked="false">Cloud, your key</button>
+        <div class="mode" role="radiogroup" aria-label="Where answers come from">
+          <button id="mode-local" class="mode-btn" role="radio" aria-checked="true" aria-label="On this device" title="On this device. Nothing you type leaves this browser.">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5"/><path d="M1 13h14"/></svg><span>Device</span>
+          </button>
+          <button id="mode-cloud" class="mode-btn" role="radio" aria-checked="false" aria-label="Cloud, with your own key" title="Cloud, with your own key. Sent only to the endpoint you set.">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z"/></svg><span>Cloud</span>
+          </button>
         </div>
       </header>
 
