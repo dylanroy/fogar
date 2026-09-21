@@ -1,10 +1,6 @@
-import { loadReminders, saveReminders, type Reminder } from '@/lib/reminders';
+import { REMINDERS_KEY, loadReminders, saveReminders, type Reminder } from '@/lib/reminders';
 
 const ALARM_PREFIX = 'fogar-reminder:';
-
-async function schedule(reminder: Reminder) {
-  await browser.alarms.create(ALARM_PREFIX + reminder.id, { when: Math.max(reminder.when, Date.now() + 1000) });
-}
 
 async function notify(reminder: Reminder) {
   await browser.notifications.create(ALARM_PREFIX + reminder.id, {
@@ -18,35 +14,49 @@ async function notify(reminder: Reminder) {
   await saveReminders(all.map((r) => (r.id === reminder.id ? { ...r, fired: true } : r)));
 }
 
-/** Alarms survive restarts in Chrome, but re-sync from storage anyway and fire anything missed while the browser was closed. */
-async function resync() {
-  const all = await loadReminders();
-  for (const r of all) {
-    if (r.fired) continue;
-    if (r.when <= Date.now()) await notify(r);
-    else await schedule(r);
-  }
+/**
+ * Storage is the source of truth. Whenever the reminders list changes, or the worker starts, make the alarm
+ * set match it: create alarms for pending reminders, clear alarms for removed ones, fire anything overdue.
+ * This never depends on a message from the page arriving, so a sleeping worker cannot lose a reminder.
+ */
+let reconciling: Promise<void> | null = null;
+function reconcile(): Promise<void> {
+  if (reconciling) return reconciling;
+  reconciling = (async () => {
+    const all = await loadReminders();
+    const alarms = await browser.alarms.getAll();
+    const wanted = new Map(all.filter((r) => !r.fired).map((r) => [ALARM_PREFIX + r.id, r] as const));
+    for (const a of alarms) {
+      if (a.name.startsWith(ALARM_PREFIX) && !wanted.has(a.name)) await browser.alarms.clear(a.name);
+    }
+    for (const [name, r] of wanted) {
+      if (r.when <= Date.now()) { await notify(r); continue; }
+      const existing = alarms.find((a) => a.name === name);
+      if (!existing || Math.abs(existing.scheduledTime - r.when) > 1000) await browser.alarms.create(name, { when: r.when });
+    }
+  })().catch((err) => console.error('[fogar] reminder reconcile failed', err)).finally(() => { reconciling = null; });
+  return reconciling;
 }
 
 export default defineBackground(() => {
-  browser.runtime.onInstalled.addListener(() => {
+  browser.runtime.onInstalled.addListener(async () => {
+    // removeAll first: on an extension update the old item still exists and create() would throw on the duplicate id.
+    await browser.contextMenus.removeAll();
     browser.contextMenus.create({ id: 'fogar-ask', title: 'Ask Fogar about “%s”', contexts: ['selection'] });
-    void resync();
+    void reconcile();
   });
-  browser.runtime.onStartup.addListener(() => void resync());
+  browser.runtime.onStartup.addListener(() => void reconcile());
+  browser.storage.onChanged.addListener((changes, area) => {
+    if (area === 'local' && REMINDERS_KEY in changes) void reconcile();
+  });
+  browser.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
+    if (msg?.type === 'reminders.changed') { void reconcile().then(() => sendResponse({ ok: true })); return true; }
+    return false;
+  });
 
   browser.contextMenus.onClicked.addListener((info) => {
     if (info.menuItemId !== 'fogar-ask' || !info.selectionText) return;
     void browser.tabs.create({ url: browser.runtime.getURL(`/newtab.html?q=${encodeURIComponent(info.selectionText)}`) });
-  });
-
-  browser.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
-    (async () => {
-      if (msg?.type === 'reminder.schedule') await schedule(msg.reminder as Reminder);
-      else if (msg?.type === 'reminder.cancel') await browser.alarms.clear(ALARM_PREFIX + msg.id);
-      sendResponse({ ok: true });
-    })();
-    return true;
   });
 
   browser.alarms.onAlarm.addListener(async (alarm) => {

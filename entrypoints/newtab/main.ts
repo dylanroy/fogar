@@ -28,10 +28,10 @@ async function main() {
 
   if (SMOKE || E2E) {
     s.onboarded = true; s.autoLoad = false;
+    const cloudPort = params.get('cloud');
+    if (cloudPort) { s.mode = 'cloud'; s.cloud = { endpoint: `http://127.0.0.1:${cloudPort}/v1`, apiKey: 'test-key', model: 'mock-model' }; }
     if (SMOKE) {
-      s.mode = 'local'; s.modelId = params.get('model') ?? 'smoke'; s.gpu = params.get('gpu') === '1';
-      const cloudPort = params.get('cloud');
-      if (cloudPort) { s.mode = 'cloud'; s.cloud = { endpoint: `http://127.0.0.1:${cloudPort}/v1`, apiKey: 'test-key', model: 'mock-model' }; }
+      if (!cloudPort) { s.mode = 'local'; s.modelId = params.get('model') ?? 'smoke'; s.gpu = params.get('gpu') === '1'; }
       const groundPort = params.get('ground');
       s.grounding = groundPort
         ? { provider: 'brave', apiKey: 'test-key', byDefault: true, endpoint: `http://127.0.0.1:${groundPort}/brave` }

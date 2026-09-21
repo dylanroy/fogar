@@ -1,9 +1,10 @@
 export type Role = 'system' | 'user' | 'assistant';
 export interface Message { role: Role; content: string }
 
+export interface AskOpts { maxTokens?: number }
 export interface Provider {
   /** Stream answer tokens for a conversation. */
-  ask(messages: Message[], signal: AbortSignal): AsyncIterable<string>;
+  ask(messages: Message[], signal: AbortSignal, opts?: AskOpts): AsyncIterable<string>;
 }
 
 export type Mode = 'local' | 'cloud';

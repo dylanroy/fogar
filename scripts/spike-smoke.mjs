@@ -107,12 +107,36 @@ const reminderRow = await page.evaluate(() => document.querySelector('#reminder-
 const alarms = await page.evaluate(() => chrome.alarms.getAll());
 check('reminder parsed, confirmed, saved, alarm created', confirmText.includes('“stretch”') && reminderRow.includes('stretch') && alarms.some((a) => a.name.startsWith('fogar-reminder:')), `${alarms.length} alarm(s); "${confirmText.split('?')[0]}"`);
 
+// 7b. a second reminder right after the first (reported as failing)
+await page.fill('#reminder-input', 'water the plants tomorrow at 9am');
+await page.press('#reminder-input', 'Enter');
+await page.waitForSelector('#reminder-confirm:not([hidden])');
+await page.click('#reminder-confirm .primary');
+await page.waitForFunction(() => document.querySelectorAll('#reminder-list .item').length === 2, null, { timeout: 5000 }).catch(() => {});
+const reminderCount = await page.evaluate(() => document.querySelectorAll('#reminder-list .item').length);
+const alarms2 = await page.evaluate(() => chrome.alarms.getAll());
+check('second reminder saves and gets its own alarm', reminderCount === 2 && alarms2.filter((a) => a.name.startsWith('fogar-reminder:')).length === 2, `${reminderCount} rows, ${alarms2.length} alarms`);
+
 // 8. bookmarks
 await page.evaluate(() => chrome.bookmarks.create({ title: 'Fogar Test Bookmark', url: 'https://example.com/fogar' }));
 await page.fill('#prompt', 'Fogar Test');
 await page.waitForSelector('#bookmark-hits:not([hidden]) .hit', { timeout: 5000 }).catch(() => {});
 const hit = await page.evaluate(() => document.querySelector('#bookmark-hits .hit .t')?.textContent ?? '');
 check('bookmark search as you type', hit === 'Fogar Test Bookmark', hit || 'no hit rendered');
+
+// 8b. natural-language bookmark finder (model picks 1 and 3 via the mock; keyword pass catches "Job posting")
+await page.evaluate(async () => {
+  await chrome.bookmarks.create({ title: 'Senior Engineer at Acme', url: 'https://acme.example/careers/123' });
+  await chrome.bookmarks.create({ title: 'Recipe blog', url: 'https://food.example/' });
+  await chrome.bookmarks.create({ title: 'Job posting: Data Analyst', url: 'https://jobs.example/456' });
+});
+await page.goto(`${base}?e2e=1&cloud=${mock.port}`);
+await page.fill('#prompt', 'find and list bookmarks that are job postings');
+await page.press('#prompt', 'Enter');
+await waitDone(30000);
+const finderLabel = await text('answer-label');
+const finderHits = await page.evaluate(() => [...document.querySelectorAll('#answer-links .hit .t')].map((n) => n.textContent));
+check('bookmark question routes to the finder and returns links', finderLabel === 'Bookmarks' && finderHits.includes('Job posting: Data Analyst') && finderHits.length === 3, `${finderHits.length} hits: ${finderHits.join(' | ')}`);
 
 // 9. share link offers the recipe
 const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));

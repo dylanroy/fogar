@@ -13,13 +13,20 @@ export async function addReminder(label: string, when: number): Promise<Reminder
   all.push(reminder);
   all.sort((a, b) => a.when - b.when);
   await saveReminders(all);
-  await browser.runtime.sendMessage({ type: 'reminder.schedule', reminder });
+  nudgeBackground();
   return reminder;
 }
 
 export async function removeReminder(id: string): Promise<void> {
   await saveReminders((await loadReminders()).filter((r) => r.id !== id));
-  await browser.runtime.sendMessage({ type: 'reminder.cancel', id });
+  nudgeBackground();
+}
+
+/** The background worker reconciles alarms from storage on its own; this only wakes it sooner. Never awaited. */
+function nudgeBackground(): void {
+  try {
+    void browser.runtime.sendMessage({ type: 'reminders.changed' }).catch(() => { /* worker asleep or absent; storage listener covers it */ });
+  } catch { /* same */ }
 }
 
 const UNIT_MS: Record<string, number> = { minute: 60e3, min: 60e3, hour: 3600e3, hr: 3600e3, day: 86400e3, week: 7 * 86400e3 };

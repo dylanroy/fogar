@@ -36,22 +36,33 @@ export function initReminders(app: App): void {
     clear(confirmBox); confirmBox.hidden = false;
     const labelIn = el('input', { type: 'text', value: label, class: 'line-input' });
     const whenIn = el('input', { type: 'datetime-local', value: when ? toLocalInput(when) : '', class: 'line-input' });
+    let saving = false;
     const save = async () => {
+      if (saving) return;
       const ts = new Date(whenIn.value).getTime();
       if (!labelIn.value.trim() || Number.isNaN(ts)) { app.toast('Pick a time for the reminder.'); return; }
       if (ts < Date.now()) { app.toast('That time has already passed.'); return; }
-      await addReminder(labelIn.value, ts);
-      confirmBox.hidden = true; input.value = '';
-      render(await loadReminders());
-      app.toast(`Reminder set for ${fmtTime(ts)}`);
+      saving = true; saveBtn.disabled = true;
+      try {
+        await addReminder(labelIn.value, ts);
+        confirmBox.hidden = true; input.value = '';
+        render(await loadReminders());
+        app.toast(`Reminder set for ${fmtTime(ts)}`);
+      } catch (err) {
+        console.error('[fogar] reminder save failed', err);
+        app.toast(`Could not save the reminder: ${(err as Error).message}`);
+      } finally {
+        saving = false; saveBtn.disabled = false;
+      }
     };
+    const saveBtn = el('button', { class: 'primary small', type: 'button', onclick: () => void save() }, 'Set reminder');
     whenIn.addEventListener('keydown', (e) => { if (e.key === 'Enter') void save(); });
     confirmBox.append(
       el('div', {}, when ? `Remind you about “${label}” ${fmtTime(when)}?` : 'When should this fire?'),
       el('div', { class: 'grid-2' }, el('label', { class: 'field' }, 'Reminder', labelIn), el('label', { class: 'field' }, 'When', whenIn)),
       el('div', { class: 'row-actions' },
         el('button', { class: 'ghost small', type: 'button', onclick: () => { confirmBox.hidden = true; } }, 'Cancel'),
-        el('button', { class: 'primary small', type: 'button', onclick: () => void save() }, 'Set reminder')),
+        saveBtn),
     );
     if (!when) whenIn.focus();
   };

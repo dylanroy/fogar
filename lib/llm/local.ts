@@ -1,6 +1,6 @@
 import { CacheManager, Wllama } from '@wllama/wllama';
 import { browser } from 'wxt/browser';
-import type { Message, Provider } from './types';
+import type { AskOpts, Message, Provider } from './types';
 import type { ModelSpec } from './models';
 
 export interface LoadOptions {
@@ -35,7 +35,7 @@ export class LocalProvider implements Provider {
     this.loaded = model;
   }
 
-  async *ask(messages: Message[], signal: AbortSignal): AsyncIterable<string> {
+  async *ask(messages: Message[], signal: AbortSignal, opts: AskOpts = {}): AsyncIterable<string> {
     if (!this.wllama || !this.loaded) throw new Error('No local model loaded');
     const suffix = this.loaded.noThinkSuffix ?? '';
     const withSuffix = suffix
@@ -45,7 +45,7 @@ export class LocalProvider implements Provider {
     const stream = (await this.wllama.createChatCompletion({
       messages: withSuffix,
       stream: true,
-      max_tokens: 512,
+      max_tokens: opts.maxTokens ?? 512,
       temperature: 0.4,
       abortSignal: signal,
     } as any)) as unknown as AsyncIterable<any>;

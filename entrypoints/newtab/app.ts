@@ -5,6 +5,9 @@ import { SYSTEM_PROMPT, type Message, type Mode, type Provider, type Settings } 
 import { groundedMessages, groundingConfigured, searchWeb, type Source } from '@/lib/grounding';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import { $, clear, el } from '@/lib/dom';
+import { browser } from 'wxt/browser';
+import { bookmarksAvailable, removeBookmark } from '@/lib/bookmarks';
+import { BOOKMARK_INTENT, bookmarkCriterion as result_criterion, findBookmarks } from '@/lib/bookmark-agent';
 
 export interface AskOptions {
   /** Label shown above the answer, e.g. the recipe name. */
@@ -125,10 +128,60 @@ export class App {
     this.abort?.abort();
   }
 
-  /** Ask a plain question. Grounds it first when asked to and a search key is set. */
+  /** Ask a plain question. Bookmark questions go to the finder; everything else to the model, grounded if asked. */
   async askQuestion(question: string, ground: boolean): Promise<void> {
+    if (BOOKMARK_INTENT.test(question) && bookmarksAvailable()) { await this.findBookmarks(question); return; }
     const messages: Message[] = [{ role: 'system', content: SYSTEM_PROMPT }, { role: 'user', content: question }];
     await this.ask(messages, { question, ground });
+  }
+
+  /** The model cannot see bookmarks, so the finder reads them and lets the model pick. Results are links, not prose. */
+  async findBookmarks(question: string): Promise<void> {
+    if (!this.isReady()) return;
+    this.abort?.abort();
+    this.abort = new AbortController();
+    const signal = this.abort.signal;
+    const card = $('answer-card'); const answer = $('answer'); const links = $('answer-links'); const stats = $('stats');
+    card.hidden = false; answer.textContent = ''; stats.textContent = ''; $('sources').hidden = true; links.hidden = true; clear(links);
+    $('answer-label').textContent = 'Bookmarks';
+    document.body.dataset.status = 'answering';
+    $('stop-btn').hidden = false;
+    this.refreshReadiness();
+    const t0 = performance.now();
+    try {
+      this.setStatus('Reading your bookmarks…');
+      const result = await findBookmarks(question, this.provider(), signal, (scanned, total) => {
+        this.setStatus(`Scanning bookmarks… ${scanned} of ${total}`);
+        answer.textContent = `Scanning ${total} bookmarks for “${result_criterion(question)}”…`;
+      });
+      const what = result.listedAll ? 'your newest bookmarks' : `“${result.criterion}”`;
+      answer.textContent = result.hits.length
+        ? `${result.hits.length} bookmark${result.hits.length === 1 ? '' : 's'} ${result.listedAll ? '' : 'look like '}${what}.`
+        : `No bookmarks looked like ${what}. I read all ${result.total}.`;
+      if (result.hits.length) {
+        links.hidden = false;
+        for (const b of result.hits) {
+          let h = ''; try { h = new URL(b.url).host.replace(/^www\./, ''); } catch { /* keep */ }
+          const row = el('a', { class: 'hit', href: b.url, target: '_blank', rel: 'noopener' },
+            el('img', { src: browser.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(b.url)}&size=32` as any), alt: '' }),
+            el('span', { class: 't' }, b.title), el('span', { class: 'h' }, h),
+            el('button', { class: 'x', type: 'button', title: 'Remove bookmark', onclick: async (ev: MouseEvent) => {
+              ev.preventDefault(); ev.stopPropagation();
+              if (!confirm(`Remove bookmark “${b.title}”?`)) return;
+              await removeBookmark(b.id); row.remove(); this.toast('Bookmark removed');
+            } }, '×'));
+          links.append(el('li', {}, row));
+        }
+      }
+      stats.textContent = `${result.scanned} of ${result.total} bookmarks read · ${Math.round(performance.now() - t0)} ms${result.scanned < result.total ? ' · list capped; the rest were matched by keyword only' : ''}`;
+      document.body.dataset.status = 'done';
+    } catch (err) {
+      if (signal.aborted) { document.body.dataset.status = 'done'; stats.textContent = 'Stopped.'; }
+      else { document.body.dataset.status = 'error'; answer.textContent = `Error: ${(err as Error).message}`; console.error('[fogar] bookmark find failed', err); }
+    } finally {
+      $('stop-btn').hidden = true;
+      this.refreshReadiness();
+    }
   }
 
   /** Stream a conversation into the answer card. */
@@ -139,6 +192,7 @@ export class App {
     const signal = this.abort.signal;
     const card = $('answer-card'); const answer = $('answer'); const sourcesEl = $('sources'); const stats = $('stats');
     card.hidden = false; answer.textContent = ''; stats.textContent = ''; sourcesEl.hidden = true; clear(sourcesEl);
+    $('answer-links').hidden = true; clear($('answer-links'));
     $('answer-label').textContent = opts.label ?? 'Answer';
     document.body.dataset.status = 'answering';
     $('stop-btn').hidden = false;

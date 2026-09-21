@@ -76,6 +76,9 @@ textarea:focus, input:focus, select:focus { outline: none; border-color: var(--a
 .answer-head { display: flex; justify-content: space-between; align-items: center; }
 .answer { white-space: pre-wrap; line-height: 1.6; font-size: 16px; }
 .answer:empty::before { content: "…"; color: var(--muted); }
+.links { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.links .hit { border-radius: 8px; padding: 7px 8px; }
+.links .hit .x { opacity: 0.6; }
 .sources { margin: 4px 0 0; padding-left: 20px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; }
 .sources a { color: inherit; }
 .stats { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }

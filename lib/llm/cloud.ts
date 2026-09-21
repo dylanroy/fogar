@@ -1,10 +1,10 @@
-import type { CloudSettings, Message, Provider } from './types';
+import type { AskOpts, CloudSettings, Message, Provider } from './types';
 
 /** Any OpenAI-compatible /chat/completions endpoint, streamed over SSE. Key never leaves the browser except to that endpoint. */
 export class CloudProvider implements Provider {
   constructor(private settings: CloudSettings) {}
 
-  async *ask(messages: Message[], signal: AbortSignal): AsyncIterable<string> {
+  async *ask(messages: Message[], signal: AbortSignal, opts: AskOpts = {}): AsyncIterable<string> {
     const base = this.settings.endpoint.replace(/\/+$/, '');
     const res = await fetch(`${base}/chat/completions`, {
       method: 'POST',
@@ -13,7 +13,7 @@ export class CloudProvider implements Provider {
         'Content-Type': 'application/json',
         ...(this.settings.apiKey ? { Authorization: `Bearer ${this.settings.apiKey}` } : {}),
       },
-      body: JSON.stringify({ model: this.settings.model, messages, stream: true }),
+      body: JSON.stringify({ model: this.settings.model, messages, stream: true, ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}) }),
     });
     if (!res.ok || !res.body) throw new Error(`Cloud endpoint returned ${res.status} ${res.statusText}`);
 
