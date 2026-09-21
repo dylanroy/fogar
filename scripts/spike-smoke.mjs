@@ -1,21 +1,29 @@
-// Loads the built extension into Chromium, opens the new tab page in smoke mode, and waits for
-// the 1 MB test model to download, load, and stream an answer. Proves wllama runs under MV3 CSP.
-// Usage: npm run build && npm run test:spike   (add GPU=1 to try the WebGPU path)
+// End-to-end test. Loads the built extension into Chromium and drives every feature:
+//   1. local model: download, load, stream (1 MB test model by default; MODEL=qwen3-0.6b for the real one)
+//   2. warm reload served from OPFS with zero GGUF downloads
+//   3. cloud mode against a local mock OpenAI server (SSE parser, bearer header)
+//   4. web grounding against a mock Brave endpoint (snippets reach the model, sources render, citation shows)
+//   5. built-in recipe run (template filled, system prompt applied)
+//   6. todos persist across reload
+//   7. reminders parse, confirm, save, and create a chrome.alarms entry
+//   8. bookmark search as you type
+// Usage: npm run build && npm run test:spike   (HEADED=1 to watch, GPU=1 for WebGPU, VERBOSE=1 for all console lines)
 import { chromium } from 'playwright';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { startMockOpenAI } from './mock-openai.mjs';
+import { startMockServer } from './mock-openai.mjs';
 
 const ext = resolve('.output/chrome-mv3');
 const userDataDir = mkdtempSync(join(tmpdir(), 'fogar-smoke-'));
 const headless = process.env.HEADED !== '1';
 const gpu = process.env.GPU === '1' ? '1' : '0';
 const model = process.env.MODEL || 'smoke';
+const results = [];
+const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`); };
 
 const context = await chromium.launchPersistentContext(userDataDir, {
-  channel: 'chromium',
-  headless,
+  channel: 'chromium', headless,
   args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`, '--enable-unsafe-webgpu'],
 });
 let sw = context.serviceWorkers()[0];
@@ -23,62 +31,103 @@ if (!sw) sw = await context.waitForEvent('serviceworker', { timeout: 15000 });
 const extId = new URL(sw.url()).host;
 const page = await context.newPage();
 const logs = [];
-let hfRequests = 0; let ggufDownloads = 0; const warmUrls = [];
-let warmPhase = false;
+let hfResponses = 0; let ggufDownloads = 0;
 page.on('response', (r) => {
   const url = r.url();
   if (!/huggingface|hf\.co/.test(url)) return;
-  hfRequests++;
-  if (warmPhase) warmUrls.push(`${r.request().method()} ${r.status()} ${url.replace(/^https:\/\//, '').slice(0, 90)}`);
+  hfResponses++;
   if (r.request().method() === 'GET' && r.status() === 200 && /\.gguf/.test(url)) ggufDownloads++;
 });
 page.on('console', (m) => logs.push(`[${m.type()}] ${m.text()}`));
 page.on('pageerror', (e) => logs.push(`[pageerror] ${e.message}`));
+const mock = await startMockServer();
+const base = `chrome-extension://${extId}/newtab.html`;
+const waitDone = (timeout) => page.waitForFunction(() => ['done', 'error'].includes(document.body.dataset.status ?? ''), null, { timeout });
+const status = () => page.evaluate(() => document.body.dataset.status);
+const text = (id) => page.evaluate((i) => document.getElementById(i)?.textContent ?? '', id);
 
-const t0 = Date.now();
-await page.goto(`chrome-extension://${extId}/newtab.html?smoke=1&gpu=${gpu}&model=${model}`);
-try {
-  await page.waitForFunction(() => ['done', 'error'].includes(document.body.dataset.status ?? ''), null, { timeout: 600000 });
-} catch {
-  logs.push('[smoke] timed out waiting for done/error');
-}
-const status = await page.evaluate(() => document.body.dataset.status);
-const answer = await page.evaluate(() => document.getElementById('answer')?.textContent ?? '');
-const stats = await page.evaluate(() => document.getElementById('stats')?.textContent ?? '');
-const statusLine = await page.evaluate(() => document.getElementById('status')?.textContent ?? '');
+// 1. local model
+let t0 = Date.now();
+await page.goto(`${base}?smoke=1&gpu=${gpu}&model=${model}`);
+try { await waitDone(600000); } catch { logs.push('[smoke] timed out'); }
+const answer = await text('answer');
+check('local model streams an answer', (await status()) === 'done' && answer.length > 0, `${Date.now() - t0} ms, ${await text('stats')}`);
+console.log(`      status: ${await text('status')}`);
+console.log(`      answer: ${answer.slice(0, 120).replace(/\n/g, ' ')}`);
 
-// Warm reload: the same model must come from OPFS with no Hugging Face traffic.
-const coldRequests = hfRequests; const coldDownloads = ggufDownloads; hfRequests = 0; ggufDownloads = 0; warmPhase = true;
-const t1 = Date.now();
+// 2. warm reload
+const coldDownloads = ggufDownloads; ggufDownloads = 0; hfResponses = 0; t0 = Date.now();
 await page.reload();
-let warmStatus = 'n/a';
-try {
-  await page.waitForFunction(() => ['done', 'error'].includes(document.body.dataset.status ?? ''), null, { timeout: 120000 });
-  warmStatus = await page.evaluate(() => document.body.dataset.status);
-} catch { warmStatus = 'timeout'; }
-const warmMs = Date.now() - t1;
-const warmRequests = hfRequests; const warmDownloads = ggufDownloads;
+try { await waitDone(120000); } catch { /* fall through */ }
+check('warm reload serves the model from OPFS', (await status()) === 'done' && ggufDownloads === 0, `${Date.now() - t0} ms, ${coldDownloads} cold GGUF downloads, ${ggufDownloads} warm, ${hfResponses} HF responses`);
 
-// Cloud mode: point the page at a local OpenAI-compatible mock and check the SSE parser end to end.
-const mock = await startMockOpenAI();
-let cloudAnswer = ''; let cloudStatus = 'n/a';
-try {
-  await page.goto(`chrome-extension://${extId}/newtab.html?smoke=1&cloud=${mock.port}`);
-  await page.waitForFunction(() => ['done', 'error'].includes(document.body.dataset.status ?? ''), null, { timeout: 30000 });
-  cloudStatus = await page.evaluate(() => document.body.dataset.status);
-  cloudAnswer = await page.evaluate(() => document.getElementById('answer')?.textContent ?? '');
-} catch { cloudStatus = 'timeout'; }
+// 3. cloud mode
+await page.goto(`${base}?smoke=1&cloud=${mock.port}`);
+try { await waitDone(30000); } catch { /* fall through */ }
+const cloudAnswer = await text('answer');
+check('cloud mode streams via SSE with bearer auth', (await status()) === 'done' && cloudAnswer.includes('mock cloud says hello') && mock.server.lastRequest?.auth === 'Bearer test-key' && mock.server.lastRequest?.stream === true, cloudAnswer);
+
+// 4. grounding
+await page.goto(`${base}?smoke=1&cloud=${mock.port}&ground=${mock.port}`);
+try { await waitDone(30000); } catch { /* fall through */ }
+const userMsg = mock.server.lastRequest?.messages?.find((m) => m.role === 'user')?.content ?? '';
+const sysMsg = mock.server.lastRequest?.messages?.find((m) => m.role === 'system')?.content ?? '';
+const sourceCount = await page.evaluate(() => document.querySelectorAll('#sources li').length);
+check('grounding: snippets reach the model and sources render',
+  (await status()) === 'done' && userMsg.includes('MOCK SNIPPET ALPHA') && userMsg.includes('Question: Who is the US president?') && sysMsg.includes('Cite') && sourceCount === 2 && mock.server.lastSearch?.q === 'Who is the US president?' && mock.server.lastSearch?.token === 'test-key',
+  `${sourceCount} sources, search q="${mock.server.lastSearch?.q}"`);
+
+// 5. recipe
+await page.goto(`${base}?smoke=1&cloud=${mock.port}&recipe_run=rewrite`);
+try { await waitDone(30000); } catch { /* fall through */ }
+const recipeUser = mock.server.lastRequest?.messages?.find((m) => m.role === 'user')?.content ?? '';
+const recipeSys = mock.server.lastRequest?.messages?.find((m) => m.role === 'system')?.content ?? '';
+check('recipe: template filled and system prompt applied',
+  (await status()) === 'done' && recipeUser.includes('Tone: Formal') && recipeUser.includes('Format: Email') && recipeUser.includes('hello there friend') && recipeSys.includes('Return only the rewritten text') && (await text('answer-label')) === 'Draft & rewrite',
+  recipeUser.split('\n')[1]);
+
+// 6. todos
+await page.goto(`${base}?e2e=1`);
+await page.fill('#todo-input', 'Write the Fogar blog post');
+await page.press('#todo-input', 'Enter');
+await page.waitForSelector('#todo-list .item');
+await page.reload();
+await page.waitForSelector('#todo-list .item');
+const todoText = await page.evaluate(() => document.querySelector('#todo-list .item .text')?.textContent);
+check('todos persist across reload', todoText === 'Write the Fogar blog post', todoText);
+
+// 7. reminders
+await page.fill('#reminder-input', 'remind me to stretch in 5 minutes');
+await page.press('#reminder-input', 'Enter');
+await page.waitForSelector('#reminder-confirm:not([hidden])');
+const confirmText = await text('reminder-confirm');
+await page.click('#reminder-confirm .primary');
+await page.waitForSelector('#reminder-list .item');
+const reminderRow = await page.evaluate(() => document.querySelector('#reminder-list .item')?.textContent ?? '');
+const alarms = await page.evaluate(() => chrome.alarms.getAll());
+check('reminder parsed, confirmed, saved, alarm created', confirmText.includes('“stretch”') && reminderRow.includes('stretch') && alarms.some((a) => a.name.startsWith('fogar-reminder:')), `${alarms.length} alarm(s); "${confirmText.split('?')[0]}"`);
+
+// 8. bookmarks
+await page.evaluate(() => chrome.bookmarks.create({ title: 'Fogar Test Bookmark', url: 'https://example.com/fogar' }));
+await page.fill('#prompt', 'Fogar Test');
+await page.waitForSelector('#bookmark-hits:not([hidden]) .hit', { timeout: 5000 }).catch(() => {});
+const hit = await page.evaluate(() => document.querySelector('#bookmark-hits .hit .t')?.textContent ?? '');
+check('bookmark search as you type', hit === 'Fogar Test Bookmark', hit || 'no hit rendered');
+
+// 9. share link offers the recipe
+const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
+await page.goto(`${base}?e2e=1&recipe=${shared}`);
+await page.waitForSelector('#recipe-panel:not([hidden])');
+const offer = await text('recipe-panel');
+await page.click('#recipe-panel .primary');
+await page.waitForFunction(() => [...document.querySelectorAll('#recipe-chips .chip')].some((c) => c.textContent?.includes('Shared Test')));
+check('shared recipe link offers and adds the recipe', offer.includes('Add “') && offer.includes('Shared Test'));
+
 mock.server.close();
-const cloudOk = cloudStatus === 'done' && cloudAnswer.includes('mock cloud says hello') && mock.server.lastRequest?.auth === 'Bearer test-key' && mock.server.lastRequest?.stream === true;
 await context.close();
 
-console.log(`status: ${status}  (${Date.now() - t0} ms wall)`);
-console.log(`status line: ${statusLine}`);
-console.log(`stats: ${stats}`);
-console.log(`answer: ${answer.slice(0, 200).replace(/\n/g, ' ')}`);
-console.log(`cold: ${coldRequests} Hugging Face responses (${coldDownloads} GGUF downloads) · warm reload: ${warmStatus} in ${warmMs} ms, ${warmRequests} responses (${warmDownloads} GGUF downloads)`);
-if (warmUrls.length) console.log('warm requests:\n  ' + warmUrls.join('\n  '));
-console.log(`cloud: ${cloudStatus} · answer "${cloudAnswer}" · auth header ${mock.server.lastRequest?.auth ?? 'missing'} · ${cloudOk ? 'OK' : 'FAILED'}`);
-const interesting = logs.filter((l) => process.env.VERBOSE === '1' || /error|refused|csp|fogar|wllama|worker|gpu|multithread|thread|removeEntry|opfs|blocked/i.test(l)).slice(-40);
+const failed = results.filter((r) => !r.ok);
+console.log(`\n${results.length - failed.length}/${results.length} checks passed`);
+const interesting = logs.filter((l) => process.env.VERBOSE === '1' || /pageerror|\[error\]|refused|csp|blocked|fogar\]/i.test(l)).slice(-30);
 if (interesting.length) console.log('console:\n  ' + interesting.join('\n  '));
-process.exit(status === 'done' && answer.length > 0 && warmStatus === 'done' && warmDownloads === 0 && cloudOk ? 0 : 1);
+process.exit(failed.length ? 1 : 0);
