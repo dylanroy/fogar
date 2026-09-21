@@ -78,21 +78,7 @@ Known fix from the first manual run: clicking "Download and load" twice mid-down
 
 ## Roadmap
 
-1. ~~Spike.~~ Done. wllama runs under MV3; see the constraints table.
-2. ~~Product.~~ Done: first run, auto-load, stop, search fallback, context menu, cache controls, icons, redesign.
-3. ~~Your corner.~~ Done: recipes, todos, reminders, bookmark search, opt-in grounding.
-4. **Release candidate.** WebGPU numbers from real Chrome in this README, a privacy policy page, store listing copy and screenshots, `wxt zip`.
-5. **Promo surface and sponsor slot.** Footer rotates own products with `ref=fogar`. "Sponsor this slot" page on fogar.ai. Sell nothing until a few thousand weekly actives; label anything sponsored.
-6. **Launch.** Show HN, local-LLM communities. Then the write-ups on dylanroy.com: the build, the launch numbers, the sponsor experiment.
-
-Later, if people ask: a shared reminder/todo panel across devices via `storage.sync`, natural-language todo capture from the ask bar, Ollama auto-detect, Firefox.
-
-## Decided against, for now
-
-- **User-authored widgets as code.** Manifest V3 bars arbitrary code in extension pages. Recipes cover the real ask: users make and share prompt forms as data, never JavaScript.
-- **Google Calendar or Gmail OAuth.** Gmail scopes are "restricted" and need an annual third-party security assessment; Calendar scopes need Google's verification review and a heavier store disclosure. Reminders link to a prefilled Google Calendar event instead, which needs nothing.
-- **Paid tiers or lifetime deals.** Zero marginal cost, no accounts, no server. Charging would need licensing and support that contradict the product. Free; the footer and a disclosed sponsor slot are the business model.
-- **Analytics inside the extension.** Cuts against the privacy pitch and complicates the store listing.
+See [ROADMAP.md](ROADMAP.md) for phases, gates, the recipe gallery plan, and everything decided against.
 
 ## Privacy stance
 
