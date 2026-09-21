@@ -117,6 +117,22 @@ const reminderCount = await page.evaluate(() => document.querySelectorAll('#remi
 const alarms2 = await page.evaluate(() => chrome.alarms.getAll());
 check('second reminder saves and gets its own alarm', reminderCount === 2 && alarms2.filter((a) => a.name.startsWith('fogar-reminder:')).length === 2, `${reminderCount} rows, ${alarms2.length} alarms`);
 
+// 7c. an alarm actually fires: write a reminder due in 3 s straight to storage (the background reconciles from
+// storage, no UI involved), then wait for the worker to mark it fired and to have asked for a notification.
+await page.evaluate(async () => {
+  const got = await chrome.storage.local.get('fogar.reminders');
+  const list = got['fogar.reminders'] ?? [];
+  list.push({ id: 'fire-test', label: 'fire test', when: Date.now() + 3000, createdAt: Date.now() });
+  await chrome.storage.local.set({ 'fogar.reminders': list });
+});
+let fired = false; const tFire = Date.now();
+while (Date.now() - tFire < 25000 && !fired) {
+  fired = await page.evaluate(async () => ((await chrome.storage.local.get('fogar.reminders'))['fogar.reminders'] ?? []).some((r) => r.id === 'fire-test' && r.fired === true));
+  if (!fired) await page.waitForTimeout(500);
+}
+const shown = await page.evaluate(() => chrome.notifications.getAll().catch(() => ({})));
+check('reminder alarm fires and is marked done', fired, `${Date.now() - tFire} ms after scheduling; ${Object.keys(shown).length} notification(s) visible to the API`);
+
 // 8. bookmarks
 await page.evaluate(() => chrome.bookmarks.create({ title: 'Fogar Test Bookmark', url: 'https://example.com/fogar' }));
 await page.fill('#prompt', 'Fogar Test');

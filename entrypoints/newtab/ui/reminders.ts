@@ -1,5 +1,6 @@
 import type { App } from '../app';
 import { $, clear, el, fmtTime } from '@/lib/dom';
+import { browser } from 'wxt/browser';
 import { addReminder, loadReminders, parseReminder, removeReminder, type Reminder } from '@/lib/reminders';
 
 /** Zero-permission calendar hand-off: a prefilled Google Calendar event link. No OAuth, nothing to verify. */
@@ -75,4 +76,28 @@ export function initReminders(app: App): void {
     confirmReminder(parsed?.label ?? text, parsed?.when ?? null);
   };
   void loadReminders().then(render);
+
+  // Chrome can have notifications switched off for the profile or by the OS. Say so where the reminder is set.
+  const warning = $('notif-warning');
+  const checkPermission = async () => {
+    try {
+      const level = await browser.notifications.getPermissionLevel();
+      warning.hidden = level !== 'denied';
+      if (level === 'denied') warning.textContent = 'Chrome notifications are turned off for this profile or by the system, so reminders will only appear in this list. Check chrome://settings/content/notifications and your OS notification settings.';
+    } catch { /* API unavailable; nothing to warn about */ }
+  };
+  void checkPermission();
+  $('notif-test').onclick = async (e) => {
+    e.preventDefault();
+    try {
+      await browser.notifications.create('fogar-test-' + Date.now(), {
+        type: 'basic', iconUrl: browser.runtime.getURL('/icon/128.png'),
+        title: 'Fogar reminders are working', message: 'This is what a reminder looks like.', priority: 2,
+      });
+      app.toast('Test notification sent. If nothing appeared, check the system notification settings for Chrome.');
+      void checkPermission();
+    } catch (err) {
+      app.toast(`Could not show a notification: ${(err as Error).message}`);
+    }
+  };
 }

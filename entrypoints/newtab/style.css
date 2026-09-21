@@ -30,6 +30,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .small { padding: 5px 12px; font-size: 13px; }
 .muted { color: var(--muted); font-size: 13px; margin: 0; }
 .small-note { font-size: 12px; margin-top: 10px; }
+.warn { color: var(--accent); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
 
 .page { width: min(780px, 92vw); margin: 0 auto; padding: 9vh 0 8vh; display: grid; gap: 36px; }

@@ -9,6 +9,7 @@ async function notify(reminder: Reminder) {
     title: 'Fogar reminder',
     message: reminder.label,
     priority: 2,
+    requireInteraction: true, // a reminder should wait to be seen, not vanish after five seconds
   });
   const all = await loadReminders();
   await saveReminders(all.map((r) => (r.id === reminder.id ? { ...r, fired: true } : r)));
@@ -23,7 +24,11 @@ let reconciling: Promise<void> | null = null;
 function reconcile(): Promise<void> {
   if (reconciling) return reconciling;
   reconciling = (async () => {
-    const all = await loadReminders();
+    let all = await loadReminders();
+    // Fired reminders older than a week are noise; drop them so storage does not grow forever.
+    const weekAgo = Date.now() - 7 * 86400e3;
+    const pruned = all.filter((r) => !(r.fired && r.when < weekAgo));
+    if (pruned.length !== all.length) { all = pruned; await saveReminders(all); }
     const alarms = await browser.alarms.getAll();
     const wanted = new Map(all.filter((r) => !r.fired).map((r) => [ALARM_PREFIX + r.id, r] as const));
     for (const a of alarms) {
