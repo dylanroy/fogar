@@ -76,10 +76,38 @@ textarea:focus, input:focus, select:focus { outline: none; border-color: var(--a
 .progress { position: relative; height: 24px; border-radius: 999px; background: var(--line); overflow: hidden; margin-top: 14px; font-size: 12px; }
 .progress-bar { position: absolute; inset: 0 auto 0 0; width: 0; background: var(--accent); transition: width 0.2s; }
 .progress span { position: absolute; inset: 0; display: grid; place-items: center; color: var(--fg); }
-.answer-card { margin-top: 16px; padding: 16px 20px 14px; display: grid; gap: 10px; }
-.answer-head { display: flex; justify-content: space-between; align-items: center; }
-.answer { white-space: pre-wrap; line-height: 1.6; font-size: 16px; }
+.examples { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.examples:empty { display: none; }
+.example { border: 1px dashed var(--line); background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-size: 13px; }
+.example:hover { color: var(--fg); border-color: var(--accent); border-style: solid; }
+.thread { display: grid; gap: 12px; margin-top: 16px; }
+.thread:has(> .answer-card) { margin-top: 16px; }
+.thread-head { display: flex; justify-content: space-between; align-items: center; order: 99; padding-top: 4px; }
+.answer-card { padding: 16px 20px 14px; display: grid; gap: 10px; }
+.answer-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.answer-q { font-size: 14px; color: var(--muted); font-style: italic; overflow-wrap: anywhere; }
+.answer-actions { display: inline-flex; align-items: center; gap: 10px; flex: 0 0 auto; }
+.answer { line-height: 1.6; font-size: 16px; overflow-wrap: anywhere; }
 .answer:empty::before { content: "…"; color: var(--muted); }
+.answer p { margin: 0 0 10px; }
+.answer > :last-child { margin-bottom: 0; }
+.answer ul, .answer ol { margin: 4px 0 10px; padding-left: 22px; }
+.answer li { margin: 2px 0; }
+.answer h3, .answer h4, .answer h5 { font-family: var(--serif); font-weight: 500; font-size: 17px; margin: 12px 0 6px; }
+.answer pre { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 6px 0 10px; }
+.answer pre code { background: none; padding: 0; font-size: inherit; }
+.answer blockquote { margin: 6px 0 10px; padding-left: 12px; border-left: 3px solid var(--line); color: var(--muted); }
+.answer hr { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
+.answer a { color: inherit; text-decoration: underline; text-decoration-color: var(--accent); }
+.answer .big { font-family: var(--serif); font-size: 34px; line-height: 1.1; }
+.nudge { font-size: 12.5px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
+.nudge a { color: inherit; }
+.answer-card.past { padding: 10px 20px; }
+.answer-card.past .answer-head { cursor: pointer; align-items: center; }
+.answer-card.past .answer-q::before { content: "›"; display: inline-block; margin-right: 8px; color: var(--accent); transition: transform 0.15s; }
+.answer-card.past.open .answer-q::before { transform: rotate(90deg); }
+.answer-card.past:not(.open) > :not(.answer-head) { display: none; }
+.answer-card.past .copy-btn, .answer-card.past .answer-label { display: none; }
 .links { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
 .links .hit { border-radius: 8px; padding: 7px 8px; }
 .links .hit .x { opacity: 0.6; }

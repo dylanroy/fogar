@@ -2,7 +2,9 @@ import type { App } from '../app';
 import { $, clear, el } from '@/lib/dom';
 import { addTodo, clearDone, loadTodos, removeTodo, toggleTodo, type Todo } from '@/lib/todos';
 
-export function initTodos(app: App): void {
+export interface TodosUI { add(text: string): Promise<void> }
+
+export function initTodos(app: App): TodosUI {
   const list = $('todo-list'); const input = $<HTMLInputElement>('todo-input');
 
   const render = (todos: Todo[]) => {
@@ -27,5 +29,6 @@ export function initTodos(app: App): void {
   };
   $('todo-clear').onclick = async () => render(await clearDone());
   void loadTodos().then(render);
-  void app; // reserved: natural-language "todo:" from the ask bar comes later
+  void app;
+  return { async add(text) { render(await addTodo(text)); } };
 }

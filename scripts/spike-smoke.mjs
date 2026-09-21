@@ -67,6 +67,20 @@ try { await waitDone(30000); } catch { /* fall through */ }
 const cloudAnswer = await text('answer');
 check('cloud mode streams via SSE with bearer auth', (await status()) === 'done' && cloudAnswer.includes('mock cloud says hello') && mock.server.lastRequest?.auth === 'Bearer test-key' && mock.server.lastRequest?.stream === true, cloudAnswer);
 
+// 3b. follow-up: the second question carries the first exchange
+await page.fill('#prompt', 'Say it again');
+await page.press('#prompt', 'Enter');
+await page.waitForFunction(() => document.querySelectorAll('#thread .answer-card').length === 2 && document.body.dataset.status === 'done', null, { timeout: 30000 });
+const followMsgs = mock.server.lastRequest?.messages ?? [];
+check('follow-up keeps the conversation', followMsgs.length === 4 && followMsgs[2]?.role === 'assistant' && /mock cloud says hello/.test(followMsgs[2]?.content ?? '') && followMsgs[3]?.content === 'Say it again', `${followMsgs.length} messages sent; ${await page.evaluate(() => document.querySelectorAll('#thread .answer-card.past').length)} collapsed card(s)`);
+
+// 3c. markdown renders as elements, never raw asterisks
+await page.fill('#prompt', 'markdown test please');
+await page.press('#prompt', 'Enter');
+await page.waitForFunction(() => document.body.dataset.status === 'done' && document.querySelector('#answer strong') !== null, null, { timeout: 30000 });
+const md = await page.evaluate(() => ({ strong: document.querySelector('#answer strong')?.textContent, items: document.querySelectorAll('#answer li').length, h: document.querySelector('#answer h5')?.textContent, code: document.querySelector('#answer code')?.textContent, raw: document.getElementById('answer')?.textContent ?? '' }));
+check('markdown renders (heading, list, bold, code)', md.strong === 'one' && md.items === 2 && md.h === 'Title' && md.code === 'code' && !md.raw.includes('**'), JSON.stringify(md).slice(0, 120));
+
 // 4. grounding
 await page.goto(`${base}?smoke=1&cloud=${mock.port}&ground=${mock.port}`);
 try { await waitDone(30000); } catch { /* fall through */ }
@@ -85,6 +99,24 @@ const recipeSys = mock.server.lastRequest?.messages?.find((m) => m.role === 'sys
 check('recipe: template filled and system prompt applied',
   (await status()) === 'done' && recipeUser.includes('Tone: Formal') && recipeUser.includes('Format: Email') && recipeUser.includes('hello there friend') && recipeSys.includes('Return only the rewritten text') && (await text('answer-label')) === 'Draft & rewrite',
   recipeUser.split('\n')[1]);
+
+// 5b. ask-bar routing: arithmetic, todo capture, reminder capture
+await page.goto(`${base}?e2e=1`);
+await page.fill('#prompt', 'what is 18% of 240?');
+await page.press('#prompt', 'Enter');
+await page.waitForSelector('#answer .big');
+const calcText = await page.evaluate(() => document.querySelector('#answer .big')?.textContent);
+check('arithmetic is computed locally', calcText === '43.2' && (await text('answer-label')) === 'Calculator', `${calcText}`);
+await page.fill('#prompt', 'todo: buy oat milk');
+await page.press('#prompt', 'Enter');
+await page.waitForFunction(() => [...document.querySelectorAll('#todo-list .item .text')].some((n) => n.textContent === 'buy oat milk'), null, { timeout: 5000 });
+const promptCleared = await page.evaluate(() => document.getElementById('prompt').value === '');
+check('"todo:" in the ask bar adds a todo', promptCleared);
+await page.fill('#prompt', 'remind me to call mom at 6pm');
+await page.press('#prompt', 'Enter');
+await page.waitForSelector('#reminder-confirm:not([hidden])');
+const captured = await text('reminder-confirm');
+check('"remind me" in the ask bar opens the reminder confirm', captured.includes('“call mom”'), captured.split('?')[0]);
 
 // 6. todos
 await page.goto(`${base}?e2e=1`);

@@ -36,13 +36,14 @@ export async function searchWeb(query: string, g: GroundingSettings, signal?: Ab
 }
 
 /** Small models answer well from text they are handed. Put the sources in front of the question, numbered, and ask for citations. */
-export function groundedMessages(system: string, question: string, sources: Source[]): Message[] {
+export function groundedMessages(system: string, question: string, sources: Source[], history: Message[] = []): Message[] {
   const list = sources.map((s, i) => `[${i + 1}] ${s.title}\n${s.snippet}`).join('\n\n');
   return [
     {
       role: 'system',
       content: `${system}\n\nAnswer using only the numbered sources below. Cite them inline like [1]. If the sources do not contain the answer, say you could not find it in the results.`,
     },
+    ...history,
     { role: 'user', content: `Sources:\n\n${list}\n\nQuestion: ${question}` },
   ];
 }

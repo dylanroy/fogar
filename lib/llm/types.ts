@@ -39,7 +39,7 @@ export interface Settings {
 
 export const DEFAULT_SETTINGS: Settings = {
   mode: 'local',
-  modelId: 'qwen3-0.6b',
+  modelId: 'qwen3.5-0.8b',
   gpu: true,
   autoLoad: false,
   onboarded: false,

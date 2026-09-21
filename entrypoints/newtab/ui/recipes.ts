@@ -9,6 +9,8 @@ import {
 export interface RecipesUI {
   runBuiltin(id: string, values: Record<string, string>): Promise<void>;
   offerShared(encoded: string): void;
+  /** Open a recipe's form by id and scroll to it. */
+  open(id: string): Promise<void>;
 }
 
 export function initRecipes(app: App): RecipesUI {
@@ -171,6 +173,12 @@ export function initRecipes(app: App): RecipesUI {
   void renderChips();
 
   return {
+    async open(id) {
+      const r = (await allRecipes()).find((x) => x.id === id);
+      if (!r) return;
+      await openRun(r);
+      panel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    },
     async runBuiltin(id, values) {
       const r = BUILTIN_RECIPES.find((x) => x.id === id);
       if (!r) return;

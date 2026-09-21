@@ -10,7 +10,9 @@ function gcalLink(r: Reminder): string {
   return `https://calendar.google.com/calendar/render?${p}`;
 }
 
-export function initReminders(app: App): void {
+export interface RemindersUI { capture(text: string): void }
+
+export function initReminders(app: App): RemindersUI {
   const list = $('reminder-list'); const input = $<HTMLInputElement>('reminder-input'); const confirmBox = $('reminder-confirm');
 
   const render = (all: Reminder[]) => {
@@ -68,12 +70,15 @@ export function initReminders(app: App): void {
     if (!when) whenIn.focus();
   };
 
+  const capture = (text: string) => {
+    const parsed = parseReminder(text);
+    confirmReminder(parsed?.label ?? text, parsed?.when ?? null);
+    $('reminders-card').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  };
   $('reminder-form').onsubmit = (e) => {
     e.preventDefault();
     const text = input.value.trim();
-    if (!text) return;
-    const parsed = parseReminder(text);
-    confirmReminder(parsed?.label ?? text, parsed?.when ?? null);
+    if (text) capture(text);
   };
   void loadReminders().then(render);
 
@@ -100,4 +105,5 @@ export function initReminders(app: App): void {
       app.toast(`Could not show a notification: ${(err as Error).message}`);
     }
   };
+  return { capture };
 }

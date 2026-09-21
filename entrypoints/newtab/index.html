@@ -29,7 +29,7 @@
         <div class="choices">
           <button class="choice" data-choice="local">
             <strong>On this device</strong>
-            <span>Downloads a 400 MB model once. After that nothing you type leaves this browser. Best with a recent Mac or a machine with a GPU.</span>
+            <span id="firstrun-rec">Downloads a model once. After that nothing you type leaves this browser.</span>
           </button>
           <button class="choice" data-choice="cloud">
             <strong>Cloud, with your own key</strong>
@@ -58,14 +58,11 @@
             </span>
           </div>
         </form>
+        <div id="examples" class="examples" aria-label="Things to try"></div>
         <div id="progress" class="progress" hidden><div id="progress-bar" class="progress-bar"></div><span id="progress-text"></span></div>
-        <article id="answer-card" class="card answer-card" hidden>
-          <div class="answer-head"><span id="answer-label" class="muted">Answer</span><button id="copy-btn" class="ghost small" type="button">Copy</button></div>
-          <div id="answer" class="answer"></div>
-          <ul id="answer-links" class="links" hidden></ul>
-          <ol id="sources" class="sources" hidden></ol>
-          <div id="stats" class="stats"></div>
-        </article>
+        <div id="thread" class="thread">
+          <div id="thread-head" class="thread-head" hidden><span class="muted">Follow-ups stay in this conversation.</span><button id="thread-clear" class="ghost small" type="button">New conversation</button></div>
+        </div>
       </section>
 
       <section class="recipes">
@@ -141,6 +138,7 @@
       </footer>
     </main>
     <div id="toast" class="toast" hidden></div>
+    <pre id="eval-out" hidden></pre>
     <script type="module" src="./main.ts"></script>
   </body>
 </html>

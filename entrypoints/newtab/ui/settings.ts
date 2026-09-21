@@ -12,7 +12,7 @@ export function initSettings(app: App): void {
 
   // Local model
   const modelSel = $<HTMLSelectElement>('model');
-  for (const m of MODELS) if (m.id !== 'smoke' || location.search.includes('smoke=1')) modelSel.add(new Option(`${m.label} · ~${m.approxMB} MB`, m.id));
+  for (const m of MODELS) if (m.id !== 'smoke' || location.search.includes('smoke=1')) modelSel.add(new Option(`${m.label} · ${m.approxMB >= 1000 ? `${(m.approxMB / 1000).toFixed(1)} GB` : `${m.approxMB} MB`}${app.recommended?.id === m.id ? ' · recommended for this machine' : ''}`, m.id));
   modelSel.value = s.modelId;
   $('model-note').textContent = modelById(s.modelId).note;
   modelSel.onchange = () => { s.modelId = modelSel.value; $('model-note').textContent = modelById(s.modelId).note; void app.save(); };
