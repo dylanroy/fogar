@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // fogar.ai: the landing page and privacy policy, served as static assets. No script, no data, nothing to log.
+  "name": "fogar-site",
+  "compatibility_date": "2026-09-15",
+  "workers_dev": false,
+  "assets": {
+    "directory": "./site",
+    "not_found_handling": "404-page",
+    "html_handling": "auto-trailing-slash"
+  },
+  // The zone came with proxied records at the apex and www (imported from the registrar's parking setup), and a
+  // Worker custom domain refuses to sit on an existing record. Routes capture both hostnames at Cloudflare's edge
+  // instead, so the records can stay exactly as they are and the zone's universal certificate covers TLS.
+  "routes": [
+    { "pattern": "fogar.ai/*", "zone_name": "fogar.ai" },
+    { "pattern": "www.fogar.ai/*", "zone_name": "fogar.ai" }
+  ]
+}

@@ -65,4 +65,4 @@ Free. Open source. Made by Dylan Roy.
 ## Support and links
 - Homepage: https://fogar.ai
 - Privacy policy: https://fogar.ai/privacy
-- Support: https://dylanroy.com
+- Support: https://github.com/dylanroy/fogar/issues (or https://dylanroy.com)

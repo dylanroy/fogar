@@ -7,6 +7,7 @@
 <meta property="og:description" content="A new tab for Chrome that answers from a model running inside your browser. Nothing leaves the room." />
 <meta property="og:url" content="https://fogar.ai/" />
 <meta name="theme-color" content="#14100d" />
+<link rel="canonical" href="https://fogar.ai/" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 </head>
 <body>
@@ -383,11 +384,11 @@
         <h2>Add to Chrome</h2>
         <p class="lead">Fogar is on its way to the Chrome Web Store. Until the listing is live, it installs from source in two commands and a drag-and-drop. This page will update the moment the store link exists.</p>
         <div class="cta-row" style="margin-top: 10px">
-          <a class="btn btn-ember" href="https://github.com/dylanroy">Get the source</a>
+          <a class="btn btn-ember" href="https://github.com/dylanroy/fogar">Get the source</a>
           <a class="btn btn-quiet" href="https://dylanroy.com/?ref=fogar">Get notified when it ships</a>
         </div>
       </div>
-      <pre class="cmd"><span class="c"># clone, then:</span>
+      <pre class="cmd">git clone https://github.com/dylanroy/fogar &amp;&amp; cd fogar
 npm install
 npm run build
 <span class="c"># chrome://extensions → Developer mode → Load unpacked</span>
