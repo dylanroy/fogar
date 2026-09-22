@@ -13,7 +13,7 @@ export class CloudProvider implements Provider {
         'Content-Type': 'application/json',
         ...(this.settings.apiKey ? { Authorization: `Bearer ${this.settings.apiKey}` } : {}),
       },
-      body: JSON.stringify({ model: this.settings.model, messages, stream: true, ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}) }),
+      body: JSON.stringify({ model: this.settings.model, messages, stream: true, ...(opts.maxTokens ? { max_tokens: opts.maxTokens } : {}), ...(opts.temperature !== undefined ? { temperature: opts.temperature } : {}) }),
     });
     if (!res.ok || !res.body) throw new Error(`Cloud endpoint returned ${res.status} ${res.statusText}`);
 

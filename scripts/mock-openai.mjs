@@ -54,8 +54,9 @@ export function startMockServer(port = 0) {
         server.lastRequest = { auth: req.headers.authorization, model: parsed.model, messages: parsed.messages, stream: parsed.stream };
         res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-cache' });
         const sorting = parsed.messages.some((m) => m.role === 'system' && /You sort bookmarks/.test(m.content));
+        const expanding = parsed.messages.some((m) => m.role === 'system' && /You expand search terms/.test(m.content));
         const lastUser = [...parsed.messages].reverse().find((m) => m.role === 'user')?.content ?? '';
-        const words = sorting ? ['1', ', ', '3']
+        const words = expanding ? ['recipe', ', kitchen', ', chef', ', risotto', ', seriouseats'] : sorting ? ['1', ', ', '3']
           : /markdown test/i.test(lastUser) ? ['### Title', '\n\n- **one**', '\n- two', '\n\nUse `code`', ' here.']
           : ['The', ' mock', ' cloud', ' says', ' hello', ' from', ` ${parsed.model}`, ' [1]', '.'];
         let i = 0;

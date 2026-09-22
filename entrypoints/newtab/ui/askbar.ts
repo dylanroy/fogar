@@ -79,10 +79,10 @@ export function initAskBar(app: App, deps: AskBarDeps): void {
       hits.hidden = found.length === 0;
       for (const b of found) {
         let host = ''; try { host = new URL(b.url).host.replace(/^www\./, ''); } catch { /* skip */ }
-        const row = el('a', { class: 'hit', href: b.url },
+        const row = el('a', { class: 'hit', href: b.url, title: b.url },
           el('img', { src: browser.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(b.url)}&size=32` as any), alt: '' }),
           el('span', { class: 't' }, b.title),
-          el('span', { class: 'h' }, host),
+          el('span', { class: 'h' }, b.path ? `${b.path} · ${host}` : host),
           el('button', {
             class: 'x', type: 'button', title: 'Remove bookmark',
             onclick: async (ev: MouseEvent) => {

@@ -177,6 +177,23 @@ await page.waitForSelector('#bookmark-hits:not([hidden]) .hit', { timeout: 5000 
 const hit = await page.evaluate(() => document.querySelector('#bookmark-hits .hit .t')?.textContent ?? '');
 check('bookmark search as you type', hit === 'Fogar Test Bookmark', hit || 'no hit rendered');
 
+// 8a. ranked search: typo in the query, folder name as the query, and a very long title stays inside the box
+await page.evaluate(async () => {
+  const folder = await chrome.bookmarks.create({ title: 'Reading List' });
+  await chrome.bookmarks.create({ parentId: folder.id, title: 'A very long bookmark title that goes on and on describing an article about the history of typography in browser user interfaces and never seems to stop at all', url: 'https://example.net/long-article-about-typography' });
+});
+await page.fill('#prompt', 'fogr bookmrk');
+await page.waitForSelector('#bookmark-hits:not([hidden]) .hit', { timeout: 5000 }).catch(() => {});
+const typoHit = await page.evaluate(() => document.querySelector('#bookmark-hits .hit .t')?.textContent ?? '');
+await page.fill('#prompt', 'reading list');
+await page.waitForFunction(() => document.querySelector('#bookmark-hits .hit .h')?.textContent?.includes('Reading List'), null, { timeout: 5000 }).catch(() => {});
+const folderRow = await page.evaluate(() => {
+  const hit = document.querySelector('#bookmark-hits .hit');
+  const box = document.getElementById('bookmark-hits');
+  return { h: hit?.querySelector('.h')?.textContent ?? '', overflow: hit ? hit.scrollWidth > box.clientWidth + 1 : true, boxOverflow: box ? box.scrollWidth > box.clientWidth + 1 : true };
+});
+check('bookmark search: typo tolerance, folder path shown, long title contained', typoHit === 'Fogar Test Bookmark' && folderRow.h.includes('Reading List') && !folderRow.overflow && !folderRow.boxOverflow, `typo→"${typoHit}"; folder row "${folderRow.h.slice(0, 40)}"; overflow=${folderRow.overflow}`);
+
 // 8b. natural-language bookmark finder (model picks 1 and 3 via the mock; keyword pass catches "Job posting")
 await page.evaluate(async () => {
   await chrome.bookmarks.create({ title: 'Senior Engineer at Acme', url: 'https://acme.example/careers/123' });
@@ -189,7 +206,8 @@ await page.press('#prompt', 'Enter');
 await waitDone(30000);
 const finderLabel = await text('answer-label');
 const finderHits = await page.evaluate(() => [...document.querySelectorAll('#answer-links .hit .t')].map((n) => n.textContent));
-check('bookmark question routes to the finder and returns links', finderLabel === 'Bookmarks' && finderHits.includes('Job posting: Data Analyst') && finderHits.length === 3, `${finderHits.length} hits: ${finderHits.join(' | ')}`);
+const finderOverflow = await page.evaluate(() => { const l = document.getElementById('answer-links'); const card = l?.closest('.answer-card'); return l && card ? l.scrollWidth > card.clientWidth : false; });
+check('bookmark question routes to the finder and returns links', finderLabel === 'Bookmarks' && finderHits.includes('Job posting: Data Analyst') && finderHits.length >= 3 && !finderOverflow, `${finderHits.length} hits: ${finderHits.join(' | ').slice(0, 120)}; overflow=${finderOverflow}`);
 
 // 10. widgets: add Links from the menu, add a site, persists
 await page.goto(`${base}?e2e=1`);
@@ -252,6 +270,16 @@ const focusPersists = await page.evaluate(() => document.body.classList.contains
 await page.click('#focus-toggle');
 const cornerBack = await page.evaluate(() => getComputedStyle(document.getElementById('corner')).display !== 'none');
 check('widgets reorder, remove, and focus mode persists', firstBefore !== firstAfter && notesGone && cornerHidden && focusPersists && cornerBack, `${firstBefore}→${firstAfter}`);
+
+// 8c. the finder finds "cooking" bookmarks that never say "cook", via expanded terms; words-first ordering
+await page.evaluate(() => chrome.bookmarks.create({ title: 'Risotto for beginners', url: 'https://food.example/risotto' }));
+await page.goto(`${base}?e2e=1&cloud=${mock.port}`);
+await page.fill('#prompt', 'find bookmarks about cooking');
+await page.press('#prompt', 'Enter');
+await waitDone(30000);
+const cooking = await page.evaluate(() => [...document.querySelectorAll('#answer-links .hit .t')].map((n) => n.textContent));
+const looked = await text('answer');
+check('finder: "cooking" finds recipe and risotto bookmarks first, shows the terms it looked for', cooking[0] !== 'Fogar Test Bookmark' && cooking.includes('Recipe blog') && cooking.includes('Risotto for beginners') && /Looked for:.*risotto/.test(looked), `${cooking.join(' | ').slice(0, 100)}`);
 
 // 9. share link offers the recipe
 const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));

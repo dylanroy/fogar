@@ -63,7 +63,7 @@ export class LocalProvider implements Provider {
       messages,
       stream: true,
       max_tokens: opts.maxTokens ?? 768,
-      temperature: 0.4,
+      temperature: opts.temperature ?? 0.4,
       abortSignal: signal,
     } as any)) as unknown as AsyncIterable<any>;
     // Belt and braces: if a template still emits a think block, hold it back rather than show it.

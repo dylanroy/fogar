@@ -294,14 +294,15 @@ export class App {
     const t0 = performance.now();
     try {
       this.setStatus('Reading your bookmarks…');
-      const result = await findBookmarks(question, this.provider(), signal, (scanned, total) => {
-        this.setStatus(`Scanning bookmarks… ${scanned} of ${total}`);
-        answer.textContent = `Scanning ${total} bookmarks for “${bookmarkCriterion(question)}”…`;
+      const result = await findBookmarks(question, this.provider(), signal, (scanned, total, phase) => {
+        if (phase === 'expanding') { this.setStatus('Thinking about what to look for…'); answer.textContent = `Working out what “${bookmarkCriterion(question)}” bookmarks look like…`; }
+        else { this.setStatus(`Reading bookmarks… ${scanned} of ${total}`); answer.textContent = `Reading ${total} bookmarks for “${bookmarkCriterion(question)}”…`; }
       });
       const what = result.listedAll ? 'your newest bookmarks' : `“${result.criterion}”`;
       answer.textContent = result.hits.length
-        ? `${result.hits.length} bookmark${result.hits.length === 1 ? '' : 's'} ${result.listedAll ? '' : 'look like '}${what}.`
-        : `No bookmarks looked like ${what}. I read all ${result.total}.`;
+        ? `${result.hits.length} bookmark${result.hits.length === 1 ? '' : 's'} ${result.listedAll ? '' : 'about '}${what}.`
+        : `No bookmarks about ${what}. I read all ${result.total}.`;
+      if (result.terms.length) answer.append(el('div', { class: 'muted small-note' }, `Looked for: ${result.terms.slice(0, 14).join(', ')}`));
       answer.dataset.raw = result.hits.map((b) => `${b.title} ${b.url}`).join('\n');
       if (result.hits.length) {
         links.hidden = false;
@@ -318,7 +319,7 @@ export class App {
           links.append(el('li', {}, row));
         }
       }
-      stats.textContent = `${result.scanned} of ${result.total} bookmarks read · ${Math.round(performance.now() - t0)} ms${result.scanned < result.total ? ' · list capped; the rest were matched by keyword only' : ''}`;
+      stats.textContent = `${result.total} bookmarks · ${result.keywordHits} matched by words, ${result.modelHits} picked by the model · ${Math.round(performance.now() - t0)} ms`;
       document.body.dataset.status = 'done';
     } catch (err) {
       if (signal.aborted) { document.body.dataset.status = 'done'; stats.textContent = 'Stopped.'; }
