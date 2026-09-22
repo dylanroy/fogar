@@ -134,6 +134,9 @@ details.thinking .thought { white-space: pre-wrap; margin-top: 6px; max-height: 
 .chip:hover { border-color: var(--accent); }
 .chip[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); }
 #recipe-panel { margin-top: 12px; padding: 18px 20px; display: grid; gap: 14px; }
+/* The run form is shared by the recipe panel and the pinned recipe widget; it spaces its own fields and the Run row. */
+.recipe-run { display: grid; gap: 14px; }
+.recipe-run > .row-actions { margin-top: 2px; }
 .recipe-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
 .recipe-head .row-actions { flex: 0 0 auto; flex-wrap: nowrap; }
 .recipe-head p { margin-top: 4px; }
