@@ -40,6 +40,12 @@ export function initAskBar(app: App, deps: AskBarDeps): void {
   ];
   for (const [label, run] of EXAMPLES) examples.append(el('button', { class: 'example', type: 'button', onclick: run }, label));
   prompt.addEventListener('input', refreshExamples);
+  // Typing something that reads like a question is the signal to bring the cached model up. A bare URL or a
+  // search prefix is not, so the tabs people open just to navigate stay cheap.
+  prompt.addEventListener('input', () => {
+    const v = prompt.value.trim();
+    if (v.length >= 3 && /\s/.test(v) && !SEARCH_PREFIX.test(v)) void app.ensureModel();
+  });
   refreshExamples();
 
   const submit = () => {
@@ -58,7 +64,7 @@ export function initAskBar(app: App, deps: AskBarDeps): void {
     const calc = tryCalculate(q);
     if (calc) { app.showCalculation(q, calc.display, calc.expression); prompt.value = ''; refreshExamples(); return; }
     // Before a model is ready the box still does something useful: a plain web search.
-    if (!app.isReady() && !app.isBusy()) { webSearch(q); return; }
+    if (!app.canAnswer() && !app.isBusy()) { webSearch(q); return; }
     void app.askQuestion(q, { ground: ground.checked && !$('ground-toggle').hidden });
     prompt.value = ''; refreshExamples();
   };

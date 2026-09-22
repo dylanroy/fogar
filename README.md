@@ -11,7 +11,8 @@ Live at [fogar.ai](https://fogar.ai). Built by [Dylan Roy](https://dylanroy.com)
 Release candidate v0.1.0. Everything below works end to end and is covered by `npm run test:spike`, which loads the built extension into Chromium and drives 23 flows against local mock servers.
 
 - Ask bar with streaming, Markdown-rendered answers and follow-ups, from a local model (wllama, WebGPU or CPU) or any OpenAI-compatible endpoint with your own key.
-- Model tiers: Qwen3.5 0.8B (533 MB), 2B (1.3 GB), 4B (2.7 GB). First run recommends a tier from the GPU vendor and device memory. Thinking mode is off. WebGPU failures fall back to the CPU.
+- Model tiers: Qwen3.5 0.8B (533 MB), 2B (1.3 GB), 4B (2.7 GB). First run recommends a tier from the GPU vendor and device memory; the 4B only on Apple silicon, where memory is unified. Thinking mode is off. WebGPU failures fall back to the CPU.
+- A new tab loads nothing by itself. The cached model comes up when you type a question, open a recipe, or ask, and a tab nobody has looked at for five minutes gives it back. Opening tabs to type a URL stays free.
 - One box, several outcomes: URLs open, `?` searches, "remind me…" sets a reminder, "todo: …" adds a todo, arithmetic is computed locally, bookmark questions go to a finder that has the model sort your bookmarks, everything else goes to the model. Cmd/Ctrl+Enter always searches.
 - Opt-in web grounding. Free by default with no key: DuckDuckGo's Instant Answer API plus Wikipedia, good for well-known people, places, and terms. Add a Brave Search or Tavily key for full web results. Snippets go in front of the question; the answer cites its sources.
 - Recipes: data-only prompt forms. Four built-ins. Create, edit, import, export, share as a link, pin to the page.
@@ -107,3 +108,7 @@ See [ROADMAP.md](ROADMAP.md) for phases, gates, the recipe gallery plan, and eve
 ## Privacy stance
 
 Local mode makes no network requests after the model is cached. Cloud mode sends prompts only to the endpoint the user typed in. No analytics in the extension. This is also the cheapest possible Chrome Web Store data disclosure.
+
+## License
+
+MIT. See [LICENSE](LICENSE).

@@ -24,15 +24,17 @@ export async function detectDevice(): Promise<DeviceProfile> {
 /**
  * Pick the largest tier that will feel good on this machine. Chrome caps reported memory at 8 GB, so "8" means
  * "8 or more". The 4B model (2.7 GB) measured 44 tok/s on Apple silicon and is the first tier that gets facts,
- * arithmetic, and classification right, so it is recommended on Apple, NVIDIA, and AMD GPUs with 8 GB+.
+ * arithmetic, and classification right. Chrome reports system memory, not video memory, so only Apple's unified
+ * memory makes the 4B a safe recommendation; a discrete GPU with 2 to 4 GB would fail and fall back to a slow CPU
+ * run. Other WebGPU machines with 8 GB+ get the 2B; the 4B stays an explicit choice with its size stated.
  * Integrated Intel and unknown GPUs get the 2B; machines without WebGPU get the 0.8B on the CPU.
  */
 export function recommendModel(d: DeviceProfile): ModelSpec {
   const mem = d.memoryGB ?? 4;
   const pick = (id: string) => MODELS.find((m) => m.id === id)!;
   const vendor = `${d.gpuVendor ?? ''} ${d.gpuArchitecture ?? ''}`.toLowerCase();
-  const strongGpu = /apple|metal|nvidia|amd|radeon/.test(vendor);
-  if (d.webgpu && mem >= 8 && strongGpu) return pick('qwen3.5-4b');
+  const unifiedMemory = /apple|metal/.test(vendor);
+  if (d.webgpu && mem >= 8 && unifiedMemory) return pick('qwen3.5-4b');
   if (d.webgpu && mem >= 8) return pick('qwen3.5-2b');
   if (mem <= 2) return pick('qwen3-0.6b');
   return pick('qwen3.5-0.8b');

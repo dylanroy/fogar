@@ -27,7 +27,7 @@ export function initRecipes(app: App): RecipesUI {
     for (const r of await allRecipes()) {
       chips.append(el('button', {
         class: 'chip', type: 'button', 'aria-pressed': String(active === r.id),
-        onclick: () => (active === r.id ? close() : void openRun(r)),
+        onclick: () => { void app.ensureModel(); if (active === r.id) close(); else void openRun(r); },
       } as any, el('span', {}, r.emoji ?? '🧪'), r.name));
     }
   }
@@ -49,9 +49,9 @@ export function initRecipes(app: App): RecipesUI {
   function buildRunForm(recipe: Recipe, prefill: Record<string, string> = {}): HTMLElement {
     const fields = recipe.inputs.map((i) => inputField(i, prefill[i.key]));
     const values = () => Object.fromEntries(fields.map((f, idx) => [recipe.inputs[idx]!.key, f.read()]));
-    const run = el('button', { class: 'primary', type: 'button', disabled: !app.isReady(), onclick: () => void app.ask(recipeMessages(recipe, values(), SYSTEM_PROMPT), { label: recipe.name }) }, 'Run');
-    const hint = el('span', { class: 'hint' }, app.isReady() ? '' : 'Load a model or set a cloud endpoint to run recipes.');
-    app.onReadyChange(() => { run.disabled = !app.isReady(); hint.textContent = app.isReady() ? '' : 'Load a model or set a cloud endpoint to run recipes.'; });
+    const run = el('button', { class: 'primary', type: 'button', disabled: !app.canAnswer(), onclick: () => void app.ask(recipeMessages(recipe, values(), SYSTEM_PROMPT), { label: recipe.name }) }, 'Run');
+    const hint = el('span', { class: 'hint' }, app.canAnswer() ? '' : 'Load a model or set a cloud endpoint to run recipes.');
+    app.onReadyChange(() => { run.disabled = !app.canAnswer(); hint.textContent = app.canAnswer() ? '' : 'Load a model or set a cloud endpoint to run recipes.'; });
     const textareas = fields.filter((_, idx) => recipe.inputs[idx]!.type === 'textarea').map((f) => f.node);
     const others = fields.filter((_, idx) => recipe.inputs[idx]!.type !== 'textarea').map((f) => f.node);
     const form = el('div', { class: 'recipe-run' }, ...textareas);

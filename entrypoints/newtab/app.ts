@@ -61,11 +61,16 @@ export class App {
   recommended: ModelSpec | null = null;
   private abort: AbortController | null = null;
   private loading = false;
+  private loadPromise: Promise<boolean> | null = null;
+  private releaseTimer: ReturnType<typeof setTimeout> | undefined;
+  /** How long a hidden tab keeps the model in memory before letting it go. Tests shorten this. */
+  releaseAfterMs = 5 * 60_000;
   private readonly readyListeners = new Set<() => void>();
   private toastTimer: ReturnType<typeof setTimeout> | undefined;
 
   async init(): Promise<void> {
     this.settings = await loadSettings();
+    document.addEventListener('visibilitychange', () => this.onVisibility());
     $('thread-clear').onclick = () => this.clearThread();
     // One listener closes any open "Dig deeper" menu on an outside click.
     document.addEventListener('click', (e) => {
@@ -87,6 +92,40 @@ export class App {
 
   onReadyChange(cb: () => void): void {
     this.readyListeners.add(cb);
+  }
+
+  /** A cached model that will load the moment the user shows intent. True only after a first successful load. */
+  autoLoadPending(): boolean {
+    return this.settings.mode === 'local' && this.settings.autoLoad && this.settings.onboarded && !this.local.loaded;
+  }
+
+  /** Can a question be taken right now, counting a model that will load on demand? */
+  canAnswer(): boolean {
+    return this.isReady() || this.autoLoadPending();
+  }
+
+  /**
+   * Load the cached model if it is not loaded yet. Opening a new tab does not load anything: most new tabs are
+   * for typing a URL, and every load costs seconds of GPU work and up to 2.7 GB of memory per tab. Typing a
+   * question, clicking a recipe, or asking does.
+   */
+  ensureModel(): Promise<boolean> {
+    if (this.isReady()) return Promise.resolve(true);
+    if (this.settings.mode !== 'local' || !this.autoLoadPending()) return Promise.resolve(this.isReady());
+    if (!this.loadPromise) this.loadPromise = this.loadModel().finally(() => { this.loadPromise = null; });
+    return this.loadPromise;
+  }
+
+  /** A tab nobody is looking at gives the model back after a while; the next interaction reloads it from disk. */
+  private onVisibility(): void {
+    clearTimeout(this.releaseTimer);
+    if (!document.hidden) return;
+    this.releaseTimer = setTimeout(async () => {
+      if (!document.hidden || this.isBusy() || !this.local.loaded || this.loading) return;
+      await this.local.unload();
+      document.body.dataset.status = 'idle';
+      this.refreshReadiness();
+    }, this.releaseAfterMs);
   }
 
   isReady(): boolean {
@@ -119,14 +158,17 @@ export class App {
 
   refreshReadiness(): void {
     const ready = this.isReady();
-    $<HTMLButtonElement>('ask-btn').disabled = !ready || this.isBusy();
-    $('web-search').hidden = ready;
+    const can = this.canAnswer();
+    $<HTMLButtonElement>('ask-btn').disabled = !can || this.isBusy();
+    $('web-search').hidden = can;
     $('ground-toggle').hidden = !groundingConfigured(this.settings.grounding);
     if (this.settings.mode === 'local') {
       const gpu = this.settings.gpu && LocalProvider.hasWebGPU() && !this.local.fellBackToCpu;
       this.setStatus(this.local.loaded
         ? `Ready · ${this.local.loaded.label} · ${gpu ? 'WebGPU' : 'CPU'}`
-        : this.loading ? $('status').textContent ?? '' : 'No model loaded. Open Settings to download one, or just search.');
+        : this.loading ? $('status').textContent ?? ''
+          : this.autoLoadPending() ? `${modelById(this.settings.modelId).label} · loads when you start typing`
+            : 'No model loaded. Open Settings to download one, or just search.');
     } else {
       let host = '';
       try { host = new URL(this.settings.cloud.endpoint).host; } catch { /* unset */ }
@@ -262,7 +304,7 @@ export class App {
 
   /** Stream a conversation into a new card. `messages` is sent as given; history is appended afterwards. */
   async ask(messages: Message[], opts: AskOptions = {}): Promise<void> {
-    if (!this.isReady()) return;
+    if (!this.isReady() && !(await this.ensureModel())) return;
     this.abort?.abort();
     this.abort = new AbortController();
     const signal = this.abort.signal;
@@ -395,7 +437,7 @@ export class App {
 
   /** The model cannot see bookmarks, so the finder reads them and lets the model pick. Results are links, not prose. */
   async findBookmarks(question: string): Promise<void> {
-    if (!this.isReady()) return;
+    if (!this.isReady() && !(await this.ensureModel())) return;
     this.abort?.abort();
     this.abort = new AbortController();
     const signal = this.abort.signal;

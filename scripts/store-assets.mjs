@@ -50,9 +50,24 @@ await page.evaluate(async ({ port, model }) => {
   });
 }, { port: mock.port, model });
 
+// Chrome only has favicons for sites this profile has visited, so visit the Links widget's sites once.
+for (const u of ['https://github.com', 'https://news.ycombinator.com', 'https://developer.chrome.com', 'https://figma.com']) {
+  const p = await context.newPage();
+  await p.goto(u, { waitUntil: 'domcontentloaded', timeout: 20000 }).catch(() => {});
+  await p.waitForTimeout(800);
+  await p.close();
+}
+// The model loads on intent now, so type something to warm it, then clear the box.
+const warm = async () => {
+  await page.waitForSelector('#recipe-chips .chip');
+  await page.fill('#prompt', 'warm up please');
+  await page.waitForFunction(() => document.body.dataset.status === 'ready', null, { timeout: 15 * 60 * 1000 });
+  await page.fill('#prompt', '');
+};
+
 // 1. an answer with a follow-up, real model
 await page.goto(base);
-await page.waitForFunction(() => document.body.dataset.status === 'ready', null, { timeout: 15 * 60 * 1000 });
+await warm();
 await page.fill('#prompt', 'Explain what OPFS is in two sentences.');
 await page.press('#prompt', 'Enter');
 await waitDone();
@@ -64,7 +79,7 @@ await shot('01-answer');
 
 // 2. a recipe with output
 await page.goto(base);
-await page.waitForFunction(() => document.body.dataset.status === 'ready', null, { timeout: 15 * 60 * 1000 });
+await warm();
 await page.click('#recipe-chips .chip:has-text("Draft & rewrite")');
 await page.fill('#recipe-panel textarea', 'hey cant make the 3pm today, thurs work instead? sorry for the short notice');
 await page.selectOption('#recipe-panel select >> nth=0', 'Friendly');

@@ -68,6 +68,22 @@ await page.reload();
 try { await waitDone(120000); } catch { /* fall through */ }
 check('warm reload serves the model from OPFS', (await status()) === 'done' && ggufDownloads === 0, `${Date.now() - t0} ms, ${coldDownloads} cold GGUF downloads, ${ggufDownloads} warm, ${hfResponses} HF responses`);
 
+// 2b. lazy load: with auto-load on, an idle new tab loads nothing; typing a question loads; a hidden tab releases
+await page.goto(`${base}?e2e=1`);
+await page.waitForSelector('#recipe-chips .chip');
+await page.evaluate(async () => { const got = await chrome.storage.local.get('fogar.settings'); await chrome.storage.local.set({ 'fogar.settings': { ...(got['fogar.settings'] ?? {}), mode: 'local', modelId: 'smoke', autoLoad: true, onboarded: true } }); });
+await page.goto(`${base}?e2e=1&autoload=1&releasems=700`);
+await page.waitForSelector('#recipe-chips .chip');
+await page.waitForTimeout(1200);
+const idle = await page.evaluate(() => ({ status: document.body.dataset.status, text: document.getElementById('status').textContent ?? '', askEnabled: !document.getElementById('ask-btn').disabled }));
+await page.fill('#prompt', 'hello there friend');
+await page.waitForFunction(() => document.body.dataset.status === 'ready', null, { timeout: 60000 });
+const warmText = await text('status');
+await page.evaluate(() => { Object.defineProperty(document, 'hidden', { configurable: true, get: () => true }); document.dispatchEvent(new Event('visibilitychange')); });
+await page.waitForFunction(() => /loads when you start typing/.test(document.getElementById('status').textContent ?? ''), null, { timeout: 10000 }).catch(() => {});
+const released = await text('status');
+check('lazy load: idle tab loads nothing, typing loads, hidden tab releases', idle.status === 'idle' && /loads when you start typing/.test(idle.text) && idle.askEnabled && /^Ready/.test(warmText) && /loads when you start typing/.test(released), `idle="${idle.text.slice(0, 44)}" warm="${warmText.slice(0, 30)}" released=${/loads when/.test(released)}`);
+
 // 3. cloud mode
 await page.goto(`${base}?smoke=1&cloud=${mock.port}`);
 try { await waitDone(30000); } catch { /* fall through */ }

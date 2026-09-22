@@ -31,6 +31,7 @@ const PROMO: Array<[label: string, href: string]> = [
 async function main() {
   const app = new App();
   await app.init();
+  const releaseMs = params.get('releasems'); if (releaseMs) app.releaseAfterMs = Number(releaseMs); // test hook
   const s = app.settings;
   app.device = await detectDevice();
   app.recommended = recommendModel(app.device);
@@ -39,7 +40,7 @@ async function main() {
 
   if (EVAL) { await runEval(app); return; }
   if (SMOKE || E2E) {
-    s.onboarded = true; s.autoLoad = false;
+    s.onboarded = true; if (params.get('autoload') !== '1') s.autoLoad = false;
     const cloudPort = params.get('cloud');
     if (cloudPort) { s.mode = 'cloud'; s.cloud = { endpoint: `http://127.0.0.1:${cloudPort}/v1`, apiKey: 'test-key', model: 'mock-model' }; }
     const altCloud = params.get('altcloud'); // cloud configured but not selected, for the "Ask the cloud model" path
@@ -89,9 +90,9 @@ async function main() {
   }
   if (E2E) return;
 
-  // New tab after the first successful load: bring the cached model up without a click.
-  if (s.mode === 'local' && s.autoLoad && s.onboarded) await app.loadModel();
-  if (selection && app.isReady()) { const q = $<HTMLTextAreaElement>('prompt').value; $<HTMLTextAreaElement>('prompt').value = ''; void app.askQuestion(q, { context: pageContext }); }
+  // A new tab loads nothing by itself. The cached model comes up on intent (typing, a recipe, a question);
+  // see App.ensureModel. A right-click question is intent.
+  if (selection && app.canAnswer()) { const q = $<HTMLTextAreaElement>('prompt').value; $<HTMLTextAreaElement>('prompt').value = ''; void app.askQuestion(q, { context: pageContext }); }
 }
 
 /** Runs a fixed prompt set against one model and reports timings and outputs as JSON for scripts/eval-models.mjs. */
