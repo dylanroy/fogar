@@ -428,10 +428,20 @@ await page.evaluate(async () => { const cur = await chrome.windows.getCurrent();
 await page.fill('.widget[data-type="sessions"] input[type="search"]', 'invoice');
 await page.waitForSelector('.widget[data-type="sessions"] .sess-tab.live', { timeout: 5000 });
 const liveRow = await page.evaluate(() => { const r = document.querySelector('.widget[data-type="sessions"] .sess-tab.live'); return { title: r?.querySelector('button.t')?.textContent ?? '', tag: r?.querySelector('.tag')?.textContent ?? '' }; });
+// The box is above the window list, the list folds away while filtering, and the first hit lands right under
+// the box rather than below however many windows are open.
+const filterUi = await page.evaluate(() => {
+  const w = document.querySelector('.widget[data-type="sessions"]');
+  const box = w.querySelector('input[type="search"]'); const open = w.querySelector('.sess-open');
+  const row = w.querySelector('.sess-saved .sess-tab');
+  return { boxFirst: !!(box.compareDocumentPosition(open) & Node.DOCUMENT_POSITION_FOLLOWING), openHidden: open.hidden, gap: Math.round(row.getBoundingClientRect().top - box.getBoundingClientRect().bottom) };
+});
 await page.click('.widget[data-type="sessions"] .sess-tab.live button.t');
 await page.waitForTimeout(400);
 const switched = await page.evaluate(async () => { const w = await chrome.windows.getLastFocused(); const [t] = await chrome.tabs.query({ active: true, windowId: w.id }); return { windowId: w.id, url: t?.url ?? '' }; });
 await page.fill('.widget[data-type="sessions"] input[type="search"]', '');
+await page.waitForFunction(() => !document.querySelector('.widget[data-type="sessions"] .sess-open').hidden, null, { timeout: 5000 });
+check('sessions: the search box sits above the window list and results land under it', filterUi.boxFirst && filterUi.openHidden && filterUi.gap >= 0 && filterUi.gap < 60, JSON.stringify(filterUi));
 check('sessions: open tabs are searchable and a hit switches to the tab',
   liveRow.title.startsWith('Quarterly Invoice') && liveRow.tag === 'open' && switched.windowId === newWinId && /invoice\.html$/.test(switched.url),
   `${JSON.stringify(liveRow)} ${JSON.stringify(switched)}`);

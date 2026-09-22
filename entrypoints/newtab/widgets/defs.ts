@@ -394,7 +394,8 @@ const sessions: WidgetDef = {
     const openBox = el('div', { class: 'sess-open' });
     const search = el('input', { class: 'line-input', type: 'search', placeholder: 'Search open and saved tabs', autocomplete: 'off' });
     const savedBox = el('div', { class: 'sess-saved' });
-    body.append(openBox, search, savedBox);
+    // Search first: with a dozen windows open, a box under the window list is a box you have to scroll to.
+    body.append(search, openBox, savedBox);
     const expanded = new Set<string>();
 
     // ---- open windows ----
@@ -483,6 +484,9 @@ const sessions: WidgetDef = {
       const kept = await bookmarkedUrls();
       clear(savedBox);
       const q = search.value.trim();
+      // While a query is live the window list is noise, and hiding it puts the results directly under the box
+      // instead of below however many windows happen to be open. Open tabs are in the results anyway, switchable.
+      openBox.hidden = !!q;
       if (q) {
         // Open first: a tab you can switch to beats the same page saved, which is why the saved list drops
         // anything already open rather than showing the address twice.
