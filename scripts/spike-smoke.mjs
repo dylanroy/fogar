@@ -483,6 +483,10 @@ check('sessions: restore reopens the saved window; delete removes the session', 
 // 13. Customize: appearance, accent, paper, headings, density apply, persist, and the boot script restores them first
 await page.goto(`${base}?e2e=1`);
 await page.waitForSelector('#customize-btn');
+// The default is serif headings. Asserting only the flipped state let a self-referential --heading ship, which
+// fell back to the body sans and made both settings look identical.
+const defaultBrandFont = await page.evaluate(() => getComputedStyle(document.querySelector('.brand')).fontFamily.slice(0, 8));
+check('customize: headings are serif out of the box', defaultBrandFont === 'ui-serif', defaultBrandFont);
 await page.click('#customize-btn');
 await page.click('#customize-menu [data-appearance="dark"]');
 await page.click('#customize-menu [data-accent="Moss"]');
