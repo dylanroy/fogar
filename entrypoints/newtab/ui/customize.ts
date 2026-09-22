@@ -47,7 +47,7 @@ export function initCustomize(app: App, widgets: WidgetsUI, theme: Theme): void 
 
     menu.append(el('div', { class: 'cz-title' }, 'Layout'));
     menu.append(group('Ask box', seg([['top', 'Top'], ['centered', 'Centered']], L.ask, 'ask', (v) => void widgets.update({ ask: v }).then(paint))));
-    menu.append(group('Wide windows', seg([['stack', 'One column'], ['sidebar', 'Widgets in a sidebar']], L.arrangement, 'arrangement', (v) => void widgets.update({ arrangement: v }).then(paint))));
+    menu.append(group('Wide windows', seg([['stack', 'One column'], ['sidebar', 'Sidebar']], L.arrangement, 'arrangement', (v) => void widgets.update({ arrangement: v }).then(paint))));
     menu.append(group('Widget columns', seg([['auto', 'Auto'], ['2', '2'], ['3', '3']], String(L.columns), 'columns', (v) => void widgets.update({ columns: v === 'auto' ? 'auto' : (Number(v) as 2 | 3) }).then(paint))));
     menu.append(group('Recipes row', seg([['shown', 'Shown'], ['hidden', 'Hidden']], L.showRecipes ? 'shown' : 'hidden', 'recipes', (v) => void widgets.update({ showRecipes: v === 'shown' }).then(paint))));
 
