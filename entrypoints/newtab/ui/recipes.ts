@@ -3,7 +3,7 @@ import { $, clear, el } from '@/lib/dom';
 import { SYSTEM_PROMPT } from '@/lib/llm/types';
 import {
   BUILTIN_RECIPES, allRecipes, decodeRecipeShare, encodeRecipeShare, loadUserRecipes, newRecipe, recipeMessages,
-  saveUserRecipes, validateRecipe, type Recipe, type RecipeInput,
+  parseRecipeText, saveUserRecipes, validateRecipe, type Recipe, type RecipeInput,
 } from '@/lib/recipes';
 
 export interface RecipesUI {
@@ -123,7 +123,7 @@ export function initRecipes(app: App): RecipesUI {
 
     const save = async () => {
       const candidate = validateRecipe({ ...recipe, name: name.value.trim(), emoji: emoji.value.trim(), description: description.value.trim(), system: system.value, template: template.value, inputs });
-      if (!candidate || !candidate.name) { app.toast('A recipe needs a name, a template, and valid input keys.'); return; }
+      if (!candidate) { app.toast('A recipe needs a name, a template with {{placeholders}}, and input keys made of letters, digits, or underscores.'); return; }
       const user = await loadUserRecipes();
       const idx = user.findIndex((r) => r.id === candidate.id);
       if (idx >= 0) user[idx] = candidate; else user.push(candidate);
@@ -153,11 +153,11 @@ export function initRecipes(app: App): RecipesUI {
     panel.append(
       el('div', { class: 'recipe-head' }, el('h3', {}, 'Import a recipe'), el('span', { class: 'row-actions' }, el('button', { class: 'ghost small', type: 'button', onclick: close }, 'Cancel'))),
       el('label', { class: 'field' }, 'Recipe JSON', box),
+      el('p', { class: 'hint' }, 'JSON with at least a ', el('code', {}, '"name"'), ' and a ', el('code', {}, '"template"'), '. A share link or its token works too. Labels and input types are filled in when missing.'),
       el('div', { class: 'row-actions' }, el('button', { class: 'primary', type: 'button', onclick: async () => {
-        let parsed: Recipe | null = null;
-        try { parsed = validateRecipe(JSON.parse(box.value)); } catch { /* invalid */ }
-        if (!parsed) { app.toast('That is not a valid recipe.'); return; }
-        await addShared(parsed);
+        const { recipe, error } = parseRecipeText(box.value);
+        if (!recipe) { app.toast(error ?? 'That is not a valid recipe.'); return; }
+        await addShared(recipe);
       } }, 'Add recipe')),
     );
     box.focus();

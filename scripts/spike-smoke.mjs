@@ -281,6 +281,19 @@ const cooking = await page.evaluate(() => [...document.querySelectorAll('#answer
 const looked = await text('answer');
 check('finder: "cooking" finds recipe and risotto bookmarks first, shows the terms it looked for', cooking[0] !== 'Fogar Test Bookmark' && cooking.includes('Recipe blog') && cooking.includes('Risotto for beginners') && /Looked for:.*risotto/.test(looked), `${cooking.join(' | ').slice(0, 100)}`);
 
+// 8d. import forgives what people actually paste: raw line breaks inside strings, no labels, smart quotes
+await page.goto(`${base}?e2e=1`);
+await page.click('#recipe-import');
+await page.fill('#recipe-panel textarea', '{\n  “name”: “Draft & rewrite Test”,\n  "inputs": [\n    { "key": "text",   "type": "textarea" },\n    { "key": "tone",   "type": "select", "options": ["Neutral","Friendly"] },\n  ],\n  "template": "Rewrite the text below.\n    Tone: {{tone}}. Extra: {{extra}}.\n\n    {{text}}"\n}');
+await page.click('#recipe-panel .primary');
+await page.waitForFunction(() => [...document.querySelectorAll('#recipe-chips .chip')].some((c) => c.textContent?.includes('Draft & rewrite Test')), null, { timeout: 5000 });
+const importedLabels = await page.evaluate(() => [...document.querySelectorAll('#recipe-panel .field')].map((f) => f.firstChild?.textContent?.trim()));
+await page.click('#recipe-import');
+await page.fill('#recipe-panel textarea', '{ "name": "Broken" ');
+await page.click('#recipe-panel .primary');
+const importError = await text('toast');
+check('recipe import forgives pasted JSON and explains failures', importedLabels.includes('Text') && importedLabels.includes('Tone') && importedLabels.includes('Extra') && /not valid JSON/.test(importError), `labels ${importedLabels.join(', ')}; error "${importError.slice(0, 60)}"`);
+
 // 9. share link offers the recipe
 const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
 await page.goto(`${base}?e2e=1&recipe=${shared}`);
