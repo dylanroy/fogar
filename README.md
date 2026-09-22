@@ -24,7 +24,7 @@ Release candidate v0.1.0. Everything below works end to end and is covered by `n
 - Bookmark search as you type.
 - Customize: appearance (system, light, or dark; six curated accents or any hue; warm, neutral, or cool paper; serif or sans headings; comfortable or compact density) and layout (ask box at the top or centered, widgets in a sidebar on wide windows, two or three widget columns, hide the recipes row). Drag a widget's title to reorder. A theme is a dozen numbers, never CSS: colors derive in OKLCH at fixed lightness, so every choice stays readable in both light and dark, and a theme shares as a link. A tiny boot script paints the saved theme and layout before the first frame.
 - A network ledger that counts every request this tab made, by host. Backup and restore of everything.
-- Landing page and privacy policy in `site/`. Store listing copy and generated assets in `store/`.
+- Landing page, four use-case pages (tabs, bookmarks, writing, your day), sitemap, and privacy policy in `site/`. Store listing copy and generated assets in `store/`.
 
 Not yet: store submission, public repo, domains. See [ROADMAP.md](ROADMAP.md).
 
@@ -71,7 +71,7 @@ Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL
 
 `npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
 
-`npm run site` wraps `site/page.html` into the deployable `site/index.html` for fogar.ai and copies the current `.output/fogar-<version>-chrome.zip` to `site/fogar-chrome.zip`, which the landing page offers as a direct download until the store listing is live (unzip, Developer mode, Load unpacked). The page body is kept separate so the same file can be previewed as a Claude artifact. To publish: `npm run zip && npm run site && npx wrangler deploy`.
+`npm run site` builds fogar.ai into `site/`: the homepage from `site/page.html`, one page per use case from `site/src/*.html` (`/tabs`, `/bookmarks`, `/write`, `/today`), plus `sitemap.xml` and `robots.txt`. The homepage is the template: its styles, nav, install section, and footer are lifted out by `<!-- @nav -->`-style markers and shared with every page, so an edit there reaches all of them; each page carries its own title, description, canonical, Open Graph tags, and JSON-LD built from its FAQ. It also copies the current `.output/fogar-<version>-chrome.zip` to `site/fogar-chrome.zip`, which the pages offer as a direct download until the store listing is live (unzip, Developer mode, Load unpacked). Cloudflare serves `site/tabs.html` at `/tabs`, so links are extensionless. To publish: `npm run zip && npm run site && npx wrangler deploy`.
 
 ## Manifest V3 constraints, and how each is handled
 

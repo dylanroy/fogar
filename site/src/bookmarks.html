@@ -1,0 +1,207 @@
+<title>Find any bookmark as you type, or by asking · Fogar</title>
+<meta name="description" content="Type a few letters in the new tab and matching bookmarks appear, typos forgiven. Or ask for a topic and a model running on your device sorts your bookmarks. Nothing leaves the machine." />
+<style>
+  .finder { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; font-size: 14px; line-height: 1.5; }
+  .finder .lead-line { font-size: 15px; }
+  .finder ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .finder .looked { font-size: 12px; color: var(--ash); }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+  .two > div { display: grid; gap: 12px; align-content: start; }
+  .two p { color: var(--ink-2); font-size: 16px; }
+  @media (max-width: 880px) { .two { grid-template-columns: 1fr; gap: 36px; } }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Bookmarks · a new tab for Chrome</span>
+      <h1>Find the bookmark <em>you half remember.</em></h1>
+      <p class="lead measure">Start typing in the new tab and matching bookmarks appear underneath: by title, by site, by folder, with room for a typo. For the ones you cannot name, ask. “Find bookmarks about cooking” has a model on your device read the list and sort it. Your bookmarks never leave the machine.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="#install">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#two">How it finds</a>
+      </div>
+      <p class="cta-note">Free. Open source. Chrome keeps your bookmarks; Fogar reads them.</p>
+    </div>
+
+    <div class="stage" aria-label="Bookmark search in the new tab, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="tab-top">
+            <div class="tab-brand">Fogar</div>
+            <div class="tab-mode" aria-label="Where answers come from">
+              <span class="on"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5"/><path d="M1 13h14"/></svg>Device</span>
+              <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z"/></svg>Cloud</span>
+            </div>
+          </div>
+          <div class="tab-ask" id="ask" aria-live="polite">fig<span class="caret"></span></div>
+          <div class="hits" id="hits" aria-live="polite">
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Landing page v3 – Figma</span><span class="h">Work › Design · figma.com</span></a>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Growing figs in a cold climate</span><span class="h">Garden · gardenersworld.com</span></a>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Q3 figures, final deck</span><span class="h">Work · docs.google.com</span></a>
+            <div class="divider">Open tabs</div>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Pricing – Figma</span><span class="h">figma.com <span class="tag">open</span></span></a>
+            <div class="divider">Saved tabs</div>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Figma to code, a survey</span><span class="h">Sep 19 4:12 PM · github.com</span></a>
+          </div>
+          <div class="tab-row"><span><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span id="status"></span></div>
+          <div class="finder" id="finder" hidden></div>
+          <button class="replay" id="replay" type="button">Try the other way</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="two">
+    <div class="section-head">
+      <span class="eyebrow">Two ways in</span>
+      <h2 class="measure">Type when you know a word. Ask when you know a topic.</h2>
+    </div>
+    <div class="two">
+      <div>
+        <span class="eyebrow">Typing</span>
+        <h3>Ranked, not just matched</h3>
+        <p>Chrome’s own bookmark search matches whole words at the start of a title or address. Fogar builds its own index once and ranks every bookmark against every word you type: title first, then site, then folder, then the rest of the address. Short typos in titles are forgiven.</p>
+        <p>Recent bookmarks get a nudge. So do short titles, which are usually the site itself rather than an article. Six words and up is a question, not a lookup, so the list steps aside and the model takes over.</p>
+      </div>
+      <div>
+        <span class="eyebrow">Asking</span>
+        <h3>Three passes, and the model cannot make it worse</h3>
+        <p>Ask for a topic and Fogar first has the model expand it into related words, so “cooking” also looks for risotto, kitchen, and seriouseats. A keyword pass over titles, addresses, and folders then sets a floor no model can take away. Finally the model reads your list twenty-five bookmarks at a time and adds what words alone miss.</p>
+        <p>Results come back matched by both first, then by words, then the model’s own picks. Past five hundred bookmarks it re-reads only the keyword candidates, so a big collection stays quick.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What leaves</span>
+      <h2 class="measure">Your bookmarks are read here. Here is the whole list of where they go.</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>You do</th><th>What is read</th><th>What leaves your browser</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Type in the box</td><td>Your bookmark tree, flattened once into an index with folder paths, rebuilt when a bookmark changes.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ask, on this device</td><td>Titles, sites, and folder names, read by the model inside the browser, twenty-five at a time.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ask, in Cloud mode</td><td>The same list, in the same batches.<small>The model is at the endpoint you typed, so that is where the list goes.</small></td><td>Bookmark titles and sites, to your provider</td></tr>
+          <tr><td class="k">Click ×</td><td>The one bookmark you pointed at, removed after you confirm.</td><td><span class="zero">Nothing</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Fogar asks for the bookmarks permission to read the tree and, on request, remove one item. It never adds, moves, or renames a bookmark, except when you promote a <a href="/tabs">saved session</a> into a folder.</p>
+  </section>
+
+  <section id="also">
+    <div class="section-head">
+      <span class="eyebrow">Also under the box</span>
+      <h2 class="measure">One box. The right thing happens.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Open tabs</span><div><h3>Switch instead of searching</h3><p>With the Sessions widget on the page, the same keystrokes find tabs open in your other windows. One click brings the window forward and selects the tab.</p></div></div>
+      <div class="feature"><span class="eyebrow">Saved tabs</span><div><h3>Closed last week, found today</h3><p>Windows you saved and closed appear too, one click from reopening. <a href="/tabs">That is the Sessions widget.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Everything else</span><div><h3>Routing, not guessing</h3><p>A URL opens. A question mark searches the web. “remind me” sets a reminder, “todo:” adds a todo, arithmetic is computed. Anything else goes to the model.</p></div></div>
+      <div class="feature"><span class="eyebrow">Keyboard</span><div><h3>No mouse needed</h3><p>Type, arrow down, Enter. Cmd or Ctrl and Enter always searches the web instead, whatever the box would otherwise do.</p></div></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Chrome keeps the bookmarks. Fogar finds them.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>Fogar is not a bookmark manager. Add, move, and organize in Chrome as you always have; Fogar reads the result.</li>
+          <li>The finder is only as good as your titles. A bookmark called “Untitled” with a cryptic address gives the model nothing to go on.</li>
+          <li>Asking takes seconds, not milliseconds: a small model reads twenty-five titles at a time. Progress is shown and you can stop it.</li>
+          <li>In Cloud mode the finder sends bookmark titles and sites to your endpoint, because that is where the model is. On this device, nothing leaves.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Does it replace Chrome’s bookmark manager?</summary><p>No. Chrome keeps the bookmarks and you organize them there as before. Fogar reads the tree, searches it as you type, and can remove the one bookmark you point at. The only thing it ever adds is a folder when you promote a saved session.</p></details>
+      <details><summary>Can it delete a bookmark by accident?</summary><p>Only the one you click × on, and only after you confirm. The finder never removes anything; it lists.</p></details>
+      <details><summary>How does it handle typos?</summary><p>Titles forgive small ones: the letters of a word four characters or longer only have to appear in order, not next to each other, so “fgar” still finds Fogar. Sites, folders, and addresses need an exact fragment.</p></details>
+      <details><summary>How many bookmarks can it search?</summary><p>The index is built once from Chrome’s bookmark tree and rebuilt when bookmarks change, so thousands are fine and typing stays instant. The finder has the model read everything up to five hundred bookmarks; above that it reads only the keyword candidates, so it stays quick on big collections.</p></details>
+      <details><summary>Does the finder work in Cloud mode?</summary><p>Yes, with your own key. Be aware of what that means: the titles and sites of your bookmarks are sent to the endpoint you typed, in batches, because that is where the model reading them lives. On this device, nothing is sent.</p></details>
+      <details><summary>Why does the list vanish when I type a long question?</summary><p>Six words and up is a question rather than a lookup, so the bookmark list steps aside and the question goes to the model. If you want the model to look through your bookmarks, say so: “find bookmarks about …” or “which bookmarks are job postings” routes to the finder.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var ask = document.getElementById('ask'), hits = document.getElementById('hits'), status = document.getElementById('status');
+    var finder = document.getElementById('finder'), replay = document.getElementById('replay');
+    var typingHits = hits.innerHTML;
+    var cooking = [
+      ['The Food Lab’s guide to pan-seared steak', 'seriouseats.com'],
+      ['Weeknight risotto, no stirring', 'cooking.nytimes.com'],
+      ['Ottolenghi Test Kitchen', 'ottolenghi.co.uk'],
+      ['How to season a carbon steel pan', 'youtube.com'],
+      ['Salt Fat Acid Heat', 'saltfatacidheat.com'],
+    ];
+    var act = 0, timer = 0, token = 0;
+    function clear() { clearTimeout(timer); token++; }
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function typeInto(q, my, onChar, done) {
+      var i = 0;
+      (function tick() {
+        if (my !== token) return;
+        i++; ask.innerHTML = esc(q.slice(0, i)) + '<span class="caret"></span>'; onChar(i);
+        if (i < q.length) timer = setTimeout(tick, 28 + Math.random() * 40); else { ask.textContent = q; timer = setTimeout(done, 350); }
+      })();
+    }
+    // Act one: a few letters, and the list is there before the word is finished.
+    function typing() {
+      clear(); var my = token;
+      hits.hidden = true; finder.hidden = true; status.textContent = '';
+      var q = 'fig';
+      if (reduce) { ask.textContent = q; hits.innerHTML = typingHits; hits.hidden = false; return; }
+      typeInto(q, my, function (i) { if (i >= 2) { hits.innerHTML = typingHits; hits.hidden = false; } }, function () {});
+    }
+    // Act two: a question about the bookmarks, read by the model on the device.
+    function asking() {
+      clear(); var my = token;
+      hits.hidden = true; finder.hidden = true; status.textContent = '';
+      var q = 'find bookmarks about cooking';
+      var list = '<ul>' + cooking.map(function (c) { return '<li><a class="hit" href="#top"><span class="fav"></span><span class="t">' + c[0] + '</span><span class="h">' + c[1] + ' <span class="x">×</span></span></a></li>'; }).join('') + '</ul>';
+      var result = '<div class="lead-line">5 bookmarks about “cooking”.</div><div class="looked">Looked for: cooking, cook, recipe, kitchen, chef, bake, seriouseats, allrecipes, ottolenghi, epicurious</div>' + list;
+      var finish = function () { finder.innerHTML = result; status.textContent = '212 bookmarks · 3 matched by words, 2 picked by the model · 6240 ms'; };
+      if (reduce) { ask.textContent = q; finder.hidden = false; finish(); return; }
+      typeInto(q, my, function () {}, function () {
+        if (my !== token) return;
+        finder.hidden = false; status.textContent = 'Reading your bookmarks…';
+        finder.innerHTML = '<div class="lead-line">Working out what “cooking” bookmarks look like…</div>';
+        var read = 0;
+        timer = setTimeout(function step() {
+          if (my !== token) return;
+          read = Math.min(212, read + 25);
+          status.textContent = 'Reading bookmarks… ' + read + ' of 212';
+          finder.innerHTML = '<div class="lead-line">Reading 212 bookmarks for “cooking”…</div>';
+          if (read < 212) timer = setTimeout(step, 320); else timer = setTimeout(finish, 300);
+        }, 900);
+      });
+    }
+    var acts = [typing, asking];
+    replay.addEventListener('click', function () { act++; acts[act % 2](); replay.textContent = act % 2 ? 'Back to typing' : 'Try the other way'; });
+    if (!reduce) typing();
+  })();
+</script>

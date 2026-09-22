@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Fogar · A private new tab for Chrome</title>
-<meta name="description" content="Fogar is a new tab for Chrome that answers from a model running inside your browser. No account, no key, no server. Save your tabs, find bookmarks, rewrite text, see your day." />
-<link rel="canonical" href="https://fogar.ai/" />
+<title>Find any bookmark as you type, or by asking · Fogar</title>
+<meta name="description" content="Type a few letters in the new tab and matching bookmarks appear, typos forgiven. Or ask for a topic and a model running on your device sorts your bookmarks. Nothing leaves the machine." />
+<link rel="canonical" href="https://fogar.ai/bookmarks" />
 <meta property="og:site_name" content="Fogar" />
-<meta property="og:title" content="Fogar · A private new tab for Chrome" />
-<meta property="og:description" content="A new tab for Chrome that answers from a model running inside your browser. Nothing leaves the room." />
-<meta property="og:url" content="https://fogar.ai/" />
+<meta property="og:title" content="Find any bookmark as you type, or by asking · Fogar" />
+<meta property="og:description" content="Type a few letters in the new tab and matching bookmarks appear, typos forgiven. Or ask for a topic and a model running on your device sorts your bookmarks. Nothing leaves the machine." />
+<meta property="og:url" content="https://fogar.ai/bookmarks" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://fogar.ai/og.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -231,27 +231,75 @@
     .case { transition: none; }
   }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/","description":"Fogar is a new tab for Chrome that answers from a model running inside your browser. No account, no key, no server. Save your tabs, find bookmarks, rewrite text, see your day.","applicationCategory":"BrowserApplication","operatingSystem":"Chrome","softwareVersion":"0.1.0","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Dylan Roy","url":"https://dylanroy.com"},"image":"https://fogar.ai/og.jpg","downloadUrl":"https://fogar.ai/fogar-chrome.zip","license":"https://github.com/dylanroy/fogar/blob/main/LICENSE"},{"@type":"FAQPage","@id":"https://fogar.ai/#faq","mainEntity":[{"@type":"Question","name":"Does it work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web grounding and cloud mode need a connection, by definition."}},{"@type":"Question","name":"How good is a small model, honestly?","acceptedAnswer":{"@type":"Answer","text":"Depends on the size. In our tests the 0.8B and 2B models rewrite and summarize well but stumble on facts and arithmetic. The 4B gets the president, the percentage, and the sorting task right and still runs at 44 tokens a second on an Apple laptop. Fogar recommends the largest size your machine can run well, computes arithmetic itself, and offers web grounding for facts."}},{"@type":"Question","name":"Where is my API key stored?","acceptedAnswer":{"@type":"Answer","text":"In Chrome's extension storage on this profile, and it is sent only to the endpoint you typed. Fogar has no server that could see it."}},{"@type":"Question","name":"What permissions does it ask for?","acceptedAnswer":{"@type":"Answer","text":"Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click plus reading that one page when you use it, favicons for site icons, and access to huggingface.co to fetch the model. The Sessions widget asks for the tabs permission when you add it, and only then. Cloud endpoints, search keys, and calendar addresses are requested one at a time, when you add them. The full list with reasons is in the privacy policy."}},{"@type":"Question","name":"Will it slow down my browser?","acceptedAnswer":{"@type":"Answer","text":"The model loads only on the new tab page and is released when you navigate away. Loading takes about a second from disk. On a machine without WebGPU it falls back to the CPU and is slower but works."}},{"@type":"Question","name":"Firefox? Safari?","acceptedAnswer":{"@type":"Answer","text":"Chrome and Chromium browsers first. Firefox builds, but its extension pages lack the shared-memory feature the multi-threaded engine needs, so it would be much slower. Not shipping it half-baked."}}]}]}</script>
+<style>
+/* Shared by the use-case pages: mock-ups of the new tab's widgets, drawn with the page's own tokens so they follow light and dark. */
+.mock { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.mock * { min-width: 0; }
+/* The mock-ups set display on things the demos also hide; the attribute has to win. */
+[hidden] { display: none !important; }
+.mock .tab-body { position: relative; }
+.card { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; padding: 18px 20px; display: grid; gap: 12px; align-content: start; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-family: var(--serif); font-weight: 600; font-size: 19px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; line-height: 1.2; color: var(--ink-2); background: transparent; white-space: nowrap; }
+.pill.primary { background: var(--ember); color: var(--ember-ink); border-color: transparent; font-weight: 600; }
+.pill.ctl { padding: 3px 8px; }
+button.pill { cursor: pointer; }
+button.pill:hover { border-color: var(--ash); color: var(--ink); }
+button.pill.primary:hover { color: var(--ember-ink); }
+button.pill[disabled] { opacity: 0.45; cursor: default; }
+.box { border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 12px; font-size: 14px; background: var(--ground); color: var(--ink); }
+.box.ph { color: var(--ash); }
+.mock .caret { display: inline-block; width: 2px; height: 1.1em; background: var(--ember); vertical-align: text-bottom; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+.note { color: var(--ash); font-size: 12px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.acts { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.fav { width: 16px; height: 16px; border-radius: 4px; background: var(--line-2); flex: 0 0 auto; }
+.hits { display: grid; gap: 1px; border: 1px solid var(--line); border-radius: 12px; padding: 6px; }
+.hit { display: grid; grid-template-columns: 16px minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; align-items: center; padding: 7px 10px; border-radius: 8px; text-decoration: none; }
+.hit:hover { background: var(--surface-2); }
+.hit .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hit .h { font-size: 12px; color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.hit .x { color: var(--ash); font-size: 15px; line-height: 1; padding-left: 6px; }
+.divider { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); padding: 8px 10px 2px; }
+.tag { font-size: 11px; color: var(--ash); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.toast { position: absolute; left: 50%; bottom: 14px; transform: translate(-50%, 8px); background: var(--ink); color: var(--ground); font-size: 12.5px; padding: 8px 14px; border-radius: 999px; opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 2; max-width: 92%; text-align: center; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.stage > .replay { margin-top: 14px; }
+.phrases { display: flex; flex-wrap: wrap; gap: 8px; }
+.phrases span { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 11px; }
+@media (prefers-reduced-motion: reduce) { .mock .caret { animation: none; } .toast { transition: none; } }
+</style>
+<style>
+  .finder { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; font-size: 14px; line-height: 1.5; }
+  .finder .lead-line { font-size: 15px; }
+  .finder ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+  .finder .looked { font-size: 12px; color: var(--ash); }
+  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
+  .two > div { display: grid; gap: 12px; align-content: start; }
+  .two p { color: var(--ink-2); font-size: 16px; }
+  @media (max-width: 880px) { .two { grid-template-columns: 1fr; gap: 36px; } }
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/bookmarks","url":"https://fogar.ai/bookmarks","name":"Find any bookmark as you type, or by asking · Fogar","description":"Type a few letters in the new tab and matching bookmarks appear, typos forgiven. Or ask for a topic and a model running on your device sorts your bookmarks. Nothing leaves the machine.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/bookmarks#faq","mainEntity":[{"@type":"Question","name":"Does it replace Chrome’s bookmark manager?","acceptedAnswer":{"@type":"Answer","text":"No. Chrome keeps the bookmarks and you organize them there as before. Fogar reads the tree, searches it as you type, and can remove the one bookmark you point at. The only thing it ever adds is a folder when you promote a saved session."}},{"@type":"Question","name":"Can it delete a bookmark by accident?","acceptedAnswer":{"@type":"Answer","text":"Only the one you click × on, and only after you confirm. The finder never removes anything; it lists."}},{"@type":"Question","name":"How does it handle typos?","acceptedAnswer":{"@type":"Answer","text":"Titles forgive small ones: the letters of a word four characters or longer only have to appear in order, not next to each other, so “fgar” still finds Fogar. Sites, folders, and addresses need an exact fragment."}},{"@type":"Question","name":"How many bookmarks can it search?","acceptedAnswer":{"@type":"Answer","text":"The index is built once from Chrome’s bookmark tree and rebuilt when bookmarks change, so thousands are fine and typing stays instant. The finder has the model read everything up to five hundred bookmarks; above that it reads only the keyword candidates, so it stays quick on big collections."}},{"@type":"Question","name":"Does the finder work in Cloud mode?","acceptedAnswer":{"@type":"Answer","text":"Yes, with your own key. Be aware of what that means: the titles and sites of your bookmarks are sent to the endpoint you typed, in batches, because that is where the model reading them lives. On this device, nothing is sent."}},{"@type":"Question","name":"Why does the list vanish when I type a long question?","acceptedAnswer":{"@type":"Answer","text":"Six words and up is a question rather than a lookup, so the bookmark list steps aside and the question goes to the model. If you want the model to look through your bookmarks, say so: “find bookmarks about …” or “which bookmarks are job postings” routes to the finder."}}]}]}</script>
 </head>
 <body>
 <div class="wrap">
   <nav class="nav">
-    <a class="brand" href="#top"><i aria-hidden="true"></i>Fogar</a>
+    <a class="brand" href="/"><i aria-hidden="true"></i>Fogar</a>
     <div class="nav-links">
       <details class="menu" id="use-cases-menu">
         <summary>Use cases</summary>
         <div class="menu-panel">
           <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
-          <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
+          <a href="/bookmarks" aria-current="page"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
           <a href="/write"><b>Writing</b><span>Rewrite, reply, summarize, on your device</span></a>
           <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
         </div>
       </details>
-      <a href="#ledger">What leaves</a>
-      <a href="#features">Features</a>
-      <a href="#recipes">Recipes</a>
-      <a href="#faq">FAQ</a>
-      <a href="#install">Install</a>
+      <a href="/#ledger">What leaves</a>
+      <a href="/#features">Features</a>
+      <a href="/#recipes">Recipes</a>
+      <a href="/#faq">FAQ</a>
+      <a href="/#install">Install</a>
     </div>
   </nav>
   <script>
@@ -262,151 +310,95 @@
 
   <header class="hero" id="top">
     <div class="hero-copy">
-      <span class="eyebrow">A new tab for Chrome</span>
-      <h1>Ask your new tab.<br /><em>Nothing leaves the room.</em></h1>
-      <p class="lead measure">Fogar answers from a language model that runs inside your browser. No account, no key, no server. When you want a bigger brain, bring your own key and it uses that instead. Either way the choice is yours, and visible.</p>
+      <span class="eyebrow">Bookmarks · a new tab for Chrome</span>
+      <h1>Find the bookmark <em>you half remember.</em></h1>
+      <p class="lead measure">Start typing in the new tab and matching bookmarks appear underneath: by title, by site, by folder, with room for a typo. For the ones you cannot name, ask. “Find bookmarks about cooking” has a model on your device read the list and sort it. Your bookmarks never leave the machine.</p>
       <div class="cta-row">
         <a class="btn btn-ember" href="#install">Add to Chrome</a>
-        <a class="btn btn-quiet" href="https://dylanroy.com/?ref=fogar">Read how it was built</a>
+        <a class="btn btn-quiet" href="#two">How it finds</a>
       </div>
-      <p class="cta-note">Free. Open source. One model download, 533 MB to 2.7 GB, sized to your machine and cached for good.</p>
+      <p class="cta-note">Free. Open source. Chrome keeps your bookmarks; Fogar reads them.</p>
     </div>
 
-    <div class="stage" aria-label="Fogar new tab, live demonstration">
-      <div class="tab">
+    <div class="stage" aria-label="Bookmark search in the new tab, demonstration">
+      <div class="tab mock">
         <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
         <div class="tab-body">
           <div class="tab-top">
             <div class="tab-brand">Fogar</div>
-            <div class="tab-actions">
-              <span class="tab-focus">Focus</span>
-              <div class="tab-mode" aria-label="Where answers come from">
-                <span class="on"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5"/><path d="M1 13h14"/></svg>Device</span>
-                <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z"/></svg>Cloud</span>
-              </div>
+            <div class="tab-mode" aria-label="Where answers come from">
+              <span class="on"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5"/><path d="M1 13h14"/></svg>Device</span>
+              <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z"/></svg>Cloud</span>
             </div>
           </div>
-          <div class="tab-ask" id="demo-ask" aria-live="polite"></div>
-          <div class="tab-row"><span><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span id="demo-stats"></span></div>
-          <div class="tab-answer" id="demo-answer" aria-live="polite"></div>
-          <div class="ledger" id="demo-ledger"><span><span class="dot"></span>network <b>0 requests</b></span><span>model <b>cached on this device</b></span><span>key <b>none</b></span></div>
-          <button class="replay" id="demo-replay" type="button">Ask something else</button>
+          <div class="tab-ask" id="ask" aria-live="polite">fig<span class="caret"></span></div>
+          <div class="hits" id="hits" aria-live="polite">
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Landing page v3 – Figma</span><span class="h">Work › Design · figma.com</span></a>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Growing figs in a cold climate</span><span class="h">Garden · gardenersworld.com</span></a>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Q3 figures, final deck</span><span class="h">Work · docs.google.com</span></a>
+            <div class="divider">Open tabs</div>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Pricing – Figma</span><span class="h">figma.com <span class="tag">open</span></span></a>
+            <div class="divider">Saved tabs</div>
+            <a class="hit" href="#top"><span class="fav"></span><span class="t">Figma to code, a survey</span><span class="h">Sep 19 4:12 PM · github.com</span></a>
+          </div>
+          <div class="tab-row"><span><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span id="status"></span></div>
+          <div class="finder" id="finder" hidden></div>
+          <button class="replay" id="replay" type="button">Try the other way</button>
         </div>
       </div>
     </div>
   </header>
 
-  <section id="ledger">
+  <section id="two">
     <div class="section-head">
-      <span class="eyebrow">The network ledger</span>
-      <h2 class="measure">Three modes. You can see exactly what each one sends.</h2>
-      <p class="lead measure">Most "private AI" claims are a paragraph in a policy. This one is a table you can verify in the Network panel.</p>
+      <span class="eyebrow">Two ways in</span>
+      <h2 class="measure">Type when you know a word. Ask when you know a topic.</h2>
+    </div>
+    <div class="two">
+      <div>
+        <span class="eyebrow">Typing</span>
+        <h3>Ranked, not just matched</h3>
+        <p>Chrome’s own bookmark search matches whole words at the start of a title or address. Fogar builds its own index once and ranks every bookmark against every word you type: title first, then site, then folder, then the rest of the address. Short typos in titles are forgiven.</p>
+        <p>Recent bookmarks get a nudge. So do short titles, which are usually the site itself rather than an article. Six words and up is a question, not a lookup, so the list steps aside and the model takes over.</p>
+      </div>
+      <div>
+        <span class="eyebrow">Asking</span>
+        <h3>Three passes, and the model cannot make it worse</h3>
+        <p>Ask for a topic and Fogar first has the model expand it into related words, so “cooking” also looks for risotto, kitchen, and seriouseats. A keyword pass over titles, addresses, and folders then sets a floor no model can take away. Finally the model reads your list twenty-five bookmarks at a time and adds what words alone miss.</p>
+        <p>Results come back matched by both first, then by words, then the model’s own picks. Past five hundred bookmarks it re-reads only the keyword candidates, so a big collection stays quick.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What leaves</span>
+      <h2 class="measure">Your bookmarks are read here. Here is the whole list of where they go.</h2>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Mode</th><th>What leaves your browser</th><th>Where it goes</th><th>Cost</th></tr></thead>
+        <thead><tr><th>You do</th><th>What is read</th><th>What leaves your browser</th></tr></thead>
         <tbody>
-          <tr>
-            <td class="k">On this device</td>
-            <td><span class="zero">0 requests</span> once the model is cached<small>The model file is fetched once from Hugging Face. Your questions never go anywhere.</small></td>
-            <td>Nowhere</td>
-            <td>Free</td>
-          </tr>
-          <tr>
-            <td class="k">Cloud, your key</td>
-            <td>Your prompt and your key<small>Sent only to the OpenAI-compatible endpoint you typed. OpenAI, OpenRouter, Groq, or Ollama on localhost.</small></td>
-            <td>The address you chose</td>
-            <td>Your provider's rates</td>
-          </tr>
-          <tr>
-            <td class="k">Web grounding</td>
-            <td>Your question, as a search query<small>Off until you tick “Search the web first”. Then DuckDuckGo’s instant answers and Wikipedia, with no key, or full web results with your own Brave Search or Tavily key. The model answers from what comes back, with citations.</small></td>
-            <td>DuckDuckGo and Wikipedia, or the search API you chose</td>
-            <td>Free</td>
-          </tr>
+          <tr><td class="k">Type in the box</td><td>Your bookmark tree, flattened once into an index with folder paths, rebuilt when a bookmark changes.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ask, on this device</td><td>Titles, sites, and folder names, read by the model inside the browser, twenty-five at a time.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ask, in Cloud mode</td><td>The same list, in the same batches.<small>The model is at the endpoint you typed, so that is where the list goes.</small></td><td>Bookmark titles and sites, to your provider</td></tr>
+          <tr><td class="k">Click ×</td><td>The one bookmark you pointed at, removed after you confirm.</td><td><span class="zero">Nothing</span></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="mono" style="margin-top: 18px">No analytics. No telemetry. Nothing to opt out of.</p>
+    <p class="mono" style="margin-top: 18px">Fogar asks for the bookmarks permission to read the tree and, on request, remove one item. It never adds, moves, or renames a bookmark, except when you promote a <a href="/tabs">saved session</a> into a folder.</p>
   </section>
 
-  <section id="features">
+  <section id="also">
     <div class="section-head">
-      <span class="eyebrow">Your corner</span>
-      <h2 class="measure">A new tab you would keep even without the model.</h2>
+      <span class="eyebrow">Also under the box</span>
+      <h2 class="measure">One box. The right thing happens.</h2>
     </div>
     <div class="features">
-      <div class="feature"><span class="eyebrow">Recipes</span><div><h3>Prompt forms you can share</h3><p>Draft and rewrite, reply to a message, summarize, explain simply. Make your own with a small form builder, then share it as a link. Recipes are data, never code.</p></div></div>
-      <div class="feature"><span class="eyebrow">Reminders</span><div><h3>"Call the dentist tomorrow at 9"</h3><p>Plain words in, a confirmed time out. Fires as a Chrome notification. One click adds it to Google Calendar, with no account connection needed.</p></div></div>
-      <div class="feature"><span class="eyebrow">Agenda</span><div><h3>Today and tomorrow, from any calendar</h3><p>Paste your calendar’s private iCal address. Google, Outlook, iCloud, anything. Recurring events included, no account connection.</p></div></div>
-      <div class="feature"><span class="eyebrow">Widgets</span><div><h3>Pin the panels you want</h3><p>Todos, links, notes, weather with no API key, a favorite recipe. Drag them into order, hide them, or hit Focus and keep only the ask box.</p></div></div>
-      <div class="feature"><span class="eyebrow">Make it yours</span><div><h3>Your colors, your layout</h3><p>Light or dark, six accents or any hue, warm or cool paper, serif or sans, cozy or compact. Put the ask box in the middle of the screen, or park the widgets in a sidebar on a wide monitor. A theme is a dozen numbers, so it always stays readable and you can share it as a link.</p></div></div>
-      <div class="feature"><span class="eyebrow">Sessions</span><div><h3>Twenty windows. Close them all.</h3><p>Save a window, or every window, and close it knowing each tab is one search away. Restore a window later, with tabs that load only when you click them, promote the good ones into a bookmark folder, or export it all as a Markdown list or a bookmarks file any browser can import. Asks for the tabs permission only when you add the widget.</p></div></div>
-      <div class="feature"><span class="eyebrow">Bookmarks</span><div><h3>Search as you type</h3><p>Start typing in the ask box and matching bookmarks appear underneath. Open one, or remove it.</p></div></div>
-      <div class="feature"><span class="eyebrow">Right-click</span><div><h3>"Ask Fogar about …"</h3><p>Select text on any page, right-click, and get an explanation in a new tab. The page comes along: its title, address, and the text around your selection, so the model answers from what you were reading.</p></div></div>
-      <div class="feature"><span class="eyebrow">Dig deeper</span><div><h3>When the first answer is not enough</h3><p>One menu on every answer: search the web and answer again with sources, let the model think longer, or ask your cloud model the same question. The better answer replaces the first one in the conversation.</p></div></div>
-      <div class="feature"><span class="eyebrow">Grounding</span><div><h3>Facts, when you ask for them</h3><p>A small local model is a good writer and a poor encyclopedia. Tick “Search the web first” for the questions where that matters: DuckDuckGo’s instant answers and Wikipedia with no key, or full web results with your own Brave Search or Tavily key. Sources are shown. Arithmetic is computed, not guessed.</p></div></div>
-    </div>
-  </section>
-
-  <section id="use-cases">
-    <div class="section-head">
-      <span class="eyebrow">Use cases</span>
-      <h2 class="measure">Come for one thing. Keep the rest.</h2>
-      <p class="lead measure">Most people install Fogar for one of these and find the others later. Each has its own page: what it does, what it sends, and what it is not.</p>
-    </div>
-    <div class="cases">
-      <a class="case" href="/tabs"><span class="eyebrow">Tabs</span><h3>Twenty windows. Close them all.</h3><p>Save a window and close it knowing each tab is one search away. Restore, promote to bookmarks, or export.</p><span class="more">About Sessions</span></a>
-      <a class="case" href="/bookmarks"><span class="eyebrow">Bookmarks</span><h3>Find the one you half remember.</h3><p>Type a few letters, typos forgiven. Or name a topic and let a model on your device sort the list.</p><span class="more">About bookmark search</span></a>
-      <a class="case" href="/write"><span class="eyebrow">Writing</span><h3>Paste the draft. Nobody else reads it.</h3><p>Rewrite, reply, summarize, explain, with forms you can make and share as a link.</p><span class="more">About recipes</span></a>
-      <a class="case" href="/today"><span class="eyebrow">Your day</span><h3>Today and tomorrow, every new tab.</h3><p>Any calendar’s agenda, reminders in plain words, a todo list, and the weather. No account to connect.</p><span class="more">About the agenda</span></a>
-    </div>
-  </section>
-
-  <section id="recipes">
-    <div class="split">
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Recipes</span>
-        <h2>The prompt is a form. The form is a file.</h2>
-        <p class="lead">A recipe declares its inputs and a template. Fogar draws the form, fills the template, and hands it to whichever model you are using. Because a recipe is plain JSON, you can paste one to a friend, post it on a blog, or open a share link and add it in one click. Copy the one below and paste it into Recipes → Import to see.</p>
-        <p class="lead">Rewriting is the thing a small local model does best, so the first built-in recipe is for exactly that.</p>
-        <div class="json-wrap">
-          <pre class="recipe-json" id="recipe-json">{
-  <b>"name"</b>: "Draft &amp; rewrite",
-  <b>"inputs"</b>: [
-    { "key": "text",   "label": "Your text", "type": "textarea" },
-    { "key": "tone",   "label": "Tone",   "type": "select",
-      "options": ["Neutral", "Friendly", "Formal", "Direct"] },
-    { "key": "length", "label": "Length", "type": "select",
-      "options": ["Shorter", "About the same", "Longer"] }
-  ],
-  <b>"template"</b>: "Rewrite the text below.\nTone: {{tone}}. Length: {{length}}.\n\n{{text}}"
-}</pre>
-          <button class="copy-json" type="button" id="copy-json">Copy recipe JSON</button>
-        </div>
-      </div>
-      <div class="recipe" aria-label="Draft and rewrite recipe, example">
-        <h4>✍️ Draft &amp; rewrite</h4>
-        <div class="field">Your text or notes<div class="box tall">cant make 3pm, thurs instead? sorry</div></div>
-        <div class="grid3">
-          <div class="field">Tone<div class="box">Friendly</div></div>
-          <div class="field">Length<div class="box">Longer</div></div>
-          <div class="field">Format<div class="box">Chat message</div></div>
-        </div>
-        <div class="out"><span class="eyebrow">Output · Qwen3.5 4B · on this device</span>Sorry, I can't make 3 pm today after all. Would Thursday work instead? Happy to fit around whatever time suits you.</div>
-      </div>
-    </div>
-  </section>
-
-  <section id="how">
-    <div class="section-head">
-      <span class="eyebrow">How it works</span>
-      <h2 class="measure">One download. Then it is just a file on your disk.</h2>
-    </div>
-    <div class="steps">
-      <div class="step"><h3>Pick how it answers</h3><p>On this device, cloud with your own key, or just a search box for now. You can change your mind any time.</p></div>
-      <div class="step"><h3>Fetch the model once</h3><p>Qwen3.5, quantized, from Hugging Face, in the size your machine can carry: 0.8B, 2B, or 4B. It lands in your browser's private file storage and never downloads again.</p><span class="mono">533 MB · 1.3 GB · 2.7 GB</span></div>
-      <div class="step"><h3>Open a new tab</h3><p>The model wakes from disk, runs on your GPU through WebGPU or on your CPU across all its cores, and starts answering. Follow-ups keep the thread.</p><span class="mono">warm start 1.3 to 3.2 s · 44 to 92 tok/s · Apple silicon, WebGPU</span></div>
+      <div class="feature"><span class="eyebrow">Open tabs</span><div><h3>Switch instead of searching</h3><p>With the Sessions widget on the page, the same keystrokes find tabs open in your other windows. One click brings the window forward and selects the tab.</p></div></div>
+      <div class="feature"><span class="eyebrow">Saved tabs</span><div><h3>Closed last week, found today</h3><p>Windows you saved and closed appear too, one click from reopening. <a href="/tabs">That is the Sessions widget.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Everything else</span><div><h3>Routing, not guessing</h3><p>A URL opens. A question mark searches the web. “remind me” sets a reminder, “todo:” adds a todo, arithmetic is computed. Anything else goes to the model.</p></div></div>
+      <div class="feature"><span class="eyebrow">Keyboard</span><div><h3>No mouse needed</h3><p>Type, arrow down, Enter. Cmd or Ctrl and Enter always searches the web instead, whatever the box would otherwise do.</p></div></div>
     </div>
   </section>
 
@@ -414,16 +406,16 @@
     <div class="honest">
       <div>
         <span class="eyebrow">Straight talk</span>
-        <h2 style="margin-top: 14px">Free, and here is how it pays for itself.</h2>
+        <h2 style="margin-top: 14px">Chrome keeps the bookmarks. Fogar finds them.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
       </div>
       <div>
         <ul>
-          <li>Fogar is free and stays free. No tiers, no trial, no lifetime deal.</li>
-          <li>The footer of the new tab rotates links to the other things its author builds. That is the business model.</li>
-          <li>If enough people use it, one small sponsor line may appear there. It will say "Sponsored". It will never be an ad network.</li>
-          <li>The code is open, so you can read exactly what the page does.</li>
+          <li>Fogar is not a bookmark manager. Add, move, and organize in Chrome as you always have; Fogar reads the result.</li>
+          <li>The finder is only as good as your titles. A bookmark called “Untitled” with a cryptic address gives the model nothing to go on.</li>
+          <li>Asking takes seconds, not milliseconds: a small model reads twenty-five titles at a time. Progress is shown and you can stop it.</li>
+          <li>In Cloud mode the finder sends bookmark titles and sites to your endpoint, because that is where the model is. On this device, nothing leaves.</li>
         </ul>
-        <p class="mono" style="margin-top: 22px">Built by <a href="https://dylanroy.com/?ref=fogar">Dylan Roy</a>, who also makes <a href="https://www.usesql.com/?ref=fogar">UseSQL</a>, <a href="https://tickerpal.com/?ref=fogar">TickerPal</a>, and <a href="https://kumkuat.ai/?ref=fogar">Kumkuat</a>.</p>
       </div>
     </div>
   </section>
@@ -434,12 +426,12 @@
       <h2>Fair questions, short answers.</h2>
     </div>
     <div class="faq">
-      <details><summary>Does it work offline?</summary><p>Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web grounding and cloud mode need a connection, by definition.</p></details>
-      <details><summary>How good is a small model, honestly?</summary><p>Depends on the size. In our tests the 0.8B and 2B models rewrite and summarize well but stumble on facts and arithmetic. The 4B gets the president, the percentage, and the sorting task right and still runs at 44 tokens a second on an Apple laptop. Fogar recommends the largest size your machine can run well, computes arithmetic itself, and offers web grounding for facts.</p></details>
-      <details><summary>Where is my API key stored?</summary><p>In Chrome's extension storage on this profile, and it is sent only to the endpoint you typed. Fogar has no server that could see it.</p></details>
-      <details><summary>What permissions does it ask for?</summary><p>Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click plus reading that one page when you use it, favicons for site icons, and access to huggingface.co to fetch the model. The Sessions widget asks for the tabs permission when you add it, and only then. Cloud endpoints, search keys, and calendar addresses are requested one at a time, when you add them. The full list with reasons is in the <a href="/privacy">privacy policy</a>.</p></details>
-      <details><summary>Will it slow down my browser?</summary><p>The model loads only on the new tab page and is released when you navigate away. Loading takes about a second from disk. On a machine without WebGPU it falls back to the CPU and is slower but works.</p></details>
-      <details><summary>Firefox? Safari?</summary><p>Chrome and Chromium browsers first. Firefox builds, but its extension pages lack the shared-memory feature the multi-threaded engine needs, so it would be much slower. Not shipping it half-baked.</p></details>
+      <details><summary>Does it replace Chrome’s bookmark manager?</summary><p>No. Chrome keeps the bookmarks and you organize them there as before. Fogar reads the tree, searches it as you type, and can remove the one bookmark you point at. The only thing it ever adds is a folder when you promote a saved session.</p></details>
+      <details><summary>Can it delete a bookmark by accident?</summary><p>Only the one you click × on, and only after you confirm. The finder never removes anything; it lists.</p></details>
+      <details><summary>How does it handle typos?</summary><p>Titles forgive small ones: the letters of a word four characters or longer only have to appear in order, not next to each other, so “fgar” still finds Fogar. Sites, folders, and addresses need an exact fragment.</p></details>
+      <details><summary>How many bookmarks can it search?</summary><p>The index is built once from Chrome’s bookmark tree and rebuilt when bookmarks change, so thousands are fine and typing stays instant. The finder has the model read everything up to five hundred bookmarks; above that it reads only the keyword candidates, so it stays quick on big collections.</p></details>
+      <details><summary>Does the finder work in Cloud mode?</summary><p>Yes, with your own key. Be aware of what that means: the titles and sites of your bookmarks are sent to the endpoint you typed, in batches, because that is where the model reading them lives. On this device, nothing is sent.</p></details>
+      <details><summary>Why does the list vanish when I type a long question?</summary><p>Six words and up is a question rather than a lookup, so the bookmark list steps aside and the question goes to the model. If you want the model to look through your bookmarks, say so: “find bookmarks about …” or “which bookmarks are job postings” routes to the finder.</p></details>
     </div>
   </section>
 
@@ -465,61 +457,71 @@
       </div>
     </div>
   </section>
-
   <footer>
-    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/write">Writing</a> · <a href="/today">Your day</a></span>
+    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks" aria-current="page">Bookmarks</a> · <a href="/write">Writing</a> · <a href="/today">Your day</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
-    <span><a href="#top">Top</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="#honest">Sponsorship</a></span>
+    <span><a href="#top">Top</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>
 </div>
 
 <script>
   (function () {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var ask = document.getElementById('demo-ask');
-    var out = document.getElementById('demo-answer');
-    var stats = document.getElementById('demo-stats');
-    var replay = document.getElementById('demo-replay');
-    var demos = [
-      ['Rewrite this politely: can’t make the 3pm, thursday instead?', 'I’m sorry, I won’t be able to make 3 pm today. Could we move it to Thursday? Happy to work around your schedule.'],
-      ['What is 18% of 240?', '18% of 240 is 43.2.'],
-      ['Explain OPFS in one sentence.', 'OPFS, the Origin Private File System, is a fast private storage area a site or extension can use to keep large files on your device without asking you to pick a folder.'],
-      ['Three bullet summary: we shipped the spike, WebGPU works, model caching works, next is the store listing.', '• The spike shipped and proved the approach.\n• WebGPU and model caching both work.\n• Next up: the Chrome Web Store listing.'],
+    var ask = document.getElementById('ask'), hits = document.getElementById('hits'), status = document.getElementById('status');
+    var finder = document.getElementById('finder'), replay = document.getElementById('replay');
+    var typingHits = hits.innerHTML;
+    var cooking = [
+      ['The Food Lab’s guide to pan-seared steak', 'seriouseats.com'],
+      ['Weeknight risotto, no stirring', 'cooking.nytimes.com'],
+      ['Ottolenghi Test Kitchen', 'ottolenghi.co.uk'],
+      ['How to season a carbon steel pan', 'youtube.com'],
+      ['Salt Fat Acid Heat', 'saltfatacidheat.com'],
     ];
-    var i = 0, timer = 0, token = 0;
+    var act = 0, timer = 0, token = 0;
     function clear() { clearTimeout(timer); token++; }
-    function finish(q, a) {
-      ask.textContent = q; out.textContent = a;
-      stats.textContent = a.split(/\s+/).length * 1.3 | 0;
-      stats.textContent += ' tokens · first token 340 ms · 0 requests';
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function typeInto(q, my, onChar, done) {
+      var i = 0;
+      (function tick() {
+        if (my !== token) return;
+        i++; ask.innerHTML = esc(q.slice(0, i)) + '<span class="caret"></span>'; onChar(i);
+        if (i < q.length) timer = setTimeout(tick, 28 + Math.random() * 40); else { ask.textContent = q; timer = setTimeout(done, 350); }
+      })();
     }
-    function run(idx) {
+    // Act one: a few letters, and the list is there before the word is finished.
+    function typing() {
       clear(); var my = token;
-      var pair = demos[idx % demos.length], q = pair[0], a = pair[1];
-      if (reduce) { finish(q, a); return; }
-      ask.innerHTML = '<span class="caret"></span>'; out.textContent = ''; stats.textContent = '';
-      var qi = 0, words = a.split(' '), wi = 0;
-      function typeQ() {
-        if (my !== token) return;
-        qi++; ask.innerHTML = q.slice(0, qi).replace(/</g, '&lt;') + '<span class="caret"></span>';
-        if (qi < q.length) timer = setTimeout(typeQ, 28 + Math.random() * 40);
-        else { ask.textContent = q; stats.textContent = 'thinking…'; timer = setTimeout(stream, 420); }
-      }
-      function stream() {
-        if (my !== token) return;
-        wi++; out.textContent = words.slice(0, wi).join(' ');
-        if (wi < words.length) timer = setTimeout(stream, 55 + Math.random() * 60);
-        else finish(q, a);
-      }
-      timer = setTimeout(typeQ, 500);
+      hits.hidden = true; finder.hidden = true; status.textContent = '';
+      var q = 'fig';
+      if (reduce) { ask.textContent = q; hits.innerHTML = typingHits; hits.hidden = false; return; }
+      typeInto(q, my, function (i) { if (i >= 2) { hits.innerHTML = typingHits; hits.hidden = false; } }, function () {});
     }
-    replay.addEventListener('click', function () { i++; run(i); });
-    run(0);
-    var copyBtn = document.getElementById('copy-json');
-    if (copyBtn) copyBtn.addEventListener('click', function () {
-      var text = document.getElementById('recipe-json').textContent;
-      navigator.clipboard.writeText(text).then(function () { copyBtn.textContent = 'Copied. Paste it into Fogar → Recipes → Import.'; setTimeout(function () { copyBtn.textContent = 'Copy recipe JSON'; }, 2600); });
-    });
+    // Act two: a question about the bookmarks, read by the model on the device.
+    function asking() {
+      clear(); var my = token;
+      hits.hidden = true; finder.hidden = true; status.textContent = '';
+      var q = 'find bookmarks about cooking';
+      var list = '<ul>' + cooking.map(function (c) { return '<li><a class="hit" href="#top"><span class="fav"></span><span class="t">' + c[0] + '</span><span class="h">' + c[1] + ' <span class="x">×</span></span></a></li>'; }).join('') + '</ul>';
+      var result = '<div class="lead-line">5 bookmarks about “cooking”.</div><div class="looked">Looked for: cooking, cook, recipe, kitchen, chef, bake, seriouseats, allrecipes, ottolenghi, epicurious</div>' + list;
+      var finish = function () { finder.innerHTML = result; status.textContent = '212 bookmarks · 3 matched by words, 2 picked by the model · 6240 ms'; };
+      if (reduce) { ask.textContent = q; finder.hidden = false; finish(); return; }
+      typeInto(q, my, function () {}, function () {
+        if (my !== token) return;
+        finder.hidden = false; status.textContent = 'Reading your bookmarks…';
+        finder.innerHTML = '<div class="lead-line">Working out what “cooking” bookmarks look like…</div>';
+        var read = 0;
+        timer = setTimeout(function step() {
+          if (my !== token) return;
+          read = Math.min(212, read + 25);
+          status.textContent = 'Reading bookmarks… ' + read + ' of 212';
+          finder.innerHTML = '<div class="lead-line">Reading 212 bookmarks for “cooking”…</div>';
+          if (read < 212) timer = setTimeout(step, 320); else timer = setTimeout(finish, 300);
+        }, 900);
+      });
+    }
+    var acts = [typing, asking];
+    replay.addEventListener('click', function () { act++; acts[act % 2](); replay.textContent = act % 2 ? 'Back to typing' : 'Try the other way'; });
+    if (!reduce) typing();
   })();
 </script>
 </body>

@@ -1,0 +1,161 @@
+<title>Save tabs, close the window, find them later · Fogar</title>
+<meta name="description" content="Save your open windows and close them without fear. Search every saved tab from the new tab, restore later with tabs that load on click, export any time. Nothing leaves your device." />
+<style>
+  .sess { display: grid; gap: 8px; }
+  .sess-win { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 7px 10px; border-radius: 8px; border: 1px solid var(--line); transition: opacity 0.3s, transform 0.3s; }
+  .sess-win .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sess-win b { font-weight: 600; }
+  .sess-win.gone { opacity: 0; transform: translateX(28px); }
+  .sess-saved { display: grid; gap: 8px; }
+  .sess-session { display: grid; gap: 6px; padding: 9px 10px 8px; border-radius: 10px; background: var(--surface-2); box-shadow: inset 0 0 0 1px transparent; transition: box-shadow 0.5s, background 0.5s; }
+  .sess-session.fresh { background: var(--glow-2); box-shadow: inset 0 0 0 1px var(--ember); }
+  .sess-session .name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sess-session .acts .pill { font-size: 11.5px; padding: 3px 9px; }
+  .sess-session .acts .ctl { padding: 3px 7px; }
+  @media (max-width: 520px) { .sess-win { grid-template-columns: 1fr; } .sess-win .acts { justify-content: flex-start; } }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Sessions · a new tab for Chrome</span>
+      <h1>Twenty windows.<br /><em>Close them all.</em></h1>
+      <p class="lead measure">Save a window, or every window, and close it knowing each tab is one search away. Restore it later with tabs that load only when you click them. Promote the good ones into a bookmark folder. Your tabs are written to this device and nowhere else.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="#install">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#how">How it works</a>
+      </div>
+      <p class="cta-note">Free. Open source. The Sessions widget is optional and asks for the tabs permission only when you add it.</p>
+    </div>
+
+    <div class="stage" aria-label="The Sessions widget, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="card-h">Sessions</div>
+          <div class="box ph">Search open and saved tabs</div>
+          <div class="sess" id="sess">
+            <div class="row note"><span id="open-head">4 windows · 63 tabs open</span><span class="acts"><span class="pill">Save all</span><button class="pill" type="button" id="save-close" title="Save every window, then close all of them except this one">Save &amp; close others</button></span></div>
+            <div class="sess-win" data-keep><span class="t"><b>This window</b> · 9 tabs <span class="note">· Fogar</span></span><span class="acts"><span class="pill">Save</span><span class="pill">Save &amp; close</span></span></div>
+            <div class="sess-win"><span class="t"><b>Window 2</b> · 22 tabs <span class="note">· Landing page v3 – Figma</span></span><span class="acts"><span class="pill">Save</span><span class="pill">Save &amp; close</span></span></div>
+            <div class="sess-win"><span class="t"><b>Window 3</b> · 18 tabs <span class="note">· 2-bedroom apartments – Zillow</span></span><span class="acts"><span class="pill">Save</span><span class="pill">Save &amp; close</span></span></div>
+            <div class="sess-win"><span class="t"><b>Window 4</b> · 14 tabs <span class="note">· Qwen3.5-4B-GGUF – Hugging Face</span></span><span class="acts"><span class="pill">Save</span><span class="pill">Save &amp; close</span></span></div>
+            <div class="row note" style="margin-top: 4px"><span id="saved-head">2 saved sessions · 57 tabs</span><span>Export all <span class="pill ctl">⇩</span></span></div>
+            <div class="sess-saved" id="saved">
+              <div class="sess-session"><div class="row"><span class="name">▸ Sep 19 4:12 PM · github, figma, notion</span><span class="note">31 tabs · 3 days ago</span></div><div class="acts"><span class="pill">Restore</span><span class="pill">Bookmark all</span><span class="pill ctl">⇩</span><span class="pill ctl">✎</span><span class="pill ctl">×</span></div></div>
+              <div class="sess-session"><div class="row"><span class="name">▸ Sep 14 9:40 AM · nytimes, wikipedia, arxiv</span><span class="note">26 tabs · 8 days ago</span></div><div class="acts"><span class="pill">Restore</span><span class="pill">Bookmark all</span><span class="pill ctl">⇩</span><span class="pill ctl">✎</span><span class="pill ctl">×</span></div></div>
+            </div>
+          </div>
+          <div class="toast" id="toast" aria-live="polite"></div>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Play it again</button>
+    </div>
+  </header>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What happens to a tab</span>
+      <h2 class="measure">Saved means written to this device. Nothing else.</h2>
+      <p class="lead measure">Every button in the widget is one line here. None of them involves a server, because there is none.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>You click</th><th>Fogar does</th><th>It lives</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Save, or Save &amp; close</td><td>Writes each tab’s title and address to Chrome’s extension storage, drops duplicate addresses, and names the session after the date and its top sites.<small>Then, if you asked, closes the windows, the one you are in last, so the save is on disk before the page goes.</small></td><td>This device</td></tr>
+          <tr><td class="k">Search</td><td>Ranks every saved tab and every tab open right now by title, site, session name, and address.<small>Every word has to land somewhere. Open tabs come first, because switching to one beats reopening it.</small></td><td>This device</td></tr>
+          <tr><td class="k">Restore</td><td>Reopens the window. The first tab loads; the rest are created discarded.<small>Twenty tabs do not fetch twenty pages. Each one loads when you click it.</small></td><td>Your browser</td></tr>
+          <tr><td class="k">Bookmark</td><td>Copies a tab, or a whole session, into a folder under Other bookmarks named after the session.<small>Addresses already in that folder are skipped. A filled bookmark icon means the link is kept somewhere already.</small></td><td>Your bookmarks</td></tr>
+          <tr><td class="k">Export</td><td>A Markdown list, a bookmarks file any browser imports, or a Fogar file that restores.<small>One session or all of them. Or copy the links to the clipboard.</small></td><td>A file you own</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Sessions ride along in the backup under Settings. No request leaves the browser for any of this.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Add the widget. Save. Forget, safely.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Add the Sessions widget</h3><p>Add widget, then Sessions. Chrome asks for the tabs permission, which it labels “Read your browsing history”. Fogar reads the titles and addresses of open tabs, only while the widget is on the page, and never your history.</p><span class="mono">optional permission · asked once, when you add the widget</span></div>
+      <div class="step"><h3>Save &amp; close</h3><p>One window, or every window except the one you are in. Duplicates collapse. The list of open windows doubles as a switcher: click a window’s name to bring it to the front.</p><span class="mono">named from the date and the top sites · rename any time</span></div>
+      <div class="step"><h3>Find it again</h3><p>Type in the widget’s search box, or in the ask box on any new tab, where saved tabs appear under your bookmarks as you type. Open hits switch; saved hits reopen.</p><span class="mono">open tabs first · then saved · one click either way</span></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Not a tab manager.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>It does not group, color, or suspend tabs. Chrome’s tab groups and memory saver already do that.</li>
+          <li>It does not snapshot on its own. You press Save. An automatic safety net is on the roadmap, not in the build, so this page does not claim it.</li>
+          <li>It does not sync. Sessions stay on this device. Export a bookmarks file, or promote a session to bookmarks and let Chrome’s own sync carry it.</li>
+          <li>It never reads incognito windows, and it skips browser pages such as chrome://settings and the new tab itself.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Why does Chrome say “Read your browsing history”?</summary><p>That is Chrome’s label for the tabs permission, the only way an extension can see the titles and addresses of open tabs. Fogar reads open tabs, not history, and only while the Sessions widget is on the page. The permission is optional: nothing else in Fogar asks for it.</p></details>
+      <details><summary>Does saving a window close it?</summary><p>Only if you choose “Save &amp; close”. “Save” leaves everything open. “Save &amp; close others” saves every window and closes all of them except the one you are in.</p></details>
+      <details><summary>Do restored tabs all load at once?</summary><p>No. The first tab loads. The others are created discarded, so they sit in the tab strip with their titles and cost almost no memory until you click one.</p></details>
+      <details><summary>How many tabs can it hold?</summary><p>Thousands. Sessions live in Chrome’s extension storage, and Fogar declares unlimitedStorage so a long history of saved windows never hits the default quota. Duplicate addresses inside one session are collapsed when you save.</p></details>
+      <details><summary>Can I get my tabs out of Fogar?</summary><p>Yes, three ways: a Markdown list, a bookmarks file that any browser imports from its bookmark manager, or a Fogar file that “Restore from a backup” brings back. Or promote a session straight into a bookmark folder. Nothing is locked in.</p></details>
+      <details><summary>Does it sync between my computers?</summary><p>No. Everything stays on this device. Export a bookmarks file and import it elsewhere, or bookmark the session and let Chrome sync the folder.</p></details>
+      <details><summary>What about incognito windows?</summary><p>Fogar never reads them. It also skips browser pages such as chrome://settings, extension pages, and the new tab itself, since those are not worth saving.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var wins = [].slice.call(document.querySelectorAll('#sess .sess-win:not([data-keep])'));
+    var saved = document.getElementById('saved'), openHead = document.getElementById('open-head'), savedHead = document.getElementById('saved-head');
+    var toast = document.getElementById('toast'), btn = document.getElementById('save-close'), replay = document.getElementById('replay');
+    var initial = saved.innerHTML, running = false, toastTimer = 0;
+    // The real widget names a session from the moment it was saved and its top sites; so does the demo.
+    function name() { var d = new Date(); return d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) + ' · figma, zillow, huggingface'; }
+    function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 3200); }
+    function reset() {
+      wins.forEach(function (w) { w.classList.remove('gone'); w.hidden = false; });
+      saved.innerHTML = initial; openHead.textContent = '4 windows · 63 tabs open'; savedHead.textContent = '2 saved sessions · 57 tabs';
+      btn.disabled = false; toast.classList.remove('on');
+    }
+    function run() {
+      if (running) return; running = true; btn.disabled = true;
+      var n = name();
+      var row = document.createElement('div'); row.className = 'sess-session fresh';
+      row.innerHTML = '<div class="row"><span class="name">▸ ' + n + '</span><span class="note">52 tabs · just now</span></div><div class="acts"><span class="pill">Restore</span><span class="pill">Bookmark all</span><span class="pill ctl">⇩</span><span class="pill ctl">✎</span><span class="pill ctl">×</span></div>';
+      var step = function (i) {
+        if (i < wins.length) { wins[i].classList.add('gone'); setTimeout(function () { wins[i].hidden = true; step(i + 1); }, reduce ? 0 : 300); return; }
+        saved.prepend(row); openHead.textContent = '1 window · 9 tabs open'; savedHead.textContent = '3 saved sessions · 109 tabs';
+        say('Saved 52 tabs as “' + n + '”, 2 duplicates dropped.');
+        setTimeout(function () { row.classList.remove('fresh'); running = false; }, 1800);
+      };
+      step(0);
+    }
+    btn.addEventListener('click', run);
+    replay.addEventListener('click', function () { reset(); setTimeout(run, reduce ? 0 : 450); });
+    if (!reduce) setTimeout(run, 1600);
+  })();
+</script>

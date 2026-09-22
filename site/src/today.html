@@ -1,0 +1,246 @@
+<title>Your calendar, reminders and todos on every new tab · Fogar</title>
+<meta name="description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
+<style>
+  .corner { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .corner .card { padding: 14px 16px; gap: 10px; font-size: 13px; }
+  .corner .card-h { font-size: 17px; }
+  .corner .box { font-size: 13px; padding: 8px 10px; }
+  .ag-day { display: grid; gap: 4px; }
+  .ag-day h5 { margin: 0 0 2px; font-family: var(--serif); font-weight: 600; font-size: 14px; }
+  .ag-day h5 span { font-weight: 400; color: var(--ash); font-size: 12px; margin-left: 6px; }
+  .ev { display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px; }
+  .ev.now { background: var(--glow-2); box-shadow: inset 3px 0 0 var(--ember); }
+  .ev .when { font-size: 12px; color: var(--ash); }
+  .temp { font-size: 34px; font-weight: 600; line-height: 1; }
+  .days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .days div { background: var(--surface-2); border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
+  .todo { display: flex; gap: 8px; align-items: center; }
+  .todo i { width: 14px; height: 14px; border: 1.5px solid var(--line-2); border-radius: 4px; display: inline-block; flex: 0 0 auto; }
+  .todo.done { text-decoration: line-through; color: var(--ash); }
+  .todo.done i { background: var(--ember); border-color: var(--ember); }
+  .rem { display: flex; justify-content: space-between; gap: 8px; }
+  .rem .note { white-space: nowrap; }
+  .confirm { border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; background: var(--surface-2); }
+  .confirm .acts { justify-content: flex-end; }
+  .tab-date { font-size: 12px; color: var(--ash); margin-top: 2px; }
+  @media (max-width: 520px) { .corner { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Agenda, reminders, todos · a new tab for Chrome</span>
+      <h1>Your day, <em>on every new tab.</em></h1>
+      <p class="lead measure">Today and tomorrow from any calendar, a reminder set in plain words, a short todo list, and the weather, on the page you open a hundred times a day. No account to connect. The calendar address you paste is the only thing that leaves, and it goes to your calendar.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="#install">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#agenda">Any calendar, no sign-in</a>
+      </div>
+      <p class="cta-note">Free. Open source. Widgets are optional; add the ones you want and hit Focus to hide them all.</p>
+    </div>
+
+    <div class="stage" aria-label="Agenda, weather, todos and reminders on the new tab, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="tab-top">
+            <div><div class="tab-brand">Fogar</div><div class="tab-date" id="tab-date">Tuesday, September 22</div></div>
+            <div class="tab-actions"><span class="tab-focus">Customize</span><span class="tab-focus">Focus</span></div>
+          </div>
+          <div class="corner">
+            <div class="card">
+              <div class="card-h">Agenda</div>
+              <div class="ag-day"><h5>Today <span id="d-today">Tue, Sep 22</span></h5>
+                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
+                <div class="ev now"><div class="row"><span class="when">2:00–3:00 PM</span><span class="pill primary" title="Join Google Meet">Join</span></div><span>Design review <span class="note">· Room 4</span></span></div>
+              </div>
+              <div class="ag-day"><h5>Tomorrow <span id="d-tomorrow">Wed, Sep 23</span></h5>
+                <div class="ev"><span class="when">All day</span><span>Dentist</span></div>
+                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
+              </div>
+              <span class="note">Updated just now · Refresh · Change</span>
+            </div>
+            <div class="card">
+              <div class="card-h">Weather · Denver</div>
+              <div class="row" style="justify-content: flex-start; gap: 12px"><span class="temp">71°</span><span>⛅ Partly cloudy<br /><span class="note">H 78° · L 55° · wind 6 mph</span></span></div>
+              <div class="days"><div>Wed<br />☀️<br />80° / 57°</div><div>Thu<br />🌧️<br />66° / 48°</div><div>Fri<br />☁️<br />70° / 50°</div></div>
+              <span class="note">Updated just now · Use °C · Change</span>
+            </div>
+            <div class="card">
+              <div class="card-h">Todos <span class="pill">Clear done</span></div>
+              <div class="box ph">Add a todo and press Enter</div>
+              <div class="todo"><i></i>Reply to the accountant</div>
+              <div class="todo"><i></i>Book the dentist</div>
+              <div class="todo done"><i></i>Renew the domain</div>
+            </div>
+            <div class="card">
+              <div class="card-h">Reminders</div>
+              <div class="box" id="rem-input"><span class="ph-text" style="color: var(--ash)">Call the dentist tomorrow at 9</span></div>
+              <div class="confirm" id="rem-confirm" hidden></div>
+              <div id="rem-list" style="display: grid; gap: 6px">
+                <div class="rem"><span>Stretch</span><span class="note">today 2:55 PM</span></div>
+                <div class="rem"><span>Call mom</span><span class="note">today 6:00 PM</span></div>
+              </div>
+              <span class="note">Reminders fire while Chrome is open. Anything missed shows the next time it starts.</span>
+            </div>
+          </div>
+          <div class="toast" id="toast" aria-live="polite"></div>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Set the reminder again</button>
+    </div>
+  </header>
+
+  <section id="agenda">
+    <div class="split">
+      <div class="section-head" style="margin-bottom: 0">
+        <span class="eyebrow">Agenda</span>
+        <h2>Any calendar. No account connection.</h2>
+        <p class="lead">Every major calendar publishes a private iCal address. Paste it. Fogar asks permission to reach that one address, fetches the feed, and shows today and tomorrow on every new tab. Recurring events, cancellations, and time zones are handled; anything fancier is skipped rather than shown wrong.</p>
+        <p class="lead">When an event carries a Meet, Zoom, Teams, or Webex link, a Join button sits on the row. Click the row and it unfurls: who, where, the notes, and a link to open the event in your calendar. One widget per calendar, so work and home can sit side by side.</p>
+      </div>
+      <div>
+        <ol class="how">
+          <li><b>Google Calendar.</b><p>Settings, pick the calendar, then Integrate calendar. Copy “Secret address in iCal format”.</p></li>
+          <li><b>Outlook.</b><p>Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</p></li>
+          <li><b>iCloud.</b><p>Click the share icon next to the calendar, tick Public Calendar, copy the link. If it starts with <code>webcal://</code>, change that to <code>https://</code>.</p></li>
+          <li><b>Anything else.</b><p>Fastmail, Nextcloud, Proton, your university: if it publishes an .ics feed, paste the address into Add widget, Agenda.</p></li>
+        </ol>
+        <p class="how-note">Treat the address like a password: anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device and sends it only to your calendar provider. If it ever leaks, your provider can reset it.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="reminders">
+    <div class="split">
+      <div>
+        <div class="section-head" style="margin-bottom: 24px">
+          <span class="eyebrow">Reminders</span>
+          <h2>Plain words in. A confirmed time out.</h2>
+          <p class="lead">Type “call the dentist tomorrow at 9” into the Reminders widget, or “remind me to stretch in 20 minutes” into the ask box. Fogar reads the time deterministically, with no model involved, shows you what it understood, and saves only when you confirm.</p>
+          <p class="lead">It fires as a Chrome notification. One click puts it in Google Calendar through a prefilled link, with no account connected and nothing to authorize.</p>
+        </div>
+      </div>
+      <div class="section-head" style="margin-bottom: 0">
+        <span class="eyebrow">Phrases it understands</span>
+        <div class="phrases"><span>in 20 minutes</span><span>in an hour</span><span>at 3pm</span><span>at 5</span><span>tomorrow 9am</span><span>friday at 10</span><span>next tuesday</span><span>tonight</span><span>this afternoon</span><span>noon</span><span>midnight</span><span>next week</span></div>
+        <p class="mono" style="margin-top: 8px">“at 5” means 5 pm, because it almost always does. A time already past today rolls to tomorrow. When no time is found, Fogar asks instead of guessing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="rest">
+    <div class="section-head">
+      <span class="eyebrow">The rest of your corner</span>
+      <h2 class="measure">Small panels, each a few numbers of configuration.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Todos</span><div><h3>A short list, always in front of you</h3><p>Type “todo: buy milk” into the ask box or add one in the widget. Click to edit in place, tick to finish, Clear done when the week is over.</p></div></div>
+      <div class="feature"><span class="eyebrow">Weather</span><div><h3>Your city, no API key</h3><p>Type a city, pick the match, done. Forecasts come from Open-Meteo, which needs no account. Fahrenheit or Celsius, your choice.</p></div></div>
+      <div class="feature"><span class="eyebrow">Links and Notes</span><div><h3>The sites you open daily, and a scratchpad</h3><p>A grid of favorites with their icons, and a note that saves as you type. Several of each, named as you like.</p></div></div>
+      <div class="feature"><span class="eyebrow">Focus</span><div><h3>One click, and the day is gone</h3><p>Focus hides every widget and leaves the ask box. Click it again to get your corner back. Drag widgets to reorder, or park them in a sidebar on a wide screen.</p></div></div>
+    </div>
+  </section>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What leaves</span>
+      <h2 class="measure">Two requests, both to services you chose. Everything else stays.</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Widget</th><th>What leaves your browser</th><th>Where it goes</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Agenda</td><td>A request for the calendar address you pasted<small>At most every thirty minutes, and only while a new tab with the widget is open. The events are parsed and kept on this device.</small></td><td>Your calendar provider</td></tr>
+          <tr><td class="k">Weather</td><td>The city you typed, then its coordinates<small>Once to find the place, then for each forecast refresh.</small></td><td>Open-Meteo, which needs no account</td></tr>
+          <tr><td class="k">Reminders, Todos, Notes, Links</td><td><span class="zero">Nothing</span><small>Stored in Chrome’s extension storage on this device. The Google Calendar button opens a prefilled event in a new tab; you decide whether to save it.</small></td><td>Nowhere</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Each address is requested as an optional permission when you save it, so the extension can reach that one site and no other.</p>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">An agenda, not an alarm clock.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>Calendar feeds refresh on the provider’s schedule, so a new event can take minutes to an hour to appear. Fine for an agenda, wrong for alarms. That is what reminders are for.</li>
+          <li>Reminders fire while Chrome is open. Anything missed shows the next time it starts. On a Mac, Chrome also needs permission in System Settings to show notifications; the widget has a test button.</li>
+          <li>The agenda is read-only. Fogar does not create or edit calendar events. The Google Calendar button opens a prefilled event for you to save yourself.</li>
+          <li>There is no Google sign-in. A read-only connection is on the roadmap; the iCal address works today, for every provider.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Do I need to connect my Google account?</summary><p>No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen.</p></details>
+      <details><summary>Which calendars work?</summary><p>Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works.</p></details>
+      <details><summary>Is the calendar address safe to paste?</summary><p>Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click.</p></details>
+      <details><summary>Will reminders fire when Chrome is closed?</summary><p>No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it.</p></details>
+      <details><summary>Does it handle recurring events and time zones?</summary><p>Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong.</p></details>
+      <details><summary>Can I show two calendars?</summary><p>Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    // The agenda shows real dates; so does the demo.
+    var now = new Date(), tmr = new Date(now); tmr.setDate(now.getDate() + 1);
+    var short = { weekday: 'short', month: 'short', day: 'numeric' };
+    document.getElementById('tab-date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+    document.getElementById('d-today').textContent = now.toLocaleDateString([], short);
+    document.getElementById('d-tomorrow').textContent = tmr.toLocaleDateString([], short);
+
+    var input = document.getElementById('rem-input'), confirmBox = document.getElementById('rem-confirm'), list = document.getElementById('rem-list');
+    var toast = document.getElementById('toast'), replay = document.getElementById('replay');
+    var initialList = list.innerHTML, placeholder = input.innerHTML, timer = 0, token = 0, toastTimer = 0;
+    var text = 'Call the dentist tomorrow at 9';
+    var when = new Date(tmr); when.setHours(9, 0, 0, 0);
+    var whenLabel = 'tomorrow ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 3000); }
+    function reset() { clearTimeout(timer); token++; input.innerHTML = placeholder; confirmBox.hidden = true; list.innerHTML = initialList; toast.classList.remove('on'); }
+    function settle() {
+      var row = document.createElement('div'); row.className = 'rem';
+      row.innerHTML = '<span>Call the dentist</span><span class="note">' + whenLabel + '</span>';
+      list.prepend(row); confirmBox.hidden = true; input.innerHTML = placeholder;
+      say('Reminder set for ' + whenLabel);
+    }
+    function run() {
+      var my = token;
+      if (reduce) { input.textContent = text; settle(); return; }
+      var i = 0;
+      (function tick() {
+        if (my !== token) return;
+        i++; input.innerHTML = text.slice(0, i) + '<span class="caret"></span>';
+        if (i < text.length) { timer = setTimeout(tick, 30 + Math.random() * 40); return; }
+        input.textContent = text;
+        timer = setTimeout(function () {
+          if (my !== token) return;
+          confirmBox.innerHTML = '<div>Remind you about “Call the dentist” ' + whenLabel + '?</div><div class="acts"><span class="pill">Cancel</span><span class="pill primary">Save</span></div>';
+          confirmBox.hidden = false;
+          timer = setTimeout(function () { if (my === token) settle(); }, 1500);
+        }, 400);
+      })();
+    }
+    replay.addEventListener('click', function () { reset(); setTimeout(run, reduce ? 0 : 300); });
+    if (!reduce) timer = setTimeout(run, 1400);
+  })();
+</script>

@@ -1,0 +1,184 @@
+<title>Rewrite, reply, summarize. Privately, on your device · Fogar</title>
+<meta name="description" content="Rewrite, reply, summarize and explain with a model that runs inside Chrome. Your drafts go nowhere. Four recipes built in; make your own and share them as a link." />
+<style>
+  .recipe .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .recipe .out .body { white-space: pre-wrap; }
+  .recipe .out:empty { display: none; }
+  .stage .ledger { margin-top: 14px; }
+  .kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .kind { display: grid; gap: 8px; align-content: start; padding: 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; }
+  .kind .em { font-size: 26px; line-height: 1; }
+  .kind h3 { font-size: 20px; }
+  .kind p { color: var(--ink-2); font-size: 15.5px; }
+  .kind .mono { margin-top: 4px; }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Recipes · a new tab for Chrome</span>
+      <h1>Paste the rough draft. <em>Nobody else reads it.</em></h1>
+      <p class="lead measure">Fogar’s recipes are small forms in front of a prompt: Draft &amp; rewrite, Reply to a message, Summarize, Explain simply. The model that fills them runs inside your browser, so the performance review, the apology, and the letter to the landlord go nowhere. Rewriting is the thing a small local model does best.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="#install">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#file">Make your own</a>
+      </div>
+      <p class="cta-note">Free. Open source. Works offline once the model is cached.</p>
+    </div>
+
+    <div class="stage" aria-label="A recipe running on the device, demonstration">
+      <div class="recipe" id="recipe" aria-live="polite">
+        <h4>↩️ Reply to a message</h4>
+        <div class="field">The message you received<div class="box tall">Hey! Any chance you could cover my Saturday shift? I know it’s last minute, sorry.</div></div>
+        <div class="grid2">
+          <div class="field">What do you want to say?<div class="box">decline, offer next weekend</div></div>
+          <div class="field">Tone<div class="box">Friendly</div></div>
+        </div>
+        <div class="out"><span class="eyebrow">Output · Qwen3.5 4B · on this device</span><span class="body">Hey! Sorry, I can’t cover Saturday this time. If you still need someone next weekend, count me in.</span></div>
+      </div>
+      <div class="ledger"><span><span class="dot"></span>network <b>0 requests</b></span><span>model <b>cached on this device</b></span><span>key <b>none</b></span></div>
+      <button class="replay" id="replay" type="button">Run another recipe</button>
+    </div>
+  </header>
+
+  <section id="four">
+    <div class="section-head">
+      <span class="eyebrow">Four built in</span>
+      <h2 class="measure">The things you actually do with text.</h2>
+      <p class="lead measure">Each one is a form with two or three choices, so you do not write a prompt, you fill in a shape. Every recipe runs on whichever model you have chosen: the one on this device, or your own cloud key.</p>
+    </div>
+    <div class="kinds">
+      <div class="kind"><span class="em" aria-hidden="true">✍️</span><h3>Draft &amp; rewrite</h3><p>Paste a rough draft or a few notes. Pick a tone, a length, and a shape: email, bullet points, one sentence, chat message. Get your own words back, better.</p><span class="mono">tone · length · format</span></div>
+      <div class="kind"><span class="em" aria-hidden="true">↩️</span><h3>Reply to a message</h3><p>Paste what you received and say what you want to happen: decline politely, ask for a week more, say yes and propose Tuesday. Get a reply you can send.</p><span class="mono">what to say · tone</span></div>
+      <div class="kind"><span class="em" aria-hidden="true">🧾</span><h3>Summarize</h3><p>Long thing in, short thing out. Three bullets, one paragraph, one sentence, or key decisions and action items. Names and numbers survive.</p><span class="mono">style</span></div>
+      <div class="kind"><span class="em" aria-hidden="true">💡</span><h3>Explain simply</h3><p>A paragraph, a term, an error message. For a smart friend, a ten-year-old, an expert in another field, or you, in one sentence.</p><span class="mono">audience</span></div>
+    </div>
+  </section>
+
+  <section id="file">
+    <div class="split">
+      <div class="section-head" style="margin-bottom: 0">
+        <span class="eyebrow">Make your own</span>
+        <h2>The prompt is a form. The form is a file.</h2>
+        <p class="lead">A recipe declares its inputs and a template with placeholders. Fogar draws the form, fills the template, and hands it to the model. Only a name and a template are required: labels come from the keys, and any placeholder you forgot to declare becomes a field on its own.</p>
+        <p class="lead">Because it is plain JSON, you can paste one to a friend or share it as a link that adds it in one click. Import forgives what people paste: smart quotes, trailing commas, line breaks inside strings, a code fence around the whole thing.</p>
+        <div class="json-wrap">
+          <pre class="recipe-json" id="recipe-json">{
+  <b>"name"</b>: "Tighten a paragraph",
+  <b>"emoji"</b>: "✂️",
+  <b>"inputs"</b>: [
+    { "key": "text", "label": "Paragraph", "type": "textarea" },
+    { "key": "cut",  "label": "Cut it by", "type": "select",
+      "options": ["A quarter", "Half", "As far as it goes"] }
+  ],
+  <b>"template"</b>: "Cut the paragraph below by {{cut}}. Keep every fact, name, and number. Return only the shorter paragraph.\n\n{{text}}"
+}</pre>
+          <button class="copy-json" type="button" id="copy-json">Copy recipe JSON</button>
+        </div>
+      </div>
+      <div>
+        <ol class="how">
+          <li><b>Open Recipes, then New recipe.</b><p>A small builder: up to eight inputs, each a text field, a text area, or a dropdown with options, and the template they fill.</p></li>
+          <li><b>Or paste JSON into Import.</b><p>Like the one on the left. Copy it, paste it, and it appears as a chip on your new tab.</p></li>
+          <li><b>Share it as a link.</b><p>The recipe rides inside the address. Anyone with Fogar who opens it gets an “Add this recipe” button, nothing else.</p></li>
+          <li><b>Pin it.</b><p>Add the Recipe widget and pick one, and its form sits on the page ready to fill, no chip to click first.</p></li>
+        </ol>
+        <p class="how-note">Recipes are data, never code. A recipe cannot run a script, fetch a page, or read anything you did not type into it. Manifest V3 enforces that; Fogar treats it as a product rule.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="more">
+    <div class="section-head">
+      <span class="eyebrow">Also for writing</span>
+      <h2 class="measure">Three more ways in, when a form is too much.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Ask box</span><div><h3>Just type</h3><p>“Rewrite this politely: can’t make the 3pm, thursday instead?” works without a recipe. Follow-ups keep the thread, so “shorter” and “now as an email” do what you mean.</p></div></div>
+      <div class="feature"><span class="eyebrow">Right-click</span><div><h3>“Ask Fogar about …”</h3><p>Select text on any page and right-click. The page’s title, address, and the text around your selection go along, so the explanation is about what you were reading, not a guess.</p></div></div>
+      <div class="feature"><span class="eyebrow">Dig deeper</span><div><h3>When the first answer is not enough</h3><p>One menu on every answer: search the web and answer again with sources, let the model think longer, or ask your cloud model the same question. The better answer replaces the first.</p></div></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Small models write well and know little.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>Rewriting, replying, summarizing, and explaining are what a small local model does best. That is why those are the four built-ins.</li>
+          <li>Facts are not. Ask for a date or a statistic and the model may invent one. The system prompt tells it to say when it does not know, and “Search the web first” exists for exactly those questions.</li>
+          <li>The 4B tier rewrote reliably in our tests. The smaller tiers sometimes answered the text instead of rewriting it, which is why Draft &amp; rewrite carries an example and a firm instruction.</li>
+          <li>When you need more, switch to Cloud and bring your own key. The filled-in prompt goes to the endpoint you typed and nowhere else.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Is anything sent when I run a recipe?</summary><p>On this device: nothing. The model is a file in your browser’s storage and the prompt never leaves the page. In Cloud mode the filled-in prompt goes to the endpoint you typed, with your key, and to no one else. The network ledger in Settings counts every request either way.</p></details>
+      <details><summary>Does it work offline?</summary><p>Yes, in local mode, once the model is cached. Turn off Wi-Fi and the recipes keep running.</p></details>
+      <details><summary>How good is the writing?</summary><p>Good enough to send, for the everyday cases: the 4B tier rewrote, replied, and summarized correctly across our test prompts. The smaller tiers are quicker and weaker; Fogar recommends the largest your machine runs well. For anything that needs a bigger brain, switch to Cloud with your own key.</p></details>
+      <details><summary>Can I make my own recipe?</summary><p>Yes. New recipe opens a small builder: up to eight inputs, each a text field, a text area, or a dropdown, plus the template they fill and an optional system prompt. Or paste JSON into Import, or open a share link.</p></details>
+      <details><summary>Can a recipe run code or fetch anything?</summary><p>No. A recipe is data: labels, options, and a prompt template. Fogar renders the form and fills the template, nothing more. Manifest V3 forbids extensions from running remote code anyway; Fogar makes it a rule for everything users create or share.</p></details>
+      <details><summary>How much text can I paste?</summary><p>A template holds up to four thousand characters, and what you paste into a field is limited by the model’s context window. The small models are happiest with a few paragraphs at a time: summarize a section, not a book.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var card = document.getElementById('recipe'), replay = document.getElementById('replay');
+    // The four built-in recipes, with the inputs each one really has.
+    var demos = [
+      { title: '↩️ Reply to a message', tall: ['The message you received', 'Hey! Any chance you could cover my Saturday shift? I know it’s last minute, sorry.'], fields: [['What do you want to say?', 'decline, offer next weekend'], ['Tone', 'Friendly']], out: 'Hey! Sorry, I can’t cover Saturday this time. If you still need someone next weekend, count me in.' },
+      { title: '✍️ Draft & rewrite', tall: ['Your text or notes', 'pls send the invoice again, the first one had the wrong address'], fields: [['Tone', 'Formal'], ['Length', 'About the same'], ['Format', 'Email']], out: 'Hello,\n\nCould you please resend the invoice? The first copy listed the wrong address.\n\nThank you.' },
+      { title: '🧾 Summarize', tall: ['Text', 'Standup: Priya finished the export flow. QA found two bugs in restore, both small. Sam is out Thursday. Launch is still Monday if the store approves in time.'], fields: [['Style', 'Three bullets']], out: '• Export flow done; QA found two small restore bugs.\n• Sam is out Thursday.\n• Launch stays Monday, pending store approval.' },
+      { title: '💡 Explain simply', tall: ['What to explain', 'NoModificationAllowedError: removeEntry failed'], fields: [['For', 'A smart friend']], out: 'The browser refused to delete a file because something else still had it open for writing. Finish or close that first, then delete.' },
+    ];
+    var i = 0, timer = 0, token = 0;
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function paint(d) {
+      var grid = d.fields.length === 3 ? 'grid3' : 'grid2';
+      card.innerHTML = '<h4>' + esc(d.title) + '</h4>'
+        + '<div class="field">' + esc(d.tall[0]) + '<div class="box tall">' + esc(d.tall[1]) + '</div></div>'
+        + '<div class="' + grid + '">' + d.fields.map(function (f) { return '<div class="field">' + esc(f[0]) + '<div class="box">' + esc(f[1]) + '</div></div>'; }).join('') + '</div>'
+        + '<div class="out"><span class="eyebrow">Output · Qwen3.5 4B · on this device</span><span class="body" id="out"></span></div>';
+      return document.getElementById('out');
+    }
+    function run(idx) {
+      clearTimeout(timer); token++; var my = token;
+      var d = demos[idx % demos.length], out = paint(d);
+      if (reduce) { out.textContent = d.out; return; }
+      var words = d.out.split(' '), w = 0;
+      out.innerHTML = '<span class="caret"></span>';
+      timer = setTimeout(function stream() {
+        if (my !== token) return;
+        w++; out.innerHTML = esc(words.slice(0, w).join(' ')) + (w < words.length ? '<span class="caret"></span>' : '');
+        if (w < words.length) timer = setTimeout(stream, 55 + Math.random() * 60);
+      }, 700);
+    }
+    replay.addEventListener('click', function () { i++; run(i); });
+    var copyBtn = document.getElementById('copy-json');
+    copyBtn.addEventListener('click', function () {
+      navigator.clipboard.writeText(document.getElementById('recipe-json').textContent).then(function () {
+        copyBtn.textContent = 'Copied. Paste it into Fogar → Recipes → Import.';
+        setTimeout(function () { copyBtn.textContent = 'Copy recipe JSON'; }, 2600);
+      });
+    });
+  })();
+</script>

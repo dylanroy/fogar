@@ -1,0 +1,36 @@
+/* Shared by the use-case pages: mock-ups of the new tab's widgets, drawn with the page's own tokens so they follow light and dark. */
+.mock { font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.mock * { min-width: 0; }
+/* The mock-ups set display on things the demos also hide; the attribute has to win. */
+[hidden] { display: none !important; }
+.mock .tab-body { position: relative; }
+.card { background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; padding: 18px 20px; display: grid; gap: 12px; align-content: start; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 12px; font-family: var(--serif); font-weight: 600; font-size: 19px; }
+.pill { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 10px; font: inherit; font-size: 12px; line-height: 1.2; color: var(--ink-2); background: transparent; white-space: nowrap; }
+.pill.primary { background: var(--ember); color: var(--ember-ink); border-color: transparent; font-weight: 600; }
+.pill.ctl { padding: 3px 8px; }
+button.pill { cursor: pointer; }
+button.pill:hover { border-color: var(--ash); color: var(--ink); }
+button.pill.primary:hover { color: var(--ember-ink); }
+button.pill[disabled] { opacity: 0.45; cursor: default; }
+.box { border: 1px solid var(--line-2); border-radius: 10px; padding: 9px 12px; font-size: 14px; background: var(--ground); color: var(--ink); }
+.box.ph { color: var(--ash); }
+.mock .caret { display: inline-block; width: 2px; height: 1.1em; background: var(--ember); vertical-align: text-bottom; margin-left: 1px; animation: blink 1s steps(1) infinite; }
+.note { color: var(--ash); font-size: 12px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.acts { display: inline-flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.fav { width: 16px; height: 16px; border-radius: 4px; background: var(--line-2); flex: 0 0 auto; }
+.hits { display: grid; gap: 1px; border: 1px solid var(--line); border-radius: 12px; padding: 6px; }
+.hit { display: grid; grid-template-columns: 16px minmax(0, 1.3fr) minmax(0, 1fr); gap: 10px; align-items: center; padding: 7px 10px; border-radius: 8px; text-decoration: none; }
+.hit:hover { background: var(--surface-2); }
+.hit .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hit .h { font-size: 12px; color: var(--ash); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+.hit .x { color: var(--ash); font-size: 15px; line-height: 1; padding-left: 6px; }
+.divider { font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ash); padding: 8px 10px 2px; }
+.tag { font-size: 11px; color: var(--ash); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.toast { position: absolute; left: 50%; bottom: 14px; transform: translate(-50%, 8px); background: var(--ink); color: var(--ground); font-size: 12.5px; padding: 8px 14px; border-radius: 999px; opacity: 0; transition: opacity 0.25s, transform 0.25s; pointer-events: none; z-index: 2; max-width: 92%; text-align: center; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+.stage > .replay { margin-top: 14px; }
+.phrases { display: flex; flex-wrap: wrap; gap: 8px; }
+.phrases span { font-family: var(--mono); font-size: 12.5px; color: var(--ink-2); border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 11px; }
+@media (prefers-reduced-motion: reduce) { .mock .caret { animation: none; } .toast { transition: none; } }
