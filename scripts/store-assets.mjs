@@ -20,25 +20,20 @@ let sw = context.serviceWorkers()[0]; if (!sw) sw = await context.waitForEvent('
 const page = await context.newPage();
 const base = `chrome-extension://${new URL(sw.url()).host}/newtab.html`;
 const waitDone = () => page.waitForFunction(() => document.body.dataset.status === 'done', null, { timeout: 15 * 60 * 1000 });
-const shot = (name) => page.screenshot({ path: `store/screenshots/${name}.png` });
-
-// 5. first run (fresh state). The e2e page saves its settings asynchronously, so let it settle before clearing.
-await page.goto(`${base}?e2e=1`);
-await page.waitForSelector('#recipe-chips .chip');
-await page.waitForTimeout(600);
-await page.evaluate(() => chrome.storage.local.clear());
-await page.goto(base);
-await page.waitForSelector('#firstrun:not([hidden])', { timeout: 10000 });
-await shot('05-firstrun');
+// The store accepts JPEG or 24-bit PNG without alpha; Playwright PNGs carry alpha, so JPEG it is.
+const shot = (name) => page.screenshot({ path: `store/screenshots/${name}.jpg`, type: 'jpeg', quality: 92 });
+const DEFAULT_THEME = { version: 1, appearance: 'system', hue: 40, chroma: 0.19, accentName: 'Ember', paper: 'warm', headings: 'serif', density: 'comfortable' };
 
 // seed state: onboarded, model, widgets, todos, reminders. Let the e2e page finish its own save first.
 await page.goto(`${base}?e2e=1`);
 await page.waitForSelector('#recipe-chips .chip');
 await page.waitForTimeout(600);
-await page.evaluate(async ({ port, model }) => {
+await page.evaluate(async ({ port, model, theme }) => {
   await chrome.storage.local.set({
-    'fogar.settings': { mode: 'local', modelId: model, gpu: true, autoLoad: true, onboarded: true, cloud: { endpoint: 'https://api.openai.com/v1', apiKey: '', model: 'gpt-4o-mini' }, grounding: { provider: 'none', apiKey: '', byDefault: true } },
-    'fogar.layout': { version: 1, focus: false, widgets: [
+    // Grounding is the real default: the free provider, toggle unticked, so the ask row shows what a new user sees.
+    'fogar.settings': { mode: 'local', modelId: model, gpu: true, autoLoad: true, onboarded: true, cloud: { endpoint: 'https://api.openai.com/v1', apiKey: '', model: 'gpt-4o-mini' }, grounding: { provider: 'free', apiKey: '', byDefault: false } },
+    'fogar.theme': theme,
+    'fogar.layout': { version: 1, focus: false, ask: 'top', arrangement: 'stack', columns: 'auto', showRecipes: true, widgets: [
       { id: 'agenda-1', type: 'agenda', config: { url: `http://127.0.0.1:${port}/agenda.ics` } },
       { id: 'weather-1', type: 'weather', config: { place: { name: 'Denver', region: 'Colorado', country: 'United States', lat: 39.7, lon: -104.9 }, unit: 'f', endpoint: `http://127.0.0.1:${port}/weather` } },
       { id: 'todos', type: 'todos', config: {} }, { id: 'reminders', type: 'reminders', config: {} },
@@ -48,7 +43,8 @@ await page.evaluate(async ({ port, model }) => {
     'fogar.todos': [{ id: 'a', text: 'Reply to the accountant', done: false, createdAt: 1 }, { id: 'b', text: 'Book the dentist', done: false, createdAt: 2 }, { id: 'c', text: 'Renew the domain', done: true, createdAt: 3 }],
     'fogar.reminders': [{ id: 'r1', label: 'Stretch', when: Date.now() + 25 * 60e3, createdAt: 1 }, { id: 'r2', label: 'Call mom', when: new Date().setHours(18, 0, 0, 0) > Date.now() ? new Date().setHours(18, 0, 0, 0) : Date.now() + 86400e3, createdAt: 2 }],
   });
-}, { port: mock.port, model });
+  localStorage.setItem('fogar.theme', JSON.stringify(theme));
+}, { port: mock.port, model, theme: DEFAULT_THEME });
 
 // Chrome only has favicons for sites this profile has visited, so visit the Links widget's sites once.
 for (const u of ['https://github.com', 'https://news.ycombinator.com', 'https://developer.chrome.com', 'https://figma.com']) {
@@ -65,7 +61,7 @@ const warm = async () => {
   await page.fill('#prompt', '');
 };
 
-// 1. an answer with a follow-up, real model
+// 1. an answer with a follow-up from the real model, and the Dig deeper menu open
 await page.goto(base);
 await warm();
 await page.fill('#prompt', 'Explain what OPFS is in two sentences.');
@@ -75,9 +71,19 @@ await page.fill('#prompt', 'Now say it like a pirate, one sentence.');
 await page.press('#prompt', 'Enter');
 await waitDone();
 await page.evaluate(() => window.scrollTo(0, 0));
+await page.click('#answer-card .dig-btn');
+await page.waitForSelector('#answer-card .dig-menu:not([hidden])');
 await shot('01-answer');
 
-// 2. a recipe with output
+// 2. widgets
+await page.goto(base);
+await page.waitForSelector('.widget[data-type="weather"] .temp');
+await page.waitForSelector('.widget[data-type="agenda"] .event');
+await page.evaluate(() => document.getElementById('corner').scrollIntoView({ block: 'start' }));
+await page.evaluate(() => window.scrollBy(0, -24));
+await shot('02-widgets');
+
+// 3. a recipe with output
 await page.goto(base);
 await warm();
 await page.click('#recipe-chips .chip:has-text("Draft & rewrite")');
@@ -86,22 +92,25 @@ await page.selectOption('#recipe-panel select >> nth=0', 'Friendly');
 await page.selectOption('#recipe-panel select >> nth=2', 'Chat message');
 await page.click('#recipe-panel .primary');
 await waitDone();
-// Show the rewritten output (labelled with the recipe name) with the open form beneath it.
 await page.evaluate(() => document.getElementById('thread').scrollIntoView({ block: 'start' }));
 await page.evaluate(() => window.scrollBy(0, -90));
-await shot('02-recipe');
+await shot('03-recipe');
 
-// 3. widgets
+// 4. Customize open over a themed page (Moss, dark)
+const moss = { ...DEFAULT_THEME, appearance: 'dark', hue: 145, chroma: 0.12, accentName: 'Moss' };
+await page.evaluate((t) => { localStorage.setItem('fogar.theme', JSON.stringify(t)); return chrome.storage.local.set({ 'fogar.theme': t }); }, moss);
 await page.goto(base);
 await page.waitForSelector('.widget[data-type="weather"] .temp');
-await page.waitForSelector('.widget[data-type="agenda"] .event');
-await page.evaluate(() => document.getElementById('corner').scrollIntoView({ block: 'start' }));
-await page.evaluate(() => window.scrollBy(0, -24));
-await shot('03-widgets');
+await page.click('#customize-btn');
+await page.waitForSelector('#customize-menu:not([hidden])');
+await shot('04-customize');
+await page.evaluate((t) => { localStorage.setItem('fogar.theme', JSON.stringify(t)); return chrome.storage.local.set({ 'fogar.theme': t }); }, DEFAULT_THEME);
 
-// 4. settings: model tiers and the ledger
+// 5. settings: model tiers, grounding, and the network ledger
+await page.goto(base);
+await page.waitForSelector('#recipe-chips .chip');
 await page.evaluate(() => { document.getElementById('settings').open = true; document.getElementById('local-settings').scrollIntoView({ block: 'start' }); window.scrollBy(0, -24); });
-await shot('04-settings');
+await shot('05-settings');
 
 // promo tile and marquee: rendered pages, screenshotted
 const tile = (w, h, big) => `<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,800&family=Source+Serif+4:opsz,wght@8..60,400&display=swap"><style>
@@ -118,7 +127,7 @@ for (const [name, w, h, big] of [['promo-440x280', 440, 280, false], ['marquee-1
   await p.setViewportSize({ width: w, height: h });
   await p.setContent(tile(w, h, big), { waitUntil: 'networkidle' });
   await p.waitForTimeout(600);
-  await p.screenshot({ path: `store/${name}.png` });
+  await p.screenshot({ path: `store/${name}.jpg`, type: 'jpeg', quality: 92 });
   await p.close();
 }
 mock.server.close();

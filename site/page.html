@@ -224,7 +224,7 @@
             </div>
           </div>
           <div class="tab-ask" id="demo-ask" aria-live="polite"></div>
-          <div class="tab-row"><span><b>Ready</b> · Qwen3 0.6B · WebGPU</span><span id="demo-stats"></span></div>
+          <div class="tab-row"><span><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span id="demo-stats"></span></div>
           <div class="tab-answer" id="demo-answer" aria-live="polite"></div>
           <div class="ledger" id="demo-ledger"><span><span class="dot"></span>network <b>0 requests</b></span><span>model <b>cached on this device</b></span><span>key <b>none</b></span></div>
           <button class="replay" id="demo-replay" type="button">Ask something else</button>
@@ -316,7 +316,7 @@
           <div class="field">Length<div class="box">Longer</div></div>
           <div class="field">Format<div class="box">Chat message</div></div>
         </div>
-        <div class="out"><span class="eyebrow">Output · Qwen3 0.6B · on this device</span>Sorry, I can't make 3 pm today after all. Would Thursday work instead? Happy to fit around whatever time suits you.</div>
+        <div class="out"><span class="eyebrow">Output · Qwen3.5 4B · on this device</span>Sorry, I can't make 3 pm today after all. Would Thursday work instead? Happy to fit around whatever time suits you.</div>
       </div>
     </div>
   </section>
@@ -360,7 +360,7 @@
       <details><summary>Does it work offline?</summary><p>Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web grounding and cloud mode need a connection, by definition.</p></details>
       <details><summary>How good is a small model, honestly?</summary><p>Depends on the size. In our tests the 0.8B and 2B models rewrite and summarize well but stumble on facts and arithmetic. The 4B gets the president, the percentage, and the sorting task right and still runs at 44 tokens a second on an Apple laptop. Fogar recommends the largest size your machine can run well, computes arithmetic itself, and offers web grounding for facts.</p></details>
       <details><summary>Where is my API key stored?</summary><p>In Chrome's extension storage on this profile, and it is sent only to the endpoint you typed. Fogar has no server that could see it.</p></details>
-      <details><summary>What permissions does it ask for?</summary><p>Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click, favicons for site icons, and access to huggingface.co to fetch the model. The Sessions widget asks for the tabs permission when you add it, and only then. Cloud endpoints, search keys, and calendar addresses are requested one at a time, when you add them. The full list with reasons is in the <a href="privacy.html">privacy policy</a>.</p></details>
+      <details><summary>What permissions does it ask for?</summary><p>Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click plus reading that one page when you use it, favicons for site icons, and access to huggingface.co to fetch the model. The Sessions widget asks for the tabs permission when you add it, and only then. Cloud endpoints, search keys, and calendar addresses are requested one at a time, when you add them. The full list with reasons is in the <a href="privacy.html">privacy policy</a>.</p></details>
       <details><summary>Will it slow down my browser?</summary><p>The model loads only on the new tab page and is released when you navigate away. Loading takes about a second from disk. On a machine without WebGPU it falls back to the CPU and is slower but works.</p></details>
       <details><summary>Firefox? Safari?</summary><p>Chrome and Chromium browsers first. Firefox builds, but its extension pages lack the shared-memory feature the multi-threaded engine needs, so it would be much slower. Not shipping it half-baked.</p></details>
     </div>

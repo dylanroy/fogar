@@ -11,6 +11,12 @@ const html = `<!doctype html>
 <meta property="og:title" content="${title}" />
 <meta property="og:description" content="A new tab for Chrome that answers from a model running inside your browser. Nothing leaves the room." />
 <meta property="og:url" content="https://fogar.ai/" />
+<meta property="og:type" content="website" />
+<meta property="og:image" content="https://fogar.ai/og.jpg" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:image" content="https://fogar.ai/og.jpg" />
 <meta name="theme-color" content="#14100d" />
 <link rel="canonical" href="https://fogar.ai/" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
