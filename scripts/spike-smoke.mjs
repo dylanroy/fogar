@@ -423,6 +423,19 @@ await page.click('.widget[data-type="sessions"] .sess-win:has-text("Acme Careers
 await page.waitForTimeout(400);
 const focusedId = await page.evaluate(() => chrome.windows.getLastFocused().then((w) => w.id));
 check('sessions: full width by default, no overflow, clicking a window focuses it', wideState.wide && !wideState.overflow && !wideState.pageOverflow && focusedId === newWinId, `${JSON.stringify(wideState)} focused=${focusedId === newWinId}`);
+// 12a. the same box finds tabs that are open right now, and a hit switches to that tab
+await page.evaluate(async () => { const cur = await chrome.windows.getCurrent(); await chrome.windows.update(cur.id, { focused: true }); });
+await page.fill('.widget[data-type="sessions"] input[type="search"]', 'invoice');
+await page.waitForSelector('.widget[data-type="sessions"] .sess-tab.live', { timeout: 5000 });
+const liveRow = await page.evaluate(() => { const r = document.querySelector('.widget[data-type="sessions"] .sess-tab.live'); return { title: r?.querySelector('button.t')?.textContent ?? '', tag: r?.querySelector('.tag')?.textContent ?? '' }; });
+await page.click('.widget[data-type="sessions"] .sess-tab.live button.t');
+await page.waitForTimeout(400);
+const switched = await page.evaluate(async () => { const w = await chrome.windows.getLastFocused(); const [t] = await chrome.tabs.query({ active: true, windowId: w.id }); return { windowId: w.id, url: t?.url ?? '' }; });
+await page.fill('.widget[data-type="sessions"] input[type="search"]', '');
+check('sessions: open tabs are searchable and a hit switches to the tab',
+  liveRow.title.startsWith('Quarterly Invoice') && liveRow.tag === 'open' && switched.windowId === newWinId && /invoice\.html$/.test(switched.url),
+  `${JSON.stringify(liveRow)} ${JSON.stringify(switched)}`);
+
 await page.click('.widget[data-type="sessions"] .sess-win:has-text("Acme Careers") button:has-text("Save & close")');
 await page.waitForFunction((n) => chrome.windows.getAll().then((w) => w.length === n), winBefore, { timeout: 10000 });
 await page.waitForSelector('.widget[data-type="sessions"] .sess-session');
@@ -445,10 +458,16 @@ await page.waitForFunction(() => chrome.bookmarks.search({ title: 'Quarterly Inv
 const folderOk = await page.evaluate(async () => { const hits = await chrome.bookmarks.search({ title: 'Quarterly Invoice from Globex' }); const parent = (await chrome.bookmarks.get(hits[0].parentId))[0]; return !parent.url && /127\.0\.0\.1/.test(parent.title); });
 await page.click('.widget[data-type="sessions"] .sess-name');
 await page.waitForSelector('.widget[data-type="sessions"] .sess-tabs .sess-tab');
+// "Bookmark all" just kept every tab, so each row's bookmark should be drawn filled and stay visible unhovered.
+const kept = await page.evaluate(() => {
+  const rows = [...document.querySelectorAll('.widget[data-type="sessions"] .sess-tabs .sess-tab')];
+  return { rows: rows.length, filled: rows.filter((r) => r.querySelector('.bm.on svg path[fill="currentColor"]')).length, visible: rows.every((r) => getComputedStyle(r.querySelector('.bm')).opacity === '1') };
+});
 await page.hover('.widget[data-type="sessions"] .sess-tabs .sess-tab:has-text("Acme")');
 await page.click('.widget[data-type="sessions"] .sess-tabs .sess-tab:has-text("Acme") .x');
 await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="sessions"] .sess-tabs .sess-tab').length === 1, null, { timeout: 5000 });
 check('sessions: ask-bar and widget search, bookmark all into a session folder, remove a tab', askHit === 'Quarterly Invoice from Globex' && widgetHit.includes('Acme Careers') && folderOk, `ask="${askHit}" widget="${widgetHit.slice(0, 30)}" folder=${folderOk}`);
+check('sessions: a bookmarked tab shows a filled bookmark without hovering', kept.rows > 0 && kept.filled === kept.rows && kept.visible, JSON.stringify(kept));
 
 // 12b2. export: the Markdown list and the browser bookmarks file both carry the remaining link
 await page.click('.widget[data-type="sessions"] .sess-session .sess-export .ctl');
@@ -470,6 +489,16 @@ check('sessions: export as Markdown, browser bookmarks file, and Fogar file',
 await page.click('.widget[data-type="sessions"] .sess-session button:has-text("Restore")');
 await page.waitForFunction((n) => chrome.windows.getAll().then((w) => w.length === n + 1), winBefore, { timeout: 10000 });
 const restoredUrls = await page.evaluate(async () => (await chrome.tabs.query({ url: 'http://127.0.0.1/*' })).map((t) => t.url));
+// The restored tab is now both open and saved. It should be listed once, as the open one you can switch to.
+await page.fill('.widget[data-type="sessions"] input[type="search"]', 'invoice');
+await page.waitForSelector('.widget[data-type="sessions"] .sess-tab.live', { timeout: 5000 });
+const dedupe = await page.evaluate(async () => {
+  const open = new Set((await chrome.tabs.query({ url: 'http://127.0.0.1/*' })).map((t) => t.url));
+  const rows = [...document.querySelectorAll('.widget[data-type="sessions"] .sess-saved .sess-tab')];
+  return { live: rows.filter((r) => r.classList.contains('live')).length, savedAlsoOpen: rows.filter((r) => !r.classList.contains('live')).filter((r) => open.has(r.querySelector('a')?.href)).length };
+});
+await page.fill('.widget[data-type="sessions"] input[type="search"]', '');
+check('sessions: a tab that is open and saved is listed once, as the open one', dedupe.live > 0 && dedupe.savedAlsoOpen === 0, JSON.stringify(dedupe));
 await page.evaluate(async () => { const ws = await chrome.windows.getAll({ populate: true }); const cur = await chrome.windows.getCurrent(); for (const w of ws) if (w.id !== cur.id) await chrome.windows.remove(w.id); });
 page.once('dialog', (d) => { d.accept().catch(() => {}); }); // the delete confirm; a second handler must never race this one
 await page.click('.widget[data-type="sessions"] .sess-session .ctl[title="Delete this saved session"]');

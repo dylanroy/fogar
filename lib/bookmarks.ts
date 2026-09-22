@@ -87,7 +87,19 @@ export async function searchBookmarks(query: string, limit = 8): Promise<Bookmar
   return scored.slice(0, limit).map(([, b]) => ({ id: b.id, title: b.title, url: b.url, path: b.path }));
 }
 
+/**
+ * Drop the cached index. The change listeners above do this too, but they are events: a caller that just wrote a
+ * bookmark and wants to repaint from the result cannot wait on one.
+ */
+export const invalidateBookmarkIndex = () => { index = null; };
+
+/** Every bookmarked address, so a list of links can show at a glance which ones are already kept. */
+export async function bookmarkedUrls(): Promise<Set<string>> {
+  if (!bookmarksAvailable()) return new Set();
+  return new Set((await bookmarkIndex()).map((b) => b.url));
+}
+
 export async function removeBookmark(id: string): Promise<void> {
   await browser.bookmarks.remove(id);
-  index = null;
+  invalidateBookmarkIndex();
 }

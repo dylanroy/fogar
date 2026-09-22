@@ -50,7 +50,7 @@ Free. Open source. Made by Dylan Roy.
 - **contextMenus**: the "Ask Fogar about …" right-click item.
 - **favicon**: site icons next to bookmarks and links.
 - **unlimitedStorage**: saved sessions can outgrow the default quota; no install warning.
-- **tabs (optional)**: requested only when the user adds the Sessions widget, to list and save the titles and addresses of open tabs on the device.
+- **tabs (optional)**: requested only when the user adds the Sessions widget, to list, search and save the titles and addresses of open tabs on the device.
 - **activeTab, scripting**: on a right-click "Ask Fogar about …", read the title, address, and text around the selection from that one page, that one time. Nothing runs on pages otherwise.
 - **host permission huggingface.co**: downloading the model file once.
 - **optional host permissions (https://*/*, localhost)**: requested individually when the user saves a cloud endpoint, search API key, or calendar address, so Fogar can reach exactly that address.

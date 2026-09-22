@@ -25,7 +25,9 @@ const SKIP = /^(chrome|chrome-extension|edge|about|devtools|view-source):/i;
 export const isSaveable = (url?: string): url is string => !!url && !SKIP.test(url);
 export const hostOf = (url: string) => { try { return new URL(url).host.replace(/^www\./, ''); } catch { return ''; } };
 
-export interface OpenWindow { id: number; current: boolean; tabs: SavedTab[]; skipped: number; /** Title of the tab on top, the way people recognise a window. */ activeTitle?: string }
+/** An open tab carries Chrome's own ids alongside the saveable shape, so a search hit can be switched to rather than reopened. These are stripped on save: they mean nothing once the tab is gone. */
+export interface OpenTab extends SavedTab { tabId: number; windowId: number; active?: boolean }
+export interface OpenWindow { id: number; current: boolean; tabs: OpenTab[]; skipped: number; /** Title of the tab on top, the way people recognise a window. */ activeTitle?: string }
 
 /** Every normal, non-incognito window with its saveable tabs. The new tab page itself and other browser pages are skipped. */
 export async function openWindows(): Promise<{ windows: OpenWindow[]; totalWindows: number; totalTabs: number }> {
@@ -36,7 +38,7 @@ export async function openWindows(): Promise<{ windows: OpenWindow[]; totalWindo
   for (const w of wins) {
     if (w.incognito) continue;
     const all = w.tabs ?? [];
-    const tabs = all.filter((t) => isSaveable(t.url)).map((t) => ({ id: uid(), url: t.url!, title: t.title || t.url!, pinned: t.pinned || undefined }));
+    const tabs: OpenTab[] = all.filter((t) => isSaveable(t.url)).map((t) => ({ id: uid(), url: t.url!, title: t.title || t.url!, pinned: t.pinned || undefined, tabId: t.id!, windowId: w.id!, active: t.active || undefined }));
     totalTabs += tabs.length;
     const active = all.find((t) => t.active && isSaveable(t.url));
     windows.push({ id: w.id!, current: w.id === cur, tabs, skipped: all.length - tabs.length, activeTitle: active?.title || undefined });
@@ -47,6 +49,14 @@ export async function openWindows(): Promise<{ windows: OpenWindow[]; totalWindo
 /** Bring a window to the front. The list of open windows doubles as a window switcher. */
 export async function focusWindow(id: number): Promise<void> {
   try { await browser.windows.update(id, { focused: true }); } catch { /* window closed meanwhile */ }
+}
+
+/** Switch to an open tab: select it inside its window, then bring that window forward. */
+export async function activateTab(tabId: number, windowId: number): Promise<void> {
+  try {
+    await browser.tabs.update(tabId, { active: true });
+    await browser.windows.update(windowId, { focused: true });
+  } catch { /* the tab or window closed meanwhile */ }
 }
 
 /** Collapse duplicate addresses inside one session. Returns how many were dropped. */
@@ -74,7 +84,7 @@ export const tabCount = (s: Session) => s.windows.reduce((n, w) => n + w.tabs.le
 
 /** Save some open windows as one session. Nothing is closed here. */
 export async function saveSession(windows: OpenWindow[], name?: string): Promise<{ session: Session; duplicates: number } | null> {
-  const saved: SavedWindow[] = windows.map((w) => ({ id: uid(), tabs: w.tabs.map((t) => ({ ...t })) }));
+  const saved: SavedWindow[] = windows.map((w) => ({ id: uid(), tabs: w.tabs.map(({ id, url, title, pinned }) => ({ id, url, title, pinned })) }));
   const duplicates = dedupe(saved);
   const kept = saved.filter((w) => w.tabs.length);
   if (!kept.length) return null;
@@ -141,32 +151,76 @@ export async function bookmarkTabs(session: Session, tabs: SavedTab[]): Promise<
 }
 export const bookmarkSession = (s: Session) => bookmarkTabs(s, s.windows.flatMap((w) => w.tabs));
 
-/** Ranked search across every saved tab: title first, then site, session name, address. */
-export interface TabHit { tab: SavedTab; session: Session; score: number }
+// ---------- search ----------
 const STOP = new Set(['the', 'and', 'for', 'with', 'from', 'that', 'this']);
-export async function searchSavedTabs(query: string, limit = 6): Promise<TabHit[]> {
+
+/** Query words worth matching on. Empty for a blank box, and for six words and up, which is a question rather than a lookup. */
+export function searchTokens(query: string): string[] {
   const tokens = query.toLowerCase().split(/[^a-z0-9.]+/).filter((t) => t.length >= 2 && !STOP.has(t));
-  if (!tokens.length || tokens.length > 6) return [];
+  return tokens.length && tokens.length <= 6 ? tokens : [];
+}
+
+/**
+ * Score one tab against every token: title first, then site, then `extra` (a session name), then the address.
+ * Zero when any token matches nothing, so every word has to land somewhere. Open and saved tabs share this, so
+ * the two lists rank the same way and cannot drift apart.
+ */
+function scoreTab(tokens: string[], title: string, url: string, extra = ''): number {
+  const t = title.toLowerCase(); const host = hostOf(url).toLowerCase(); const u = url.toLowerCase(); const x = extra.toLowerCase();
+  let score = 0;
+  for (const tok of tokens) {
+    let sc = 0;
+    if (t.startsWith(tok)) sc = 12; else if (t.includes(` ${tok}`) || t.includes(`-${tok}`) || t.includes(`:${tok}`)) sc = 10; else if (t.includes(tok)) sc = 6;
+    else if (host.startsWith(tok) || host.includes(`.${tok}`)) sc = 7; else if (host.includes(tok)) sc = 4;
+    else if (x.includes(tok)) sc = 3; else if (u.includes(tok)) sc = 2;
+    if (!sc) return 0;
+    score += sc;
+  }
+  return score;
+}
+
+/** Ranked search across every saved tab. */
+export interface TabHit { tab: SavedTab; session: Session; score: number }
+export async function searchSavedTabs(query: string, limit = 6): Promise<TabHit[]> {
+  const tokens = searchTokens(query);
+  if (!tokens.length) return [];
   const hits: TabHit[] = [];
   for (const s of await loadSessions()) {
-    const sname = s.name.toLowerCase();
     for (const w of s.windows) for (const t of w.tabs) {
-      const title = t.title.toLowerCase(); const host = hostOf(t.url).toLowerCase(); const url = t.url.toLowerCase();
-      let score = 0;
-      for (const tok of tokens) {
-        let sc = 0;
-        if (title.startsWith(tok)) sc = 12; else if (title.includes(` ${tok}`) || title.includes(`-${tok}`) || title.includes(`:${tok}`)) sc = 10; else if (title.includes(tok)) sc = 6;
-        else if (host.startsWith(tok) || host.includes(`.${tok}`)) sc = 7; else if (host.includes(tok)) sc = 4;
-        else if (sname.includes(tok)) sc = 3; else if (url.includes(tok)) sc = 2;
-        if (!sc) { score = 0; break; }
-        score += sc;
-      }
+      const score = scoreTab(tokens, t.title, t.url, s.name);
       if (score) hits.push({ tab: t, session: s, score });
     }
   }
   hits.sort((a, b) => b.score - a.score || b.session.savedAt - a.session.savedAt);
   return hits.slice(0, limit);
 }
+
+/**
+ * The same ranked search over tabs that are open right now. A tab you closed last week is already findable; one
+ * open in another window was not, which is backwards, because switching to it is cheaper than restoring it.
+ * Costs no new permission: the widget already holds `tabs`, and without that grant this returns nothing.
+ */
+export interface OpenHit { tab: OpenTab; window: OpenWindow; score: number }
+export async function searchOpenTabs(query: string, limit = 6): Promise<OpenHit[]> {
+  const tokens = searchTokens(query);
+  if (!tokens.length || !(await hasTabsPermission())) return [];
+  let windows: OpenWindow[];
+  try { ({ windows } = await openWindows()); } catch { return []; }
+  const hits: OpenHit[] = [];
+  for (const w of windows) for (const t of w.tabs) {
+    const score = scoreTab(tokens, t.title, t.url);
+    if (score) hits.push({ tab: t, window: w, score });
+  }
+  // A window you are not looking at is the one you were trying to find; the tab in front of you is not a discovery.
+  hits.sort((a, b) => b.score - a.score || Number(a.window.current) - Number(b.window.current));
+  return hits.slice(0, limit);
+}
+
+/** Saved hits for addresses that are not already open. An open tab is the same page, reachable in one click instead of a restore. */
+export const withoutOpen = (saved: TabHit[], open: OpenHit[]): TabHit[] => {
+  const live = new Set(open.map((h) => h.tab.url));
+  return saved.filter((h) => !live.has(h.tab.url));
+};
 
 // ---------- export ----------
 const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');

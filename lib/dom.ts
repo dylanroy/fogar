@@ -34,6 +34,29 @@ export function clear(node: HTMLElement): HTMLElement {
   return node;
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/**
+ * A 24-viewBox icon drawn from one path. `filled` paints the middle in as well as the outline, so the same
+ * path carries two states: an empty shape for "you could", a solid one for "you have".
+ */
+export function icon(path: string, filled = false, size = 15): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('width', String(size));
+  svg.setAttribute('height', String(size));
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  const d = document.createElementNS(SVG_NS, 'path');
+  d.setAttribute('d', path);
+  d.setAttribute('fill', filled ? 'currentColor' : 'none');
+  d.setAttribute('stroke', 'currentColor');
+  d.setAttribute('stroke-width', '1.8');
+  d.setAttribute('stroke-linejoin', 'round');
+  svg.append(d);
+  return svg;
+}
+
 export function debounce<A extends unknown[]>(fn: (...a: A) => void, ms: number) {
   let t: ReturnType<typeof setTimeout> | undefined;
   return (...a: A) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };

@@ -99,6 +99,8 @@ textarea:focus, input:focus, select:focus { outline: none; border-color: var(--a
 .hits { position: absolute; left: 0; right: 0; top: calc(100% + 6px); z-index: 5; background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
 .hit { display: flex; align-items: center; gap: 10px; padding: 9px 14px; text-decoration: none; color: inherit; min-width: 0; max-width: 100%; }
 .hit:hover { background: var(--accent-soft); }
+/* An open tab's row is a button (it switches windows) where the others are links; it has to read identically. */
+button.hit { width: 100%; border: 0; background: transparent; font: inherit; text-align: left; }
 .hit img { width: 16px; height: 16px; border-radius: 3px; flex: 0 0 auto; }
 .hit .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
 .hit .h { color: var(--muted); font-size: 12px; flex: 0 1 auto; max-width: 42%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -307,6 +309,13 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .sess-tab .x, .sess-tab .bm { border: 0; background: transparent; color: var(--muted); padding: 2px 5px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity 0.1s; }
 .sess-tab:hover .x, .sess-tab:hover .bm, .sess-tab:focus-within .x, .sess-tab:focus-within .bm { opacity: 1; }
 .sess-tab .x:hover, .sess-tab .bm:hover { color: var(--accent); }
+.sess-tab .bm { display: grid; place-items: center; padding: 3px 4px; }
+/* An open tab's title is a button (it switches) where a saved one is a link (it opens); they read the same. */
+.sess-tab button.t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; border: 0; background: transparent; color: inherit; font: inherit; padding: 0; }
+.sess-tab button.t:hover { text-decoration: underline; }
+.sess-tab .tag { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); flex: 0 0 auto; }
+/* A filled bookmark is status, not an offer: it stays visible unhovered, so a session shows at a glance what is already kept. */
+.sess-tab .bm.on { opacity: 1; color: var(--accent); }
 .menu.compact { width: 250px; right: auto; left: 0; }
 .sess-saved-head { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
 .hits .divider { padding: 8px 14px 2px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }

@@ -2,7 +2,7 @@ import type { App } from '../app';
 import { $, clear, debounce, el } from '@/lib/dom';
 import { browser } from 'wxt/browser';
 import { bookmarksAvailable, removeBookmark, searchBookmarks } from '@/lib/bookmarks';
-import { hostOf, searchSavedTabs } from '@/lib/sessions';
+import { activateTab, hostOf, searchOpenTabs, searchSavedTabs, withoutOpen } from '@/lib/sessions';
 import { tryCalculate } from '@/lib/calc';
 import type { RecipesUI } from './recipes';
 import type { TodosUI } from './todos';
@@ -81,9 +81,10 @@ export function initAskBar(app: App, deps: AskBarDeps): void {
   // Bookmark search as you type. Local, instant, and the reason the box says "or find a bookmark".
   if (bookmarksAvailable()) {
     const render = async (q: string) => {
-      const [found, saved] = await Promise.all([searchBookmarks(q), searchSavedTabs(q, 5)]);
+      const [found, live, stored] = await Promise.all([searchBookmarks(q), searchOpenTabs(q, 3), searchSavedTabs(q, 5)]);
+      const saved = withoutOpen(stored, live);
       clear(hits);
-      hits.hidden = found.length === 0 && saved.length === 0;
+      hits.hidden = found.length === 0 && live.length === 0 && saved.length === 0;
       for (const b of found) {
         let host = ''; try { host = new URL(b.url).host.replace(/^www\./, ''); } catch { /* skip */ }
         const row = el('a', { class: 'hit', href: b.url, title: b.url },
@@ -103,8 +104,22 @@ export function initAskBar(app: App, deps: AskBarDeps): void {
         );
         hits.append(row);
       }
+      // Open before saved: one click switches to it, where a saved tab has to be reopened.
+      if (live.length) {
+        if (found.length) hits.append(el('div', { class: 'divider' }, 'Open tabs'));
+        for (const h of live) {
+          hits.append(el('button', {
+            class: 'hit saved', type: 'button', title: h.tab.url,
+            onclick: () => { hits.hidden = true; void activateTab(h.tab.tabId, h.tab.windowId); },
+          } as any,
+            el('img', { src: browser.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(h.tab.url)}&size=32` as any), alt: '' }),
+            el('span', { class: 't' }, h.tab.title),
+            el('span', { class: 'h' }, hostOf(h.tab.url)),
+            el('span', { class: 'tag' }, h.window.current ? 'this window' : 'open')));
+        }
+      }
       if (saved.length) {
-        if (found.length) hits.append(el('div', { class: 'divider' }, 'Saved tabs'));
+        if (found.length || live.length) hits.append(el('div', { class: 'divider' }, 'Saved tabs'));
         for (const h of saved) {
           hits.append(el('a', { class: 'hit saved', href: h.tab.url, title: h.tab.url },
             el('img', { src: browser.runtime.getURL(`/_favicon/?pageUrl=${encodeURIComponent(h.tab.url)}&size=32` as any), alt: '' }),
