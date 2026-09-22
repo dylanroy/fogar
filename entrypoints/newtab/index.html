@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script src="/theme-boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>New Tab</title>
     <link rel="stylesheet" href="./style.css" />
@@ -14,6 +15,10 @@
           <div id="today" class="today"></div>
         </div>
         <div class="top-actions">
+        <span class="menu-wrap">
+          <button id="customize-btn" class="ghost small" type="button" aria-haspopup="menu" aria-expanded="false" title="Appearance and layout">Customize</button>
+          <div id="customize-menu" class="menu customize" role="menu" hidden></div>
+        </span>
         <button id="focus-toggle" class="ghost small" type="button" aria-pressed="false" title="Hide everything except the ask box and the conversation">Focus</button>
         <div class="mode" role="radiogroup" aria-label="Where answers come from">
           <button id="mode-local" class="mode-btn" role="radio" aria-checked="true" aria-label="On this device" title="On this device. Nothing you type leaves this browser.">

@@ -42,6 +42,10 @@ Every proposed feature passes these five or it does not ship.
 - [x] Privacy policy, store listing copy, generated store assets, zipped build.
 - [x] Right-click questions carry the page (activeTab + scripting, session storage hand-off). "Dig deeper" on answers: search again, think longer (600-token budget), ask the other model; re-asks replace the exchange. Honesty line in the system prompt. Test build variant (WXT_E2E=1) so the suite exercises the real right-click path.
 
+### Phase 3c: make it yours (closed 2026-09-22)
+- [x] Customize popover: appearance override, curated accents plus a hue slider, paper tint, heading face, density; layout: ask box placement, sidebar arrangement for wide windows, widget columns, recipes row. Reset. Theme share links. Drag widgets to reorder (arrows kept for keyboards).
+- [x] Themes as data: OKLCH tokens derived from four numbers, so no theme can be unreadable. Boot script paints the saved theme before first paint. Backup carries the theme.
+
 ## Now: release candidate, v0.1
 
 The goal is a listing that gets approved on the first pass and a page that is true the day it goes live.
@@ -108,6 +112,7 @@ Dylan's ask: connect Google Calendar and show a daily agenda on the new tab. Tha
 - **Gmail.** Its scopes are "restricted", which means an annual third-party security assessment on top of verification, and reading mail is the opposite of the pitch. Calendar is different and is on the roadmap above.
 - **Paid tiers or lifetime deals.** Zero marginal cost, no server, no accounts.
 - **Analytics in the extension.** Contradicts the pitch and complicates the listing.
+- **Arbitrary CSS themes and wallpapers.** Not a Chrome rule, a quality one: free CSS breaks contrast and dark mode and looks like user code to a reviewer; wallpapers pull the design toward a screensaver. Themes are parameters instead.
 - **Scraping a search engine for grounding.** Breaks, violates terms, and gets store listings pulled. DuckDuckGo's Instant Answer API and Wikipedia's API are official, keyless, and CORS-open, so they are the free tier; DuckDuckGo's web results have no API and are not scraped. Full web results stay bring-your-own key.
 - **The `history` permission.** Scares people at install and invites review trouble. Bookmarks are enough.
 - **The `tabs` permission at install.** Chrome labels it "Read your browsing history". It exists only as an optional permission, asked for when someone adds the Sessions widget, with the reason stated in the widget.

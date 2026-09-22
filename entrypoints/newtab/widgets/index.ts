@@ -1,6 +1,6 @@
 import type { App } from '../app';
 import { $, clear, el } from '@/lib/dom';
-import { loadLayout, newInstance, saveLayout, type Layout, type WidgetInstance, type WidgetType } from '@/lib/layout';
+import { applyLayoutAttrs, loadLayout, newInstance, saveLayout, type Layout, type WidgetInstance, type WidgetType } from '@/lib/layout';
 import type { RecipesUI } from '../ui/recipes';
 import type { TodosUI } from '../ui/todos';
 import type { RemindersUI } from '../ui/reminders';
@@ -9,6 +9,8 @@ import { WIDGETS, widgetDef, type WidgetCtx } from './defs';
 export interface WidgetsUI {
   layout: Layout;
   ensure(type: WidgetType): Promise<void>;
+  /** Change the page shape (ask placement, arrangement, columns, recipes row, focus); persists and repaints. */
+  update(patch: Partial<Pick<Layout, 'ask' | 'arrangement' | 'columns' | 'showRecipes' | 'focus'>>): Promise<void>;
 }
 
 /** Renders the layout, owns the controls (reorder, configure, hide, add), and the Focus toggle. */
@@ -16,6 +18,7 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
   const grid = $('widgets');
   const layout = await loadLayout();
   const cards = new Map<string, HTMLElement>();
+  applyLayoutAttrs(layout);
 
   const persist = () => saveLayout(layout);
   const ctx: WidgetCtx = {
@@ -50,12 +53,49 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
       ctrl(isWide(inst) ? '⤡' : '⤢', isWide(inst) ? 'Half width' : 'Full width', async () => { inst.config.wide = !isWide(inst); await persist(); render(); }),
       ctrl('×', 'Remove from page', () => void remove(inst)),
     );
+    const title = el('h2', { draggable: true, title: 'Drag to reorder' }, def.name(inst));
     const card = el('div', { class: `card panel widget${isWide(inst) ? ' wide' : ''}`, dataset: { type: inst.type, id: inst.id } },
-      el('div', { class: 'row-head' }, el('h2', {}, def.name(inst)), el('span', { class: 'row-actions widget-actions' }, controls)),
+      el('div', { class: 'row-head' }, title, el('span', { class: 'row-actions widget-actions' }, controls)),
       el('div', { class: 'widget-body' }));
     if (inst.type === 'todos') card.id = 'todos-card';
     if (inst.type === 'reminders') card.id = 'reminders-card';
+
+    // Drag the title to reorder. Dropping on the left/top half of a card lands before it, the right/bottom half after.
+    title.addEventListener('dragstart', (e) => {
+      dragId = inst.id; card.classList.add('dragging');
+      e.dataTransfer?.setData('text/plain', inst.id); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
+    });
+    title.addEventListener('dragend', () => { dragId = null; card.classList.remove('dragging'); clearDropMarks(); });
+    const side = (e: DragEvent) => {
+      const r = card.getBoundingClientRect();
+      return isWide(inst) ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2;
+    };
+    card.addEventListener('dragover', (e) => {
+      if (!dragId || dragId === inst.id) return;
+      e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const before = side(e);
+      card.classList.toggle('drop-before', before); card.classList.toggle('drop-after', !before);
+    });
+    card.addEventListener('dragleave', () => card.classList.remove('drop-before', 'drop-after'));
+    card.addEventListener('drop', (e) => {
+      if (!dragId || dragId === inst.id) return;
+      e.preventDefault();
+      void reorder(dragId, inst.id, side(e));
+    });
     return card;
+  }
+
+  let dragId: string | null = null;
+  const clearDropMarks = () => { for (const c of cards.values()) c.classList.remove('drop-before', 'drop-after'); };
+  async function reorder(fromId: string, toId: string, before: boolean) {
+    const from = layout.widgets.findIndex((w) => w.id === fromId);
+    if (from < 0) return;
+    const [moved] = layout.widgets.splice(from, 1);
+    let to = layout.widgets.findIndex((w) => w.id === toId);
+    if (to < 0) { layout.widgets.splice(from, 0, moved!); return; }
+    if (!before) to += 1;
+    layout.widgets.splice(to, 0, moved!);
+    await persist(); render();
   }
 
   function render() {
@@ -101,13 +141,19 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
 
   // Focus mode
   const focusBtn = $('focus-toggle');
-  const paintFocus = () => { document.body.classList.toggle('focus', layout.focus); focusBtn.textContent = layout.focus ? 'Show everything' : 'Focus'; focusBtn.setAttribute('aria-pressed', String(layout.focus)); };
+  const paintFocus = () => { applyLayoutAttrs(layout); focusBtn.textContent = layout.focus ? 'Show everything' : 'Focus'; focusBtn.setAttribute('aria-pressed', String(layout.focus)); };
   focusBtn.onclick = async () => { layout.focus = !layout.focus; await persist(); paintFocus(); };
   paintFocus();
+
+  async function update(patch: Partial<Pick<Layout, 'ask' | 'arrangement' | 'columns' | 'showRecipes' | 'focus'>>) {
+    Object.assign(layout, patch);
+    await persist();
+    paintFocus();
+  }
 
   // The ask bar can capture "remind me…" even when the widget is hidden.
   deps.reminders.onNeedMount = () => add('reminders');
 
   render();
-  return { layout, ensure: (type) => add(type) };
+  return { layout, ensure: (type) => add(type), update };
 }

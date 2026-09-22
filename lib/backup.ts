@@ -16,6 +16,7 @@ export interface Backup {
   reminders: Reminder[];
   sessions?: Session[];
   layout?: unknown;
+  theme?: unknown;
   notes?: Record<string, unknown>;
 }
 
@@ -33,6 +34,7 @@ export async function exportBackup(): Promise<Backup> {
     reminders: await loadReminders(),
     sessions: await loadSessions(),
     layout: await getItem('fogar.layout', undefined),
+    theme: await getItem('fogar.theme', undefined),
     notes,
   };
 }
@@ -65,6 +67,7 @@ export async function importBackup(raw: unknown): Promise<{ recipes: number; tod
   }
   if (b.settings && typeof b.settings === 'object') { const current = await loadSettings(); await saveSettings({ ...current, ...b.settings, onboarded: true }); }
   if (b.layout) await setItem('fogar.layout', b.layout);
+  if (b.theme) await setItem('fogar.theme', b.theme);
   if (b.notes && typeof b.notes === 'object') for (const [k, v] of Object.entries(b.notes)) if (k.startsWith('fogar.widget.')) await setItem(k, v);
   return { recipes, todos, reminders };
 }

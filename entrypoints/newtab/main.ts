@@ -11,6 +11,8 @@ import { $, el } from '@/lib/dom';
 import { detectDevice, recommendModel } from '@/lib/device';
 import { browser } from 'wxt/browser';
 import { CTX_KEY, type PageContext } from '@/lib/page-context';
+import { applyTheme, decodeThemeShare, loadTheme, saveTheme } from '@/lib/theme';
+import { initCustomize } from './ui/customize';
 
 const params = new URLSearchParams(location.search);
 const SMOKE = params.get('smoke') === '1'; // automated flows
@@ -18,6 +20,7 @@ const E2E = params.get('e2e') === '1'; // marks onboarding done, then waits for 
 const INITIAL_QUESTION = params.get('q');
 const CTX_ID = params.get('ctx'); // set by the background worker for a right-click question
 const SHARED_RECIPE = params.get('recipe');
+const SHARED_THEME = params.get('theme');
 const EVAL = params.get('eval') === '1'; // model quality and speed harness, see scripts/eval-models.mjs
 
 // Rotating footer line. Own products first; a disclosed sponsor slot comes later, and only with real usage.
@@ -31,6 +34,13 @@ const PROMO: Array<[label: string, href: string]> = [
 async function main() {
   const app = new App();
   await app.init();
+  // The boot script already painted the mirrored theme; this corrects it from the source of truth.
+  const theme = await loadTheme();
+  if (SHARED_THEME) {
+    const shared = decodeThemeShare(SHARED_THEME);
+    if (shared) { Object.assign(theme, shared); await saveTheme(theme); }
+  }
+  applyTheme(theme);
   const releaseMs = params.get('releasems'); if (releaseMs) app.releaseAfterMs = Number(releaseMs); // test hook
   const s = app.settings;
   app.device = await detectDevice();
@@ -62,10 +72,12 @@ async function main() {
   const recipes = initRecipes(app);
   const todos = createTodosUI(app);
   const reminders = createRemindersUI(app);
-  await initWidgets(app, { recipes, todos, reminders });
+  const widgets = await initWidgets(app, { recipes, todos, reminders });
+  initCustomize(app, widgets, theme);
   initAskBar(app, { todos, reminders, recipes });
   initFirstRun(app);
   app.setMode(s.mode);
+  if (SHARED_THEME) app.toast(decodeThemeShare(SHARED_THEME) ? 'Theme applied from the link. Open Customize to change it.' : 'That theme link is not valid.');
 
   // A right-click question arrives with the page it came from. The selection may already carry quotes; do not add more.
   let pageContext: PageContext | null = null;

@@ -22,6 +22,7 @@ Release candidate v0.1.0. Everything below works end to end and is covered by `n
 - "Dig deeper" on every answer: search the web and answer again (grounded, cited), think longer (reasoning mode with a 600-token budget, local thinking models), or ask the other model (cloud or local). Each re-ask replaces the earlier exchange in the conversation.
 - The system prompt tells the model to say when it does not know rather than invent names, dates, or numbers.
 - Bookmark search as you type.
+- Customize: appearance (system, light, or dark; six curated accents or any hue; warm, neutral, or cool paper; serif or sans headings; comfortable or compact density) and layout (ask box at the top or centered, widgets in a sidebar on wide windows, two or three widget columns, hide the recipes row). Drag a widget's title to reorder. A theme is a dozen numbers, never CSS: colors derive in OKLCH at fixed lightness, so every choice stays readable in both light and dark, and a theme shares as a link. A tiny boot script paints the saved theme and layout before the first frame.
 - A network ledger that counts every request this tab made, by host. Backup and restore of everything.
 - Landing page and privacy policy in `site/`. Store listing copy and generated assets in `store/`.
 

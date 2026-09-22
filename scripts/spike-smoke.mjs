@@ -358,7 +358,7 @@ await page.click('#focus-toggle');
 const cornerHidden = await page.evaluate(() => getComputedStyle(document.getElementById('corner')).display === 'none' && getComputedStyle(document.querySelector('.recipes')).display === 'none');
 await page.reload();
 await page.waitForSelector('#focus-toggle');
-const focusPersists = await page.evaluate(() => document.body.classList.contains('focus') && document.getElementById('focus-toggle').textContent === 'Show everything');
+const focusPersists = await page.evaluate(() => document.documentElement.classList.contains('focus') && document.getElementById('focus-toggle').textContent === 'Show everything');
 await page.click('#focus-toggle');
 const cornerBack = await page.evaluate(() => getComputedStyle(document.getElementById('corner')).display !== 'none');
 check('widgets reorder, remove, and focus mode persists', firstBefore !== firstAfter && notesGone && cornerHidden && focusPersists && cornerBack, `${firstBefore}→${firstAfter}`);
@@ -479,6 +479,63 @@ check('sessions: restore reopens the saved window; delete removes the session', 
   check('sessions: flow completed without a thrown step', false, String(err.message ?? err).split('\n')[0].slice(0, 160));
   await page.evaluate(async () => { const ws = await chrome.windows.getAll(); const cur = await chrome.windows.getCurrent(); for (const w of ws) if (w.id !== cur.id) await chrome.windows.remove(w.id).catch(() => {}); }).catch(() => {});
 }
+
+// 13. Customize: appearance, accent, paper, headings, density apply, persist, and the boot script restores them first
+await page.goto(`${base}?e2e=1`);
+await page.waitForSelector('#customize-btn');
+await page.click('#customize-btn');
+await page.click('#customize-menu [data-appearance="dark"]');
+await page.click('#customize-menu [data-accent="Moss"]');
+await page.click('#customize-menu [data-paper="cool"]');
+await page.click('#customize-menu [data-headings="sans"]');
+await page.click('#customize-menu [data-density="compact"]');
+const menuStillOpen = await page.evaluate(() => !document.getElementById('customize-menu').hidden);
+const applied = await page.evaluate(() => { const r = document.documentElement; const cs = getComputedStyle(r); return { theme: r.dataset.theme, h: cs.getPropertyValue('--h').trim(), ph: cs.getPropertyValue('--ph').trim(), headings: r.dataset.headings, density: r.dataset.density, brandFont: getComputedStyle(document.querySelector('.brand')).fontFamily.slice(0, 13) }; });
+await page.addInitScript(() => { document.addEventListener('DOMContentLoaded', () => { const r = document.documentElement; window.__boot = { theme: r.dataset.theme, h: r.style.getPropertyValue('--h'), density: r.dataset.density }; }); });
+await page.reload();
+await page.waitForSelector('#customize-btn');
+const boot = await page.evaluate(() => window.__boot);
+check('customize: theme applies, persists, and the boot script restores it before first paint', menuStillOpen && applied.theme === 'dark' && applied.h === '145' && applied.ph === '250' && applied.headings === 'sans' && applied.density === 'compact' && applied.brandFont === 'ui-sans-serif' && boot?.theme === 'dark' && boot?.h === '145' && boot?.density === 'compact', JSON.stringify({ applied, boot }));
+
+// 14. Customize: layout — centered ask box, sidebar on a wide window, hidden recipes, 3 columns; persists
+await page.setViewportSize({ width: 1440, height: 900 });
+await page.click('#customize-btn');
+await page.click('#customize-menu [data-ask="centered"]');
+await page.click('#customize-menu [data-arrangement="sidebar"]');
+await page.click('#customize-menu [data-recipes="hidden"]');
+const lay1 = await page.evaluate(() => ({ ask: document.documentElement.dataset.ask, pageCols: getComputedStyle(document.querySelector('.page')).gridTemplateColumns.trim().split(/\s+/).length, recipes: getComputedStyle(document.querySelector('.recipes')).display, askMin: Math.round(parseFloat(getComputedStyle(document.querySelector('.ask')).minHeight)) }));
+await page.click('#customize-menu [data-arrangement="stack"]');
+await page.click('#customize-menu [data-columns="3"]');
+const lay2 = await page.evaluate(() => ({ panelCols: getComputedStyle(document.getElementById('widgets')).gridTemplateColumns.trim().split(/\s+/).length, pageCols: getComputedStyle(document.querySelector('.page')).gridTemplateColumns.trim().split(/\s+/).length }));
+await page.reload(); await page.waitForSelector('#customize-btn');
+const lay3 = await page.evaluate(() => ({ ask: document.documentElement.dataset.ask, columns: document.documentElement.dataset.columns, recipes: document.documentElement.dataset.recipes, mirrored: JSON.parse(localStorage.getItem('fogar.layout') || '{}').columns }));
+check('customize: layout options apply and persist', lay1.ask === 'centered' && lay1.pageCols === 2 && lay1.recipes === 'none' && lay1.askMin > 300 && lay2.panelCols === 3 && lay2.pageCols === 1 && lay3.ask === 'centered' && lay3.columns === '3' && lay3.recipes === 'hidden' && lay3.mirrored === 3, JSON.stringify({ lay1, lay2, lay3 }));
+await page.setViewportSize({ width: 1280, height: 800 });
+await page.click('#customize-btn'); await page.click('#customize-menu [data-reset="all"]');
+await page.waitForFunction(() => document.documentElement.dataset.ask === 'top' && !document.documentElement.dataset.theme && getComputedStyle(document.documentElement).getPropertyValue('--h').trim() === '40', null, { timeout: 5000 }).catch(() => {});
+const resetState = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, h: getComputedStyle(document.documentElement).getPropertyValue('--h').trim(), ask: document.documentElement.dataset.ask, columns: document.documentElement.dataset.columns, recipes: document.documentElement.dataset.recipes }));
+check('customize: reset returns theme and layout to the defaults, widgets untouched', resetState.theme === null && resetState.h === '40' && resetState.ask === 'top' && resetState.columns === 'auto' && resetState.recipes === 'shown' && (await page.evaluate(() => document.querySelectorAll('#widgets .widget').length)) > 0, JSON.stringify(resetState));
+
+// 15. drag a widget by its title to reorder; the order persists
+await page.evaluate(() => chrome.storage.local.set({ 'fogar.layout': { version: 1, widgets: [{ id: 'todos', type: 'todos', config: {} }, { id: 'reminders', type: 'reminders', config: {} }], focus: false, ask: 'top', arrangement: 'stack', columns: 'auto', showRecipes: true } }));
+await page.goto(`${base}?e2e=1`); await page.waitForSelector('#widgets .widget');
+const orderBefore = await page.evaluate(() => [...document.querySelectorAll('#widgets .widget')].map((w) => w.dataset.type));
+await page.locator('#widgets .widget').first().locator('h2').dragTo(page.locator('#widgets .widget').nth(1), { targetPosition: { x: 260, y: 20 } });
+await page.waitForFunction((b) => document.querySelectorAll('#widgets .widget')[0]?.dataset.type !== b[0], orderBefore, { timeout: 5000 }).catch(() => {});
+const orderAfter = await page.evaluate(() => [...document.querySelectorAll('#widgets .widget')].map((w) => w.dataset.type));
+await page.reload(); await page.waitForSelector('#widgets .widget');
+const orderReload = await page.evaluate(() => [...document.querySelectorAll('#widgets .widget')].map((w) => w.dataset.type));
+check('drag a widget title to reorder; the order persists', orderBefore.length === 2 && orderAfter[0] === orderBefore[1] && orderAfter[1] === orderBefore[0] && orderReload.join() === orderAfter.join(), `${orderBefore.join('→')} ⇒ ${orderAfter.join('→')}`);
+
+// 16. a theme link applies and is saved
+const encTheme = await page.evaluate(() => btoa(JSON.stringify({ version: 1, appearance: 'light', hue: 325, chroma: 0.14, accentName: 'Plum', paper: 'neutral', headings: 'serif', density: 'comfortable' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
+await page.goto(`${base}?e2e=1&theme=${encTheme}`); await page.waitForSelector('#customize-btn');
+const linked = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme, h: getComputedStyle(document.documentElement).getPropertyValue('--h').trim(), ph: getComputedStyle(document.documentElement).getPropertyValue('--ph').trim() }));
+await page.goto(`${base}?e2e=1`); await page.waitForSelector('#customize-btn');
+const linkedPersist = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--h').trim());
+check('a theme link applies and is saved', linked.theme === 'light' && linked.h === '325' && linked.ph === '0' && linkedPersist === '325', JSON.stringify(linked));
+await page.click('#customize-btn'); await page.click('#customize-menu [data-reset="all"]');
+await page.waitForFunction(() => getComputedStyle(document.documentElement).getPropertyValue('--h').trim() === '40', null, { timeout: 5000 }).catch(() => {});
 
 // 9. share link offers the recipe
 const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));

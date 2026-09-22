@@ -29,6 +29,7 @@ When you want a bigger brain, switch to Cloud and bring your own key for OpenAI,
 • Sessions: twenty windows, three hundred tabs, zero fear. Save a window and close it; every tab stays one search away. Restore a window later, promote tabs into a bookmark folder, or export everything as a Markdown list or a bookmarks file any browser can import. Asks for the tabs permission only when you add the widget.
 • Bookmarks: start typing to find one. Or ask "find bookmarks that are job postings" and the model sorts them for you.
 • Right-click any text on any page: "Ask Fogar about …". The page's title, address, and the text around your selection go along, so the answer comes from the page you were reading.
+• Make it yours: light or dark, accent colors, paper tint, fonts, density, a centered ask box or a widget sidebar on wide screens. Drag widgets into order. Share a theme as a link.
 • Dig deeper on any answer: search the web and answer again with sources, let the model think longer, or ask your cloud model the same question.
 • Arithmetic is computed, not guessed: "18% of 240" gives 43.2 every time.
 • Optional web grounding: tick “Search the web first” and Fogar looks the question up on DuckDuckGo instant answers and Wikipedia, no key needed, then answers with sources. Add a Brave Search or Tavily key for full web results.

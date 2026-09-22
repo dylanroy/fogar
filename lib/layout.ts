@@ -9,11 +9,20 @@ export interface WidgetInstance {
   config: Record<string, any>;
 }
 
+export type AskPlacement = 'top' | 'centered';
+/** How the page uses a wide window: one column as on narrow windows, or widgets in a right-hand rail. */
+export type Arrangement = 'stack' | 'sidebar';
+export type Columns = 'auto' | 2 | 3;
+
 export interface Layout {
   version: 1;
   widgets: WidgetInstance[];
   /** Focus mode: only the ask box and the conversation. */
   focus: boolean;
+  ask: AskPlacement;
+  arrangement: Arrangement;
+  columns: Columns;
+  showRecipes: boolean;
 }
 
 export const DEFAULT_LAYOUT: Layout = {
@@ -23,11 +32,28 @@ export const DEFAULT_LAYOUT: Layout = {
     { id: 'reminders', type: 'reminders', config: {} },
   ],
   focus: false,
+  ask: 'top',
+  arrangement: 'stack',
+  columns: 'auto',
+  showRecipes: true,
 };
 
 const KEY = 'fogar.layout';
 export const loadLayout = async (): Promise<Layout> => ({ ...DEFAULT_LAYOUT, ...(await getItem<Partial<Layout>>(KEY, {})) } as Layout);
-export const saveLayout = (l: Layout) => setItem(KEY, l);
+export const saveLayout = async (l: Layout): Promise<void> => {
+  await setItem(KEY, l);
+  // Mirror the page-shape fields so public/theme-boot.js can lay the page out before the first paint.
+  try { localStorage.setItem(KEY, JSON.stringify({ ask: l.ask, arrangement: l.arrangement, columns: l.columns, showRecipes: l.showRecipes, focus: l.focus })); } catch { /* fine */ }
+};
+
+/** The layout as attributes on the root element; the stylesheet does the rest. */
+export function applyLayoutAttrs(l: Layout, root: HTMLElement = document.documentElement): void {
+  root.dataset.ask = l.ask;
+  root.dataset.arrangement = l.arrangement;
+  root.dataset.columns = String(l.columns);
+  root.dataset.recipes = l.showRecipes ? 'shown' : 'hidden';
+  root.classList.toggle('focus', l.focus);
+}
 
 export function newInstance(type: WidgetType, config: Record<string, any> = {}): WidgetInstance {
   return { id: `${type}-${uid()}`, type, config };
