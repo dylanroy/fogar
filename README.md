@@ -60,6 +60,7 @@ npm run shots        # light and dark screenshots to .output/shots
 npm run zip          # store-ready zip in .output/
 node scripts/eval-models.mjs      # model quality and speed, see Measured
 node scripts/store-assets.mjs     # store screenshots and promo tiles into store/
+npm run site         # site/index.html for fogar.ai, plus the zip as site/fogar-chrome.zip
 ```
 
 Load the unpacked extension from `.output/chrome-mv3` at `chrome://extensions` with Developer mode on. Open a new tab.
@@ -70,7 +71,7 @@ Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL
 
 `npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
 
-`npm run site` wraps `site/page.html` into the deployable `site/index.html` for fogar.ai. The page body is kept separate so the same file can be previewed as a Claude artifact.
+`npm run site` wraps `site/page.html` into the deployable `site/index.html` for fogar.ai and copies the current `.output/fogar-<version>-chrome.zip` to `site/fogar-chrome.zip`, which the landing page offers as a direct download until the store listing is live (unzip, Developer mode, Load unpacked). The page body is kept separate so the same file can be previewed as a Claude artifact. To publish: `npm run zip && npm run site && npx wrangler deploy`.
 
 ## Manifest V3 constraints, and how each is handled
 

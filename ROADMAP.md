@@ -57,6 +57,7 @@ The goal is a listing that gets approved on the first pass and a page that is tr
 - [x] `wxt zip` produces the store package in `.output/`.
 - [ ] Submit to the store. New-tab overrides get extra review; expect days to weeks. Needs Dylan's developer account.
 - [x] Public GitHub repo: github.com/dylanroy/fogar (2026-09-22). The landing page's "Get the source" button points at it.
+- [x] Landing page offers the built zip as a direct download, fogar.ai/fogar-chrome.zip, with unzip / Developer mode / Load unpacked steps in place of the clone-and-build block, until the store listing exists (2026-09-22). `npm run site` copies the zip from `.output/`; it is not committed.
 - [x] fogar.ai on Cloudflare (Dylan); `site/` deployed as an assets-only Worker (`wrangler.jsonc`, `npx wrangler deploy`) with edge routes for fogar.ai and www.fogar.ai, since the zone's imported parking records block Worker custom domains (2026-09-22).
 - [ ] Recipe assistant: "Describe the recipe you want" and the model drafts the JSON, validated and opened in the existing editor. Worth doing once the 4B is the common tier; the smaller ones will not produce valid JSON reliably (see the eval).
 

@@ -7,3 +7,4 @@ public/wllama/
 .env
 .output-e2e/
 .wrangler/
+site/*.zip
