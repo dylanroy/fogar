@@ -11,7 +11,7 @@
 // The suite builds its own test variant (WXT_E2E=1 → .output-e2e) with a host permission for the mock server, so
 // the right-click page-context path can run for real. The store build in .output is untouched.
 import { chromium } from 'playwright';
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -30,7 +30,7 @@ const results = [];
 const check = (name, ok, detail = '') => { results.push({ name, ok, detail }); console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? `  (${detail})` : ''}`); };
 
 const context = await chromium.launchPersistentContext(userDataDir, {
-  channel: 'chromium', headless,
+  channel: 'chromium', headless, acceptDownloads: true,
   args: [`--disable-extensions-except=${ext}`, `--load-extension=${ext}`, '--enable-unsafe-webgpu'],
 });
 let sw = context.serviceWorkers()[0];
@@ -443,6 +443,22 @@ await page.hover('.widget[data-type="sessions"] .sess-tabs .sess-tab:has-text("A
 await page.click('.widget[data-type="sessions"] .sess-tabs .sess-tab:has-text("Acme") .x');
 await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="sessions"] .sess-tabs .sess-tab').length === 1, null, { timeout: 5000 });
 check('sessions: ask-bar and widget search, bookmark all into a session folder, remove a tab', askHit === 'Quarterly Invoice from Globex' && widgetHit.includes('Acme Careers') && folderOk, `ask="${askHit}" widget="${widgetHit.slice(0, 30)}" folder=${folderOk}`);
+
+// 12b2. export: the Markdown list and the browser bookmarks file both carry the remaining link
+await page.click('.widget[data-type="sessions"] .sess-session .sess-export .ctl');
+const [mdDl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('.widget[data-type="sessions"] .sess-session .sess-export-menu .menu-item:has-text("Markdown list")')]);
+const mdText = readFileSync(await mdDl.path(), 'utf8');
+await page.click('.widget[data-type="sessions"] .sess-session .sess-export .ctl');
+const [htmlDl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('.widget[data-type="sessions"] .sess-session .sess-export-menu .menu-item:has-text("Browser bookmarks")')]);
+const htmlText = readFileSync(await htmlDl.path(), 'utf8');
+await page.click('.widget[data-type="sessions"] .sess-saved-head .sess-export .ctl');
+const [jsonDl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('.widget[data-type="sessions"] .sess-saved-head .sess-export-menu .menu-item:has-text("Fogar file")')]);
+const fogarFile = JSON.parse(readFileSync(await jsonDl.path(), 'utf8'));
+check('sessions: export as Markdown, browser bookmarks file, and Fogar file',
+  mdDl.suggestedFilename().endsWith('.md') && /\[Quarterly Invoice from Globex\]\(http:\/\/127\.0\.0\.1:\d+\/invoice\.html\)/.test(mdText)
+    && htmlText.startsWith('<!DOCTYPE NETSCAPE-Bookmark-file-1>') && /<DT><A HREF="http:\/\/127\.0\.0\.1:\d+\/invoice\.html"/.test(htmlText) && /<H3[^>]*>Sep|<H3[^>]*>\w/.test(htmlText)
+    && fogarFile.fogar === 1 && Array.isArray(fogarFile.sessions) && fogarFile.sessions.length === 1 && jsonDl.suggestedFilename().startsWith('fogar-sessions-'),
+  `${mdDl.suggestedFilename()}, ${htmlDl.suggestedFilename()}, ${jsonDl.suggestedFilename()}`);
 
 // 12c. restore reopens the window; delete removes the session
 await page.click('.widget[data-type="sessions"] .sess-session button:has-text("Restore")');

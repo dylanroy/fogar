@@ -26,7 +26,7 @@ When you want a bigger brain, switch to Cloud and bring your own key for OpenAI,
 • Reminders in plain words: "call the dentist tomorrow at 9". Fires as a Chrome notification. One click adds it to Google Calendar, no account connection needed.
 • Agenda from any calendar's iCal address. Today and tomorrow, on every new tab.
 • Todos, Links, Notes, Weather (from Open-Meteo, no key). Pin the panels you want, in the order you want, or hit Focus for just the ask box.
-• Sessions: twenty windows, three hundred tabs, zero fear. Save a window and close it; every tab stays one search away. Restore a window later, or promote tabs into a bookmark folder. Asks for the tabs permission only when you add the widget.
+• Sessions: twenty windows, three hundred tabs, zero fear. Save a window and close it; every tab stays one search away. Restore a window later, promote tabs into a bookmark folder, or export everything as a Markdown list or a bookmarks file any browser can import. Asks for the tabs permission only when you add the widget.
 • Bookmarks: start typing to find one. Or ask "find bookmarks that are job postings" and the model sorts them for you.
 • Right-click any text on any page: "Ask Fogar about …". The page's title, address, and the text around your selection go along, so the answer comes from the page you were reading.
 • Dig deeper on any answer: search the web and answer again with sources, let the model think longer, or ask your cloud model the same question.

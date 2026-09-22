@@ -161,3 +161,44 @@ export async function searchSavedTabs(query: string, limit = 6): Promise<TabHit[
   hits.sort((a, b) => b.score - a.score || b.session.savedAt - a.session.savedAt);
   return hits.slice(0, limit);
 }
+
+// ---------- export ----------
+const esc = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+export const slug = (t: string) => t.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'session';
+
+/** A readable list of every link, one heading per session. */
+export function sessionsToMarkdown(list: Session[]): string {
+  const out: string[] = ['# Fogar sessions', '', `Exported ${new Date().toLocaleString()}.`, ''];
+  for (const s of list) {
+    out.push(`## ${s.name}`, '', `${tabCount(s)} tab${tabCount(s) === 1 ? '' : 's'} · saved ${new Date(s.savedAt).toLocaleString()}`, '');
+    s.windows.forEach((w, i) => {
+      if (s.windows.length > 1) out.push(`### Window ${i + 1}`, '');
+      for (const t of w.tabs) out.push(`- [${t.title.replace(/[\[\]]/g, ' ').trim() || t.url}](${t.url})`);
+      out.push('');
+    });
+  }
+  return out.join('\n');
+}
+
+/** The Netscape bookmark file format, which every browser's bookmark manager imports. One folder per session. */
+export function sessionsToBookmarksHtml(list: Session[]): string {
+  const ts = (ms: number) => Math.floor(ms / 1000);
+  const lines = [
+    '<!DOCTYPE NETSCAPE-Bookmark-file-1>',
+    '<!-- This is an automatically generated file. It will be read and overwritten. DO NOT EDIT! -->',
+    '<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">',
+    '<TITLE>Bookmarks</TITLE>', '<H1>Bookmarks</H1>', '<DL><p>',
+  ];
+  for (const s of list) {
+    lines.push(`    <DT><H3 ADD_DATE="${ts(s.savedAt)}" LAST_MODIFIED="${ts(Date.now())}">${esc(s.name)}</H3>`, '    <DL><p>');
+    for (const w of s.windows) for (const t of w.tabs) lines.push(`        <DT><A HREF="${esc(t.url)}" ADD_DATE="${ts(s.savedAt)}">${esc(t.title)}</A>`);
+    lines.push('    </DL><p>');
+  }
+  lines.push('</DL><p>');
+  return lines.join('\n') + '\n';
+}
+
+/** The backup shape, sessions only, so "Restore from a backup" brings it back into Fogar. */
+export function sessionsToFogarFile(list: Session[]): string {
+  return JSON.stringify({ fogar: 1, exportedAt: new Date().toISOString(), sessions: list }, null, 2);
+}

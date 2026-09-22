@@ -12,8 +12,9 @@ import { defaultUnit, describeWeather, fetchForecast, geocode, type Forecast, ty
 import { allRecipes, type Recipe } from '@/lib/recipes';
 import {
   bookmarkSession, bookmarkTabs, closeWindows, deleteSession, hasTabsPermission, hostOf, loadSessions, openWindows, removeTab, renameSession,
-  requestTabsPermission, restoreSession, restoreWindow, saveSession, searchSavedTabs, SESSIONS_KEY, tabCount, topHosts, type OpenWindow, type Session,
+  requestTabsPermission, restoreSession, restoreWindow, saveSession, searchSavedTabs, SESSIONS_KEY, sessionsToBookmarksHtml, sessionsToFogarFile, sessionsToMarkdown, slug, tabCount, topHosts, type OpenWindow, type Session,
 } from '@/lib/sessions';
+import { downloadFile } from '@/lib/backup';
 import { onItemChange } from '@/lib/store';
 
 export interface WidgetCtx {
@@ -322,6 +323,28 @@ const sessions: WidgetDef = {
       });
     };
 
+    // ---- export: a session, or everything, as a file the links survive in ----
+    const exportMenu = (title: string, get: () => Session[], fileBase: () => string) => {
+      const menu = el('div', { class: 'menu compact sess-export-menu', role: 'menu', hidden: true });
+      const btn = el('button', { class: 'ctl', type: 'button', title, 'aria-haspopup': 'menu', 'aria-expanded': 'false' } as any, '⇩');
+      const item = (label: string, note: string, run: (list: Session[]) => void | Promise<void>) =>
+        el('button', { class: 'menu-item', type: 'button', role: 'menuitem', onclick: async (e: MouseEvent) => { e.stopPropagation(); menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); await run(get()); } } as any,
+          el('strong', {}, label), el('span', { class: 'muted' }, note));
+      menu.append(
+        item('Markdown list', 'A readable .md file of every link.', (l) => downloadFile(`${fileBase()}.md`, sessionsToMarkdown(l), 'text/markdown')),
+        item('Browser bookmarks file', 'An .html file any browser imports from its bookmark manager.', (l) => downloadFile(`${fileBase()}.html`, sessionsToBookmarksHtml(l), 'text/html')),
+        item('Fogar file', 'A .json that “Restore from a backup” brings back.', (l) => downloadFile(`${fileBase()}.json`, sessionsToFogarFile(l), 'application/json')),
+        item('Copy links', 'The Markdown list, onto your clipboard.', async (l) => { await navigator.clipboard.writeText(sessionsToMarkdown(l)); app.toast('Links copied'); }),
+      );
+      btn.onclick = (e) => { e.stopPropagation(); menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden)); };
+      menu.onclick = (e) => e.stopPropagation();
+      return el('span', { class: 'menu-wrap sess-export' }, btn, menu);
+    };
+    if (!(document.body as any).__fogarSessExportClose) {
+      (document.body as any).__fogarSessExportClose = true;
+      document.addEventListener('click', (e) => { for (const m of document.querySelectorAll<HTMLElement>('.sess-export-menu:not([hidden])')) if (!m.parentElement!.contains(e.target as Node)) m.hidden = true; });
+    }
+
     // ---- saved sessions ----
     const tabRow = (s: Session, t: { id: string; url: string; title: string }, showSession: boolean) =>
       el('div', { class: 'sess-tab' },
@@ -342,6 +365,10 @@ const sessions: WidgetDef = {
         return;
       }
       if (!all.length) { savedBox.append(el('p', { class: 'muted empty' }, 'Nothing saved yet. Save a window above and you can close it knowing every tab is one search away.')); return; }
+      const totalSaved = all.reduce((n, s) => n + tabCount(s), 0);
+      savedBox.append(el('div', { class: 'sess-head sess-saved-head' },
+        el('span', {}, `${all.length} saved session${all.length === 1 ? '' : 's'} · ${totalSaved} tab${totalSaved === 1 ? '' : 's'}`),
+        el('span', { class: 'row-actions' }, el('span', { class: 'muted' }, 'Export all'), exportMenu('Export every saved session', () => all, () => `fogar-sessions-${new Date().toISOString().slice(0, 10)}`))));
       for (const s of all) {
         const n = tabCount(s);
         const row = el('div', { class: 'sess-session', dataset: { id: s.id } });
@@ -360,6 +387,7 @@ const sessions: WidgetDef = {
           el('div', { class: 'sess-actions' },
             el('button', { class: 'ghost small', type: 'button', title: 'Reopen every window in this session; tabs load when you click them', onclick: async () => { await restoreSession(s); app.toast(`Restored “${s.name}”`); void paintOpen(); } }, 'Restore'),
             el('button', { class: 'ghost small', type: 'button', title: 'Copy every tab into a bookmark folder named after this session', onclick: async () => { const r = await bookmarkSession(s); app.toast(`${r.added} bookmarked into “${s.name}”${r.skipped ? `, ${r.skipped} already there` : ''}`); } }, 'Bookmark all'),
+            exportMenu('Export this session', () => [s], () => `fogar-${slug(s.name)}`),
             el('button', { class: 'ctl', type: 'button', title: 'Rename', onclick: rename }, '✎'),
             el('button', { class: 'ctl', type: 'button', title: 'Delete this saved session', onclick: async () => { if (!confirm(`Delete “${s.name}” (${n} tabs)? This cannot be undone.`)) return; await deleteSession(s.id); void paintSaved(); } }, '×')));
         if (expanded.has(s.id)) {

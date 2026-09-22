@@ -69,9 +69,12 @@ export async function importBackup(raw: unknown): Promise<{ recipes: number; tod
   return { recipes, todos, reminders };
 }
 
-export function downloadJson(name: string, data: unknown): void {
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+export function downloadFile(name: string, text: string, type: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement('a'); a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadJson(name: string, data: unknown): void {
+  downloadFile(name, JSON.stringify(data, null, 2), 'application/json');
 }

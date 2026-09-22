@@ -246,6 +246,8 @@ body.focus .recipes, body.focus #corner, body.focus #examples, body.focus #first
 .sess-tab .x, .sess-tab .bm { border: 0; background: transparent; color: var(--muted); padding: 2px 5px; border-radius: 6px; font-size: 13px; opacity: 0; transition: opacity 0.1s; }
 .sess-tab:hover .x, .sess-tab:hover .bm, .sess-tab:focus-within .x, .sess-tab:focus-within .bm { opacity: 1; }
 .sess-tab .x:hover, .sess-tab .bm:hover { color: var(--accent); }
+.menu.compact { width: 250px; right: auto; left: 0; }
+.sess-saved-head { border-top: 1px solid var(--line); padding-top: 8px; margin-top: 4px; }
 .hits .divider { padding: 8px 14px 2px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
 .hit.saved .tag { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent); flex: 0 0 auto; }
 
