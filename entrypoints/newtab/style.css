@@ -216,7 +216,7 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .menu-item:disabled { opacity: 0.5; }
 .menu-item strong { font-weight: 600; }
 .menu-item .muted { font-size: 12px; }
-.widget { position: relative; }
+.widget { position: relative; container-type: inline-size; }
 .widget-controls { display: inline-flex; gap: 2px; opacity: 0; transition: opacity 0.12s; }
 .widget:hover .widget-controls, .widget:focus-within .widget-controls { opacity: 1; }
 .ctl { border: 0; background: transparent; color: var(--muted); border-radius: 6px; width: 26px; height: 26px; font-size: 14px; line-height: 1; display: grid; place-items: center; }
@@ -240,14 +240,33 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .add-link input { min-width: 0; }
 @media (max-width: 900px) { .add-link { grid-template-columns: 1fr auto; } .add-link input + input { grid-column: 1 / -1; } }
 .notes { min-height: 96px; resize: none; line-height: 1.5; font-size: 15px; }
-.agenda { display: grid; gap: 4px; }
-.agenda h4 { margin: 8px 0 4px; font-family: var(--heading); font-weight: 500; font-size: 15px; color: var(--muted); }
+.agenda { display: grid; gap: 1px; }
+.agenda h4 { display: flex; align-items: baseline; gap: 8px; margin: 16px 0 6px; padding: 0 8px; font-family: var(--heading); font-weight: 500; font-size: 15px; color: var(--fg); }
 .agenda h4:first-child { margin-top: 0; }
-.event { display: grid; grid-template-columns: 118px 1fr; gap: 10px; padding: 5px 6px; border-radius: 8px; font-size: 14px; }
+.agenda h4 .date, .agenda h4 .muted { font-family: var(--sans); font-size: 12.5px; font-weight: 400; color: var(--muted); }
+.event { display: grid; grid-template-columns: 136px minmax(0, 1fr) auto; align-items: baseline; column-gap: 14px; padding: 7px 8px; border-radius: 9px; font-size: 14px; line-height: 1.35; cursor: pointer; }
+.event:hover { background: var(--bg); }
+.event:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 .event .when { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; font-size: 13px; }
+.event .what { min-width: 0; overflow-wrap: anywhere; }
 .event .where { color: var(--muted); }
+.event .join { justify-self: end; align-self: center; color: var(--muted); text-decoration: none; font-size: 12px; font-weight: 500; border: 1px solid transparent; border-radius: 999px; padding: 2px 10px; white-space: nowrap; transition: color 0.12s, border-color 0.12s, background 0.12s; }
+.event:hover .join, .event:focus-within .join, .event.now .join, .event.open .join { color: var(--accent); border-color: var(--line); }
+.event .join:hover { border-color: var(--accent); background: var(--card); }
 .event.past { opacity: 0.5; }
-.event.now { background: var(--accent-soft); }
+.event.past .join { display: none; }
+.event.now { background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.event.open { background: var(--bg); }
+.event-detail { display: grid; gap: 7px; margin: 2px 0 10px 8px; padding: 11px 14px; border-radius: 11px; border: 1px solid var(--line); background: var(--bg); font-size: 13px; }
+.event-detail .detail-line { margin: 0; line-height: 1.45; }
+.event-detail .detail-desc { margin: 0; white-space: pre-wrap; line-height: 1.5; max-height: 180px; overflow: auto; overflow-wrap: anywhere; color: var(--muted); }
+.detail-links { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 1px; }
+.chip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 12.5px; text-decoration: none; color: inherit; }
+.chip:hover { border-color: var(--muted); }
+.chip.primary-chip { background: var(--accent); border-color: var(--accent); color: var(--accent-fg); font-weight: 500; }
+.chip.primary-chip:hover { filter: brightness(1.06); }
+/* A half-width card cannot hold a time column and a title side by side; stack them. */
+@container (max-width: 430px) { .event { grid-template-columns: minmax(0, 1fr) auto; } .event .when { grid-column: 1 / 2; grid-row: 1; } .event .what { grid-column: 1 / 2; grid-row: 2; } .event .join { grid-column: 2; grid-row: 1 / 3; } }
 .weather .now { display: flex; align-items: center; gap: 14px; }
 .weather .temp { font-family: var(--heading); font-size: 44px; line-height: 1; }
 .weather .cond { font-size: 14px; line-height: 1.4; }

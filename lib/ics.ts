@@ -3,11 +3,22 @@
  * times, RRULE (DAILY, WEEKLY with BYDAY, MONTHLY, YEARLY, INTERVAL, COUNT, UNTIL), EXDATE, RECURRENCE-ID
  * overrides, and CANCELLED status. Anything fancier is skipped rather than shown wrong.
  */
-export interface AgendaEvent { uid: string; summary: string; location?: string; start: number; end: number; allDay: boolean }
+export interface AgendaEvent {
+  uid: string; summary: string; location?: string; description?: string; start: number; end: number; allDay: boolean;
+  /** The event's own page, when the feed publishes one. */
+  url?: string;
+  /** A video call to join, from X-GOOGLE-CONFERENCE, LOCATION or the description. */
+  meetUrl?: string;
+  organizer?: string;
+  attendees: string[];
+  /** This occurrence came out of an RRULE, so a deep link needs to name the instance. */
+  recurring: boolean;
+}
 
 interface Wall { y: number; m: number; d: number; h: number; mi: number; s: number; tz: string | null; date: boolean }
 interface RawEvent {
-  uid: string; summary: string; location?: string; start: Wall; end: Wall | null; durationMs: number | null;
+  uid: string; summary: string; location?: string; description?: string; url?: string; conference?: string;
+  organizer?: string; attendees: string[]; start: Wall; end: Wall | null; durationMs: number | null;
   rrule: Record<string, string> | null; exdates: Set<string>; recurrenceId: Wall | null; cancelled: boolean;
 }
 
@@ -30,6 +41,64 @@ function unfold(text: string): string[] {
 
 function unescapeText(s: string): string {
   return s.replace(/\\n/gi, '\n').replace(/\\,/g, ',').replace(/\;/g, ';').replace(/\\\\/g, '\\');
+}
+
+/** Hosts whose links are a meeting you can join. An allowlist, so a stray link in a description is never mistaken for one. */
+const MEET_HOSTS: Array<[RegExp, string]> = [
+  [/(^|\.)meet\.google\.com$/, 'Google Meet'],
+  [/(^|\.)zoom\.(us|com)$/, 'Zoom'],
+  [/(^|\.)zoomgov\.com$/, 'Zoom'],
+  [/(^|\.)teams\.microsoft\.com$/, 'Teams'],
+  [/(^|\.)teams\.live\.com$/, 'Teams'],
+  [/(^|\.)webex\.com$/, 'Webex'],
+  [/(^|\.)whereby\.com$/, 'Whereby'],
+  [/(^|\.)chime\.aws$/, 'Chime'],
+  [/(^|\.)meet\.jit\.si$/, 'Jitsi'],
+  [/(^|\.)bluejeans\.com$/, 'BlueJeans'],
+  [/(^|\.)(goto\.com|gotomeeting\.com)$/, 'GoTo'],
+];
+
+/** The provider behind a join link, for labelling the button. */
+export function meetingLabel(url: string): string {
+  try {
+    const host = new URL(url).host.toLowerCase();
+    for (const [re, name] of MEET_HOSTS) if (re.test(host)) return name;
+  } catch { /* fall through */ }
+  return 'call';
+}
+
+/** The first joinable video call in any of the given fields, in the order given. */
+export function findMeetingLink(...fields: Array<string | undefined>): string | undefined {
+  for (const field of fields) {
+    if (!field) continue;
+    for (const raw of field.match(/https?:\/\/[^\s<>"']+/g) ?? []) {
+      const url = raw.replace(/[.,;:)\]]+$/, '');
+      try {
+        const host = new URL(url).host.toLowerCase();
+        if (MEET_HOSTS.some(([re]) => re.test(host))) return url;
+      } catch { /* not a URL we can use */ }
+    }
+  }
+  return undefined;
+}
+
+/** Feeds put HTML and Google's boilerplate divider in DESCRIPTION. Reduce it to something readable. */
+export function cleanDescription(text: string): string {
+  return text
+    .split(/-::~:~:[^\n]*/)[0]!
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/gi, ' ').replace(/&amp;/gi, '&').replace(/&lt;/gi, '<').replace(/&gt;/gi, '>').replace(/&quot;/gi, '"').replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+/** The display name of an ORGANIZER/ATTENDEE line: its CN, else the mailto address. */
+function personName(value: string, params: Record<string, string>): string {
+  const cn = params.CN?.replace(/^"|"$/g, '');
+  if (cn) return unescapeText(cn);
+  return value.replace(/^mailto:/i, '').trim();
 }
 
 function parseWall(value: string, params: Record<string, string>): Wall | null {
@@ -72,9 +141,9 @@ function parseDuration(v: string): number | null {
 
 export function parseIcs(text: string): RawEvent[] {
   const events: RawEvent[] = [];
-  let cur: Partial<RawEvent> & { exdates: Set<string> } | null = null;
+  let cur: Partial<RawEvent> & { exdates: Set<string>; attendees: string[] } | null = null;
   for (const line of unfold(text)) {
-    if (line === 'BEGIN:VEVENT') { cur = { exdates: new Set(), rrule: null, end: null, durationMs: null, recurrenceId: null, cancelled: false }; continue; }
+    if (line === 'BEGIN:VEVENT') { cur = { exdates: new Set(), attendees: [], rrule: null, end: null, durationMs: null, recurrenceId: null, cancelled: false }; continue; }
     if (line === 'END:VEVENT') { if (cur && cur.start && cur.uid) events.push({ summary: '(untitled)', ...cur } as RawEvent); cur = null; continue; }
     if (!cur) continue;
     const idx = line.indexOf(':'); if (idx < 0) continue;
@@ -86,6 +155,11 @@ export function parseIcs(text: string): RawEvent[] {
       case 'UID': cur.uid = value; break;
       case 'SUMMARY': cur.summary = unescapeText(value); break;
       case 'LOCATION': cur.location = unescapeText(value); break;
+      case 'DESCRIPTION': cur.description = unescapeText(value); break;
+      case 'URL': if (/^https?:/i.test(value)) cur.url = value; break;
+      case 'X-GOOGLE-CONFERENCE': cur.conference = value; break;
+      case 'ORGANIZER': cur.organizer = personName(value, params); break;
+      case 'ATTENDEE': { const who = personName(value, params); if (who) cur.attendees.push(who); break; }
       case 'DTSTART': cur.start = parseWall(value, params) ?? undefined; break;
       case 'DTEND': cur.end = parseWall(value, params); break;
       case 'DURATION': cur.durationMs = parseDuration(value); break;
@@ -120,7 +194,13 @@ export function expandEvents(raw: RawEvent[], windowStart: number, windowEnd: nu
     else end = start + (startWall.date ? DAY : 0);
     if (end <= start) end = start + (startWall.date ? DAY : 30 * 60e3);
     if (end <= windowStart || start >= windowEnd) return;
-    out.push({ uid: e.uid, summary: e.summary, location: e.location, start, end, allDay: startWall.date });
+    out.push({
+      uid: e.uid, summary: e.summary, location: e.location,
+      description: e.description ? cleanDescription(e.description) || undefined : undefined,
+      start, end, allDay: startWall.date, url: e.url,
+      meetUrl: findMeetingLink(e.conference, e.location, e.description),
+      organizer: e.organizer, attendees: e.attendees, recurring: e.rrule !== null,
+    });
   };
 
   for (const e of raw) {
@@ -161,6 +241,36 @@ export function expandEvents(raw: RawEvent[], windowStart: number, windowEnd: nu
   }
   out.sort((a, b) => a.start - b.start || a.end - b.end);
   return out;
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * A deep link to the event in Google Calendar, derived from the feed's calendar id and the event's uid.
+ * Google's ICS feeds carry no URL property, so this is the only way in; it applies to Google feeds only.
+ */
+export function googleEventUrl(feedUrl: string, ev: AgendaEvent): string | undefined {
+  const m = feedUrl.match(/calendar\.google\.com\/calendar\/ical\/([^/]+)\//);
+  if (!m) return undefined;
+  const calendarId = decodeURIComponent(m[1]!);
+  let id = ev.uid.replace(/@google\.com$/i, '');
+  if (ev.recurring && !/_R\d/.test(id)) {
+    const d = new Date(ev.start);
+    id += ev.allDay
+      ? `_${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`
+      : `_${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}${pad(d.getUTCSeconds())}Z`;
+  }
+  const eid = btoa(`${id} ${calendarId}`).replace(/=+$/, '').replace(/\+/g, '-').replace(/\//g, '_');
+  return `https://calendar.google.com/calendar/event?action=VIEW&eid=${eid}`;
+}
+
+/** "45 min", "1 hr", "1 hr 30 min" — how long an event runs. */
+export function formatDuration(ms: number): string {
+  const mins = Math.round(ms / 60e3);
+  if (mins < 60) return `${mins} min`;
+  const h = Math.floor(mins / 60); const m = mins % 60;
+  const hours = `${h} hr`;
+  return m ? `${hours} ${m} min` : hours;
 }
 
 export function agendaWindow(now = Date.now()): { start: number; end: number } {

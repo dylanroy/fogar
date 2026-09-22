@@ -7,7 +7,7 @@ import { clear, debounce, el, fmtTime } from '@/lib/dom';
 import { browser } from 'wxt/browser';
 import { getItem, setItem } from '@/lib/store';
 import { ensureOriginPermission } from '@/lib/settings';
-import { agendaWindow, expandEvents, parseIcs, type AgendaEvent } from '@/lib/ics';
+import { agendaWindow, expandEvents, formatDuration, googleEventUrl, meetingLabel, parseIcs, type AgendaEvent } from '@/lib/ics';
 import { defaultUnit, describeWeather, fetchForecast, geocode, type Forecast, type Place } from '@/lib/weather';
 import { allRecipes, type Recipe } from '@/lib/recipes';
 import {
@@ -146,6 +146,64 @@ function agendaSetup(body: HTMLElement, inst: WidgetInstance, ctx: WidgetCtx, ca
     el('p', { class: 'muted small-note' }, 'Google Calendar: Settings → your calendar → “Secret address in iCal format”. Outlook: Settings → Shared calendars → Publish. iCloud: share the calendar publicly and copy the webcal link (change webcal:// to https://).'),
   );
 }
+/** A location worth printing on the line: a room or address, not the bare join URL the Join button already covers. */
+function placeLabel(ev: AgendaEvent): string | undefined {
+  const loc = ev.location?.trim();
+  if (!loc || /^https?:\/\//i.test(loc)) return undefined;
+  return loc;
+}
+
+/** "10:00–10:45 AM" when both ends share a meridiem, "11:00 AM–12:30 PM" when they don't. */
+function agendaTime(ev: AgendaEvent, dayStart: number, dayEnd: number): string {
+  if (ev.allDay) return 'All day';
+  const parts = (ts: number) => {
+    const t = new Date(ts).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    const m = t.match(/\s*([AP]\.?M\.?)$/i);
+    return m ? { clock: t.slice(0, m.index).trim(), suffix: m[1]!.toUpperCase() } : { clock: t, suffix: '' };
+  };
+  const a = parts(Math.max(ev.start, dayStart)); const b = parts(Math.min(ev.end, dayEnd));
+  if (a.suffix && a.suffix === b.suffix) return `${a.clock}–${b.clock} ${b.suffix}`;
+  const join = (x: { clock: string; suffix: string }) => (x.suffix ? `${x.clock} ${x.suffix}` : x.clock);
+  return `${join(a)}–${join(b)}`;
+}
+
+/** Text with its URLs turned into links, so a description stays clickable. */
+function linkify(text: string): Node[] {
+  const out: Node[] = [];
+  const re = /https?:\/\/[^\s<>"']+/g;
+  let last = 0;
+  for (const m of text.matchAll(re)) {
+    const url = m[0].replace(/[.,;:)\]]+$/, '');
+    if (m.index > last) out.push(document.createTextNode(text.slice(last, m.index)));
+    out.push(el('a', { class: 'link', href: url, target: '_blank', rel: 'noopener' }, url.length > 60 ? `${url.slice(0, 57)}…` : url));
+    last = m.index + url.length;
+  }
+  if (last < text.length) out.push(document.createTextNode(text.slice(last)));
+  return out;
+}
+
+/** The unfurled panel under an agenda line: when, where, who, the notes, and the ways in. */
+function eventDetail(ev: AgendaEvent, eventUrl: string | undefined): HTMLElement[] {
+  const out: HTMLElement[] = [];
+  const day = new Date(ev.start).toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
+  const clock = ev.allDay ? 'All day' : `${agendaTime(ev, ev.start, ev.end)} · ${formatDuration(ev.end - ev.start)}`;
+  out.push(el('p', { class: 'detail-line' }, `${day} · ${clock}`));
+  const place = ev.location?.trim();
+  if (place && place !== ev.meetUrl) out.push(el('p', { class: 'detail-line' }, ...linkify(place)));
+  const guests = ev.attendees.filter((a) => a !== ev.organizer);
+  if (ev.organizer || guests.length) {
+    const who = [ev.organizer ? `${ev.organizer} (organizer)` : null, ...guests.slice(0, 4)].filter(Boolean).join(', ');
+    const more = guests.length > 4 ? ` and ${guests.length - 4} more` : '';
+    out.push(el('p', { class: 'detail-line muted' }, `${who}${more}`));
+  }
+  if (ev.description) out.push(el('p', { class: 'detail-desc' }, ...linkify(ev.description)));
+  const links = el('div', { class: 'detail-links' });
+  if (ev.meetUrl) links.append(el('a', { class: 'chip primary-chip', href: ev.meetUrl, target: '_blank', rel: 'noopener' }, `Join ${meetingLabel(ev.meetUrl)}`));
+  if (eventUrl) links.append(el('a', { class: 'chip', href: eventUrl, target: '_blank', rel: 'noopener' }, 'Open in calendar'));
+  if (links.childElementCount) out.push(links);
+  return out;
+}
+
 const agenda: WidgetDef = {
   type: 'agenda', title: 'Agenda', description: 'Today and tomorrow from any calendar’s iCal feed. No account connection.', single: false,
   defaultConfig: () => ({ url: '' }),
@@ -169,27 +227,63 @@ const agenda: WidgetDef = {
         }
         const { start, end } = agendaWindow();
         const events = expandEvents(parseIcs(cached.text), start, end);
-        paint(events, start);
-        clear(status); status.append(`Updated ${ago(cached.fetchedAt)} · `, refresh, ' · ', change);
+        const fetchedAt = cached.fetchedAt;
+        repaint = () => {
+          paint(events, start);
+          clear(status); status.append(`Updated ${ago(fetchedAt)} · `, refresh, ' · ', change);
+        };
+        repaint();
       } catch (err) {
+        repaint = null;
         clear(list);
         clear(status); status.append(`Could not load the calendar: ${(err as Error).message}. `, refresh, ' · ', change);
       }
     };
+    // Keep the "happening now" highlight and the update stamp honest, without refetching or closing an open detail.
+    let repaint: (() => void) | null = null;
+    const tick = setInterval(() => {
+      if (!list.isConnected) { clearInterval(tick); return; }
+      if (!list.querySelector('.event.open')) repaint?.();
+    }, 60e3);
     const paint = (events: AgendaEvent[], dayStart: number) => {
       clear(list);
       const days: Array<[string, number, number]> = [['Today', dayStart, dayStart + 86400e3], ['Tomorrow', dayStart + 86400e3, dayStart + 2 * 86400e3]];
       const now = Date.now();
       for (const [label, s, e] of days) {
         const todays = events.filter((ev) => ev.start < e && ev.end > s);
-        list.append(el('h4', {}, label, todays.length ? '' : el('span', { class: 'muted' }, '  nothing scheduled')));
-        for (const ev of todays) {
-          const past = ev.end <= now;
-          const time = ev.allDay ? 'All day' : `${new Date(Math.max(ev.start, s)).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}–${new Date(Math.min(ev.end, e)).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
-          list.append(el('div', { class: `event${past ? ' past' : ''}${!past && ev.start <= now ? ' now' : ''}` },
-            el('span', { class: 'when' }, time), el('span', { class: 'what' }, ev.summary, ev.location ? el('span', { class: 'where' }, ` · ${ev.location}`) : '')));
-        }
+        list.append(el('h4', {}, label, el('span', { class: 'date' }, new Date(s).toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })),
+          todays.length ? '' : el('span', { class: 'muted' }, 'nothing scheduled')));
+        for (const ev of todays) list.append(...eventRow(ev, s, e, now));
       }
+    };
+    /** One agenda line plus its (initially hidden) detail panel. */
+    const eventRow = (ev: AgendaEvent, s: number, e: number, now: number): HTMLElement[] => {
+      const past = ev.end <= now;
+      const eventUrl = ev.url ?? googleEventUrl(inst.config.url, ev);
+      const detail = el('div', { class: 'event-detail', hidden: true });
+      const row = el('div', {
+        class: `event${past ? ' past' : ''}${!past && ev.start <= now ? ' now' : ''}`,
+        role: 'button', tabIndex: 0, 'aria-expanded': 'false', title: 'Show details',
+      } as any,
+        el('span', { class: 'when' }, agendaTime(ev, s, e)),
+        el('span', { class: 'what' }, ev.summary, placeLabel(ev) ? el('span', { class: 'where' }, ` · ${placeLabel(ev)}`) : ''),
+        ev.meetUrl ? el('a', {
+          class: 'join', href: ev.meetUrl, target: '_blank', rel: 'noopener',
+          title: `Join ${meetingLabel(ev.meetUrl)}`, onclick: (evt: MouseEvent) => evt.stopPropagation(),
+        }, 'Join') : '');
+      const toggle = () => {
+        const open = detail.hidden;
+        for (const other of list.querySelectorAll<HTMLElement>('.event.open')) {
+          other.classList.remove('open'); other.setAttribute('aria-expanded', 'false');
+          (other.nextElementSibling as HTMLElement | null)?.setAttribute('hidden', '');
+        }
+        if (!open) return;
+        clear(detail); detail.append(...eventDetail(ev, eventUrl));
+        detail.hidden = false; row.classList.add('open'); row.setAttribute('aria-expanded', 'true');
+      };
+      row.onclick = toggle;
+      row.onkeydown = (evt: KeyboardEvent) => { if (evt.key === 'Enter' || evt.key === ' ') { evt.preventDefault(); toggle(); } };
+      return [row, detail];
     };
     void load(false);
     void actions; void fmtTime;
