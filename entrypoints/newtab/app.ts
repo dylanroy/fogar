@@ -308,7 +308,7 @@ export class App {
           sourcesEl.hidden = false;
           for (const s of sources) {
             let host = s.url; try { host = new URL(s.url).host.replace(/^www\./, ''); } catch { /* keep */ }
-            sourcesEl.append(el('li', {}, el('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.title), ' ', el('span', { class: 'muted' }, host)));
+            sourcesEl.append(el('li', {}, el('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.title), ' ', el('span', { class: 'muted' }, s.via ?? host)));
           }
         }
         this.setStatus('Answering…');
@@ -376,8 +376,8 @@ export class App {
       menu.append(ex.grounded
         ? item('Search the web and answer again', 'This answer already used web results.', null, true)
         : groundOk
-          ? item('Search the web and answer again', 'Five live results, cited. Best for facts, names, and anything recent.', () => reask({ ground: true }))
-          : item('Search the web and answer again', 'Needs a Brave Search or Tavily key. Free tiers cover most people. Opens Settings.', () => { $<HTMLDetailsElement>('settings').open = true; $('grounding-settings').scrollIntoView({ block: 'center', behavior: 'smooth' }); }));
+          ? item('Search the web and answer again', this.settings.grounding.provider === 'free' ? 'DuckDuckGo instant answers and Wikipedia, cited. No key. Best for well-known people, places, and terms.' : 'Five live results, cited. Best for facts, names, and anything recent.', () => reask({ ground: true }))
+          : item('Search the web and answer again', 'Web grounding is off. Opens Settings; the free option needs no key.', () => { $<HTMLDetailsElement>('settings').open = true; $('grounding-settings').scrollIntoView({ block: 'center', behavior: 'smooth' }); }));
       if (this.settings.mode === 'local' && this.local.loaded?.canThink) {
         menu.append(ex.thought
           ? item('Think longer', 'This answer already used thinking.', null, true)

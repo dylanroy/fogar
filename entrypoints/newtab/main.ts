@@ -43,10 +43,12 @@ async function main() {
     if (cloudPort) { s.mode = 'cloud'; s.cloud = { endpoint: `http://127.0.0.1:${cloudPort}/v1`, apiKey: 'test-key', model: 'mock-model' }; }
     const altCloud = params.get('altcloud'); // cloud configured but not selected, for the "Ask the cloud model" path
     if (altCloud) s.cloud = { endpoint: `http://127.0.0.1:${altCloud}/v1`, apiKey: 'test-key', model: 'mock-model' };
-    const groundPort = params.get('ground');
+    const groundPort = params.get('ground'); const freePort = params.get('freeground');
     s.grounding = groundPort
       ? { provider: 'brave', apiKey: 'test-key', byDefault: params.get('groundoff') !== '1', endpoint: `http://127.0.0.1:${groundPort}/brave` }
-      : { provider: 'none', apiKey: '', byDefault: true };
+      : freePort
+        ? { provider: 'free', apiKey: '', byDefault: true, endpoint: `http://127.0.0.1:${freePort}` }
+        : { provider: 'none', apiKey: '', byDefault: true };
     if (SMOKE && !cloudPort) { s.mode = 'local'; s.modelId = params.get('model') ?? 'smoke'; s.gpu = params.get('gpu') === '1'; }
   }
 
@@ -78,7 +80,7 @@ async function main() {
     const recipe = params.get('recipe_run');
     if (s.mode === 'cloud') {
       if (recipe) await recipes.runBuiltin(recipe, { text: 'hello there friend', tone: 'Formal', length: 'Shorter', format: 'Email' });
-      else await app.askQuestion(params.get('ground') ? 'Who is the US president?' : 'Say hello', { ground: Boolean(params.get('ground')) });
+      else { const grounded = Boolean(params.get('ground') || params.get('freeground')); await app.askQuestion(grounded ? 'Who is the US president?' : 'Say hello', { ground: grounded }); }
       return;
     }
     if (await app.loadModel()) await app.askQuestion('Once upon a time');

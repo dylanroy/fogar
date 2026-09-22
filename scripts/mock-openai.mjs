@@ -46,6 +46,24 @@ export function startMockServer(port = 0) {
       return;
     }
 
+    if (req.method === 'GET' && url.pathname === '/ddg') {
+      server.lastFree = { ...(server.lastFree ?? {}), ddgQ: url.searchParams.get('q') };
+      res.writeHead(202, { 'Content-Type': 'application/x-javascript' }); // DuckDuckGo really answers 202
+      res.end(JSON.stringify({ Heading: 'Mock Person', AbstractText: 'MOCK DDG ABSTRACT about the person.', AbstractURL: 'https://en.wikipedia.org/wiki/Mock_Person', AbstractSource: 'Wikipedia',
+        RelatedTopics: [{ Text: 'Mock Topic - a related thing', FirstURL: 'https://duckduckgo.com/Mock_Topic' }, { FirstURL: 'https://duckduckgo.com/c/Mock_Category', Text: 'Mock Person Category' }, { Name: 'Group', Topics: [{ Text: 'Nested Topic - inside a group', FirstURL: 'https://duckduckgo.com/Nested' }] }] }));
+      return;
+    }
+    if (req.method === 'GET' && url.pathname === '/wiki') {
+      server.lastFree = { ...(server.lastFree ?? {}), wikiQ: url.searchParams.get('gsrsearch') };
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      // page 2 shares the DDG abstract's URL with a shorter text, so the merge must keep the abstract and drop it
+      res.end(JSON.stringify({ query: { pages: {
+        '2': { pageid: 2, index: 2, title: 'Mock Person', extract: 'MOCK WIKI SECOND.', fullurl: 'https://en.wikipedia.org/wiki/Mock_Person' },
+        '1': { pageid: 1, index: 1, title: 'Mock Person (article)', extract: 'MOCK WIKI EXTRACT about the person from the encyclopedia.', fullurl: 'https://en.wikipedia.org/wiki/Mock_Person_(article)' },
+      } } }));
+      return;
+    }
+
     if (req.method === 'GET' && url.pathname === '/brave') {
       server.lastSearch = { q: url.searchParams.get('q'), token: req.headers['x-subscription-token'] };
       res.writeHead(200, { 'Content-Type': 'application/json' });

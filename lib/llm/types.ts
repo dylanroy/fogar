@@ -21,13 +21,13 @@ export interface CloudSettings {
   model: string;
 }
 
-export type GroundingProvider = 'none' | 'brave' | 'tavily';
+export type GroundingProvider = 'none' | 'free' | 'brave' | 'tavily';
 export interface GroundingSettings {
   provider: GroundingProvider;
   apiKey: string;
   /** Search the web before answering unless the user unticks it for a question. */
   byDefault: boolean;
-  /** Test hook: override the provider URL. Not exposed in the UI. */
+  /** Test hook: base URL that replaces the provider's real endpoints. Not exposed in the UI. */
   endpoint?: string;
 }
 
@@ -50,7 +50,8 @@ export const DEFAULT_SETTINGS: Settings = {
   autoLoad: false,
   onboarded: false,
   cloud: { endpoint: 'https://api.openai.com/v1', apiKey: '', model: 'gpt-4o-mini' },
-  grounding: { provider: 'none', apiKey: '', byDefault: true },
+  // Free tier by default so the toggle exists without setup; still off per question until the user ticks it.
+  grounding: { provider: 'free', apiKey: '', byDefault: false },
 };
 
 export const SYSTEM_PROMPT =

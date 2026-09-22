@@ -2,7 +2,7 @@ import type { App } from '../app';
 import { $ } from '@/lib/dom';
 import { LocalProvider } from '@/lib/llm/local';
 import { MODELS, modelById } from '@/lib/llm/models';
-import { groundingApiUrl } from '@/lib/grounding';
+import { groundingApiUrl, needsKey } from '@/lib/grounding';
 import type { GroundingProvider } from '@/lib/llm/types';
 import { ensureOriginPermission } from '@/lib/settings';
 import { fmtBytes, el, clear } from '@/lib/dom';
@@ -53,12 +53,19 @@ export function initSettings(app: App): void {
   // Grounding
   const gProv = $<HTMLSelectElement>('ground-provider'); const gKey = $<HTMLInputElement>('ground-key'); const gDefault = $<HTMLInputElement>('ground-default');
   gProv.value = s.grounding.provider; gKey.value = s.grounding.apiKey; gDefault.checked = s.grounding.byDefault;
+  const syncKey = () => { $('ground-key-label').hidden = !needsKey(gProv.value as GroundingProvider); };
+  gProv.onchange = syncKey; syncKey();
   $('ground-save').onclick = async () => {
     s.grounding = { ...s.grounding, provider: gProv.value as GroundingProvider, apiKey: gKey.value.trim(), byDefault: gDefault.checked };
-    let note = 'Saved.';
-    if (s.grounding.provider !== 'none') {
-      const ok = await ensureOriginPermission(groundingApiUrl(s.grounding));
-      note = ok ? 'Saved. Tick “Search the web first” under the ask box to use it.' : 'Saved, but permission for the search API was not granted.';
+    let note = 'Saved. Web grounding is off.';
+    if (s.grounding.provider === 'free') {
+      note = 'Saved. No key needed. Tick “Search the web first” under the ask box to use it.';
+    } else if (needsKey(s.grounding.provider)) {
+      if (!s.grounding.apiKey) note = 'Saved, but this provider needs an API key before it can search.';
+      else {
+        const ok = await ensureOriginPermission(groundingApiUrl(s.grounding));
+        note = ok ? 'Saved. Tick “Search the web first” under the ask box to use it.' : 'Saved, but permission for the search API was not granted.';
+      }
     }
     await app.save();
     $<HTMLInputElement>('ground').checked = s.grounding.byDefault;

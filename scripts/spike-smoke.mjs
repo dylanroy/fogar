@@ -120,6 +120,27 @@ const cloudLabel = await text('answer-label');
 const cloudReask = mock.server.lastRequest?.messages ?? [];
 check('dig deeper: ask the cloud model re-asks the same question there', cloudLabel === 'Cloud answer' && cloudReask.at(-1)?.content === 'Once upon a time' && !cloudReask.some((m) => m.content === localAnswer) && !localItems.includes('Think longer') /* the smoke model cannot think */ && (await text('status')).includes('Smoke test'), `menu: ${localItems.join(' / ')}; label ${cloudLabel}`);
 
+// 3f. keyless grounding: DuckDuckGo instant answer + Wikipedia, entity query, dedupe by URL, attribution
+await page.goto(`${base}?smoke=1&cloud=${mock.port}&freeground=${mock.port}`);
+try { await waitDone(30000); } catch { /* fall through */ }
+const freeUser = mock.server.lastRequest?.messages?.find((m) => m.role === 'user')?.content ?? '';
+const freeSources = await page.evaluate(() => [...document.querySelectorAll('#sources li')].map((li) => li.textContent ?? ''));
+check('keyless grounding: DuckDuckGo + Wikipedia, no key, deduped, attributed',
+  (await status()) === 'done' && freeUser.includes('MOCK DDG ABSTRACT') && freeUser.includes('MOCK WIKI EXTRACT') && !freeUser.includes('MOCK WIKI SECOND') && !freeUser.includes('Category')
+    && freeSources.length === 4 && /DuckDuckGo · Wikipedia/.test(freeSources[0]) && /Wikipedia$/.test(freeSources[1]) && mock.server.lastFree?.ddgQ === 'the US president' && mock.server.lastFree?.wikiQ === 'the US president',
+  `${freeSources.length} sources; q="${mock.server.lastFree?.wikiQ}"; first="${freeSources[0]?.slice(0, 50)}"`);
+
+// 3g. defaults on a fresh install: free provider, toggle visible and unticked, no key field.
+// Earlier smoke runs persisted their own grounding overrides into this profile, so start from no settings at all.
+await page.goto(`${base}?e2e=1`);
+await page.waitForSelector('#recipe-chips .chip');
+await page.evaluate(() => chrome.storage.local.remove('fogar.settings'));
+await page.goto(`${base}?e2e=1`);
+await page.waitForSelector('#recipe-chips .chip');
+await page.waitForSelector('#ground-toggle:not([hidden])', { timeout: 5000 }).catch(() => {});
+const toggleState = await page.evaluate(() => ({ visible: !document.getElementById('ground-toggle').hidden, checked: document.getElementById('ground').checked, keyHidden: document.getElementById('ground-key-label').hidden, provider: document.getElementById('ground-provider').value }));
+check('grounding defaults: toggle visible and unticked, free provider, no key field', toggleState.visible && !toggleState.checked && toggleState.keyHidden && toggleState.provider === 'free', JSON.stringify(toggleState));
+
 // 4. grounding
 await page.goto(`${base}?smoke=1&cloud=${mock.port}&ground=${mock.port}`);
 try { await waitDone(30000); } catch { /* fall through */ }
@@ -166,6 +187,27 @@ await page.reload();
 await page.waitForSelector('#todo-list .item');
 const todoText = await page.evaluate(() => document.querySelector('#todo-list .item .text')?.textContent);
 check('todos persist across reload', todoText === 'Write the Fogar blog post', todoText);
+
+// 6b. edit a todo in place: Enter saves and persists; Escape cancels; emptying it keeps the old text
+await page.click('#todo-list .item .text');
+await page.waitForSelector('#todo-list .item input.edit');
+await page.fill('#todo-list .item input.edit', 'Write blog post one');
+await page.press('#todo-list .item input.edit', 'Enter');
+await page.waitForFunction(() => document.querySelector('#todo-list .item .text')?.textContent === 'Write blog post one');
+await page.reload();
+await page.waitForSelector('#todo-list .item .text');
+const edited = await page.evaluate(() => document.querySelector('#todo-list .item .text')?.textContent);
+await page.click('#todo-list .item .text');
+await page.fill('#todo-list .item input.edit', 'should be discarded');
+await page.press('#todo-list .item input.edit', 'Escape');
+await page.waitForSelector('#todo-list .item .text');
+const afterEscape = await page.evaluate(() => document.querySelector('#todo-list .item .text')?.textContent);
+await page.click('#todo-list .item .text');
+await page.fill('#todo-list .item input.edit', '');
+await page.press('#todo-list .item input.edit', 'Enter');
+await page.waitForSelector('#todo-list .item .text');
+const afterEmpty = await page.evaluate(() => document.querySelector('#todo-list .item .text')?.textContent);
+check('todos edit in place: Enter saves, Escape cancels, empty keeps the old text', edited === 'Write blog post one' && afterEscape === 'Write blog post one' && afterEmpty === 'Write blog post one', `${edited} / ${afterEscape} / ${afterEmpty}`);
 
 // 7. reminders
 await page.fill('#reminder-input', 'remind me to stretch in 5 minutes');

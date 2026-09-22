@@ -19,6 +19,12 @@ export async function toggleTodo(id: string): Promise<Todo[]> {
   return todos;
 }
 
+export async function updateTodo(id: string, text: string): Promise<Todo[]> {
+  const todos = (await loadTodos()).map((t) => (t.id === id ? { ...t, text: text.trim() } : t));
+  await saveTodos(todos);
+  return todos;
+}
+
 export async function removeTodo(id: string): Promise<Todo[]> {
   const todos = (await loadTodos()).filter((t) => t.id !== id);
   await saveTodos(todos);

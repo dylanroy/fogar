@@ -109,17 +109,18 @@
           <div class="row-actions"><button id="cloud-save" class="primary" type="button">Save</button><span class="muted">Works with OpenAI, OpenRouter, Groq, or Ollama at http://localhost:11434/v1. The key is stored only in this browser.</span></div>
         </fieldset>
         <fieldset id="grounding-settings">
-          <legend>Web grounding (optional)</legend>
-          <p class="muted">A small local model is a good summarizer and a poor encyclopedia. With a search key, Fogar fetches five results first and answers from them with citations. Off unless you turn it on.</p>
+          <legend>Web grounding</legend>
+          <p class="muted">A small local model is a good writer and a poor encyclopedia. Tick “Search the web first” under the ask box and Fogar looks the question up before answering, then cites what it found. The free option needs no key and knows well-known people, places, and topics, not news or niche sites. Your question goes only to the provider below, and only when you tick the box.</p>
           <label>Provider
             <select id="ground-provider">
+              <option value="free">Free: DuckDuckGo instant answers + Wikipedia (no key)</option>
+              <option value="brave">Brave Search API, full web results (free tier: 2,000 queries a month)</option>
+              <option value="tavily">Tavily, full web results (free tier: 1,000 queries a month)</option>
               <option value="none">Off</option>
-              <option value="brave">Brave Search API (free tier: 2,000 queries a month)</option>
-              <option value="tavily">Tavily (free tier: 1,000 queries a month)</option>
             </select>
           </label>
-          <label>API key <input id="ground-key" type="password" autocomplete="off" placeholder="Paste your key" /></label>
-          <label class="inline"><input type="checkbox" id="ground-default" /> Search the web first by default</label>
+          <label id="ground-key-label">API key <input id="ground-key" type="password" autocomplete="off" placeholder="Paste your key" /></label>
+          <label class="inline"><input type="checkbox" id="ground-default" /> Tick “Search the web first” by default</label>
           <div class="row-actions"><button id="ground-save" class="primary" type="button">Save</button><span id="ground-note" class="muted"></span></div>
         </fieldset>
         <fieldset>

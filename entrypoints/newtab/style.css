@@ -157,7 +157,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .item { display: flex; align-items: center; gap: 10px; padding: 7px 4px; border-radius: 8px; }
 .item:hover { background: var(--bg); }
 .item input[type="checkbox"] { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: 0 0 auto; }
-.item .text { flex: 1; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.item .text { flex: 1; min-width: 0; font-size: 15px; overflow-wrap: anywhere; cursor: text; border-radius: 6px; padding: 1px 4px; margin: -1px -4px; }
+.item .text:hover { background: var(--accent-soft); }
+.item input.edit { flex: 1; min-width: 0; font-size: 15px; padding: 3px 8px; border-radius: 8px; }
+.item.editing .x { opacity: 0; pointer-events: none; }
 .item.done .text { color: var(--muted); text-decoration: line-through; }
 .item .when { color: var(--muted); font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .item .x, .item .cal { border: 0; background: transparent; color: var(--muted); font-size: 15px; padding: 2px 6px; border-radius: 6px; opacity: 0; transition: opacity 0.1s; text-decoration: none; }

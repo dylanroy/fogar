@@ -22,7 +22,7 @@ Every proposed feature passes these five or it does not ship.
 - [x] First-run chooser, cached model auto-loads on every new tab, stop button, plain web search before a model is ready, right-click "Ask Fogar about …", cache size and clear, icons, redesign with dark mode.
 
 ### Phase 3: your corner (closed 2026-09-21)
-- [x] Opt-in web grounding with a Brave Search or Tavily key. Citations and sources.
+- [x] Opt-in web grounding with a Brave Search or Tavily key. Citations and sources. Keyless default added 2026-09-21: DuckDuckGo Instant Answer API plus Wikipedia.
 - [x] Recipes: data-only prompt forms with a builder, import, export, and share links. Four built-ins.
 - [x] Todos. Reminders with a plain-language parser, confirmation, `chrome.alarms`, notifications, and a zero-permission Google Calendar link.
 - [x] Bookmark search as you type, and a natural-language bookmark finder that has the model classify the list.
@@ -103,7 +103,7 @@ Dylan's ask: connect Google Calendar and show a daily agenda on the new tab. Tha
 - **Gmail.** Its scopes are "restricted", which means an annual third-party security assessment on top of verification, and reading mail is the opposite of the pitch. Calendar is different and is on the roadmap above.
 - **Paid tiers or lifetime deals.** Zero marginal cost, no server, no accounts.
 - **Analytics in the extension.** Contradicts the pitch and complicates the listing.
-- **Scraping a search engine for grounding.** Breaks, violates terms, and gets store listings pulled. Bring-your-own key or nothing.
+- **Scraping a search engine for grounding.** Breaks, violates terms, and gets store listings pulled. DuckDuckGo's Instant Answer API and Wikipedia's API are official, keyless, and CORS-open, so they are the free tier; DuckDuckGo's web results have no API and are not scraped. Full web results stay bring-your-own key.
 - **The `history` permission.** Scares people at install and invites review trouble. Bookmarks are enough.
 
 ## Sponsor slot rules

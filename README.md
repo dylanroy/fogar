@@ -13,7 +13,7 @@ Release candidate v0.1.0. Everything below works end to end and is covered by `n
 - Ask bar with streaming, Markdown-rendered answers and follow-ups, from a local model (wllama, WebGPU or CPU) or any OpenAI-compatible endpoint with your own key.
 - Model tiers: Qwen3.5 0.8B (533 MB), 2B (1.3 GB), 4B (2.7 GB). First run recommends a tier from the GPU vendor and device memory. Thinking mode is off. WebGPU failures fall back to the CPU.
 - One box, several outcomes: URLs open, `?` searches, "remind me…" sets a reminder, "todo: …" adds a todo, arithmetic is computed locally, bookmark questions go to a finder that has the model sort your bookmarks, everything else goes to the model. Cmd/Ctrl+Enter always searches.
-- Opt-in web grounding with a Brave Search or Tavily key: five snippets, citations, sources.
+- Opt-in web grounding. Free by default with no key: DuckDuckGo's Instant Answer API plus Wikipedia, good for well-known people, places, and terms. Add a Brave Search or Tavily key for full web results. Snippets go in front of the question; the answer cites its sources.
 - Recipes: data-only prompt forms. Four built-ins. Create, edit, import, export, share as a link, pin to the page.
 - Widgets, as data: Agenda (any iCal feed, recurring events included), Todos, Reminders (plain-language parser, confirm, `chrome.alarms`, notifications, Google Calendar link), Links, Notes, Weather (Open-Meteo, no key), Recipe. Reorder, configure, remove, add. Focus mode.
 - Right-click "Ask Fogar about …" carries the page along: title, address, and the text around the selection go in front of the model, so a small model answers from the page it was on instead of guessing.

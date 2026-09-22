@@ -5,3 +5,4 @@ public/wllama/
 *.log
 .DS_Store
 .env
+.output-e2e/
