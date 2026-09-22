@@ -1,3 +1,4 @@
+import { DEFAULT_SETTINGS } from '@/lib/llm/types';
 import { App } from './app';
 import { initAskBar } from './ui/askbar';
 import { initRecipes } from './ui/recipes';
@@ -48,7 +49,7 @@ async function main() {
       ? { provider: 'brave', apiKey: 'test-key', byDefault: params.get('groundoff') !== '1', endpoint: `http://127.0.0.1:${groundPort}/brave` }
       : freePort
         ? { provider: 'free', apiKey: '', byDefault: true, endpoint: `http://127.0.0.1:${freePort}` }
-        : { provider: 'none', apiKey: '', byDefault: true };
+        : { ...DEFAULT_SETTINGS.grounding }; // no test parameter: the real default, so tests see what users see
     if (SMOKE && !cloudPort) { s.mode = 'local'; s.modelId = params.get('model') ?? 'smoke'; s.gpu = params.get('gpu') === '1'; }
   }
 
