@@ -411,13 +411,19 @@ try {
 await page.goto(`${base}?e2e=1`);
 await page.waitForSelector('#recipe-chips .chip');
 const winBefore = await page.evaluate(() => chrome.windows.getAll().then((w) => w.length));
-await page.evaluate(async (port) => { await chrome.windows.create({ url: [`http://127.0.0.1:${port}/page.html`, `http://127.0.0.1:${port}/invoice.html`, `http://127.0.0.1:${port}/invoice.html`], focused: false }); }, mock.port);
+const newWinId = await page.evaluate(async (port) => { const w = await chrome.windows.create({ url: [`http://127.0.0.1:${port}/page.html`, `http://127.0.0.1:${port}/invoice.html`, `http://127.0.0.1:${port}/invoice.html`], focused: false }); return w.id; }, mock.port);
 await page.waitForFunction(async () => { const titles = (await chrome.tabs.query({ url: 'http://127.0.0.1/*' })).map((t) => t.title ?? ''); return titles.some((t) => t.startsWith('Acme Careers')) && titles.filter((t) => t.startsWith('Quarterly Invoice')).length === 2; }, null, { timeout: 20000 });
 await page.click('#widget-add');
 await page.click('#widget-menu .menu-item:has-text("Sessions")');
 await page.waitForSelector('.widget[data-type="sessions"] .sess-win:has-text("Window")', { timeout: 10000 });
 const openText = await page.evaluate(() => document.querySelector('.widget[data-type="sessions"] .sess-head span')?.textContent ?? '');
-await page.click('.widget[data-type="sessions"] .sess-win:has-text("127.0.0.1") button:has-text("Save & close")');
+// 12pre. the widget spans the row, nothing overflows the card, and clicking a window row brings that window to the front
+const wideState = await page.evaluate(() => { const card = document.querySelector('.widget[data-type="sessions"]'); return { wide: card.classList.contains('wide'), overflow: card.scrollWidth > card.clientWidth + 1, pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth }; });
+await page.click('.widget[data-type="sessions"] .sess-win:has-text("Acme Careers") .t');
+await page.waitForTimeout(400);
+const focusedId = await page.evaluate(() => chrome.windows.getLastFocused().then((w) => w.id));
+check('sessions: full width by default, no overflow, clicking a window focuses it', wideState.wide && !wideState.overflow && !wideState.pageOverflow && focusedId === newWinId, `${JSON.stringify(wideState)} focused=${focusedId === newWinId}`);
+await page.click('.widget[data-type="sessions"] .sess-win:has-text("Acme Careers") button:has-text("Save & close")');
 await page.waitForFunction((n) => chrome.windows.getAll().then((w) => w.length === n), winBefore, { timeout: 10000 });
 await page.waitForSelector('.widget[data-type="sessions"] .sess-session');
 const sessText = await page.evaluate(() => document.querySelector('.widget[data-type="sessions"] .sess-session')?.textContent ?? '');

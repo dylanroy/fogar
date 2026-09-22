@@ -25,7 +25,7 @@ const SKIP = /^(chrome|chrome-extension|edge|about|devtools|view-source):/i;
 export const isSaveable = (url?: string): url is string => !!url && !SKIP.test(url);
 export const hostOf = (url: string) => { try { return new URL(url).host.replace(/^www\./, ''); } catch { return ''; } };
 
-export interface OpenWindow { id: number; current: boolean; tabs: SavedTab[]; skipped: number }
+export interface OpenWindow { id: number; current: boolean; tabs: SavedTab[]; skipped: number; /** Title of the tab on top, the way people recognise a window. */ activeTitle?: string }
 
 /** Every normal, non-incognito window with its saveable tabs. The new tab page itself and other browser pages are skipped. */
 export async function openWindows(): Promise<{ windows: OpenWindow[]; totalWindows: number; totalTabs: number }> {
@@ -38,9 +38,15 @@ export async function openWindows(): Promise<{ windows: OpenWindow[]; totalWindo
     const all = w.tabs ?? [];
     const tabs = all.filter((t) => isSaveable(t.url)).map((t) => ({ id: uid(), url: t.url!, title: t.title || t.url!, pinned: t.pinned || undefined }));
     totalTabs += tabs.length;
-    windows.push({ id: w.id!, current: w.id === cur, tabs, skipped: all.length - tabs.length });
+    const active = all.find((t) => t.active && isSaveable(t.url));
+    windows.push({ id: w.id!, current: w.id === cur, tabs, skipped: all.length - tabs.length, activeTitle: active?.title || undefined });
   }
   return { windows, totalWindows: windows.length, totalTabs };
+}
+
+/** Bring a window to the front. The list of open windows doubles as a window switcher. */
+export async function focusWindow(id: number): Promise<void> {
+  try { await browser.windows.update(id, { focused: true }); } catch { /* window closed meanwhile */ }
 }
 
 /** Collapse duplicate addresses inside one session. Returns how many were dropped. */

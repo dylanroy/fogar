@@ -37,6 +37,8 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
     for (const node of Array.from(proxy.children)) { node.classList.add('widget-extra'); actions.prepend(node); }
   }
 
+  const isWide = (inst: WidgetInstance): boolean => inst.config.wide ?? widgetDef(inst.type).wide ?? false;
+
   function buildCard(inst: WidgetInstance, index: number): HTMLElement {
     const def = widgetDef(inst.type);
     const ctrl = (label: string, title: string, onclick: () => void, disabled = false) =>
@@ -45,9 +47,10 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
       ctrl('↑', 'Move up', () => void move(inst, -1), index === 0),
       ctrl('↓', 'Move down', () => void move(inst, 1), index === layout.widgets.length - 1),
       def.configure ? ctrl('⚙', 'Settings', () => { const card = cards.get(inst.id)!; def.configure!(card.querySelector<HTMLElement>('.widget-body')!, inst, ctx); }) : null,
+      ctrl(isWide(inst) ? '⤡' : '⤢', isWide(inst) ? 'Half width' : 'Full width', async () => { inst.config.wide = !isWide(inst); await persist(); render(); }),
       ctrl('×', 'Remove from page', () => void remove(inst)),
     );
-    const card = el('div', { class: 'card panel widget', dataset: { type: inst.type, id: inst.id } },
+    const card = el('div', { class: `card panel widget${isWide(inst) ? ' wide' : ''}`, dataset: { type: inst.type, id: inst.id } },
       el('div', { class: 'row-head' }, el('h2', {}, def.name(inst)), el('span', { class: 'row-actions widget-actions' }, controls)),
       el('div', { class: 'widget-body' }));
     if (inst.type === 'todos') card.id = 'todos-card';

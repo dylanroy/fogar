@@ -11,7 +11,7 @@ import { agendaWindow, expandEvents, parseIcs, type AgendaEvent } from '@/lib/ic
 import { defaultUnit, describeWeather, fetchForecast, geocode, type Forecast, type Place } from '@/lib/weather';
 import { allRecipes, type Recipe } from '@/lib/recipes';
 import {
-  bookmarkSession, bookmarkTabs, closeWindows, deleteSession, hasTabsPermission, hostOf, loadSessions, openWindows, removeTab, renameSession,
+  bookmarkSession, bookmarkTabs, closeWindows, deleteSession, focusWindow, hasTabsPermission, hostOf, loadSessions, openWindows, removeTab, renameSession,
   requestTabsPermission, restoreSession, restoreWindow, saveSession, searchSavedTabs, SESSIONS_KEY, sessionsToBookmarksHtml, sessionsToFogarFile, sessionsToMarkdown, slug, tabCount, topHosts, type OpenWindow, type Session,
 } from '@/lib/sessions';
 import { downloadFile } from '@/lib/backup';
@@ -34,6 +34,8 @@ export interface WidgetDef {
   description: string;
   /** Only one on the page at a time. */
   single: boolean;
+  /** Spans the full row by default; users can toggle per instance. */
+  wide?: boolean;
   defaultConfig(): Record<string, any>;
   /** The header title; instances can carry their own name. */
   name(inst: WidgetInstance): string;
@@ -278,7 +280,7 @@ const weather: WidgetDef = {
 // ---------- Sessions ----------
 const relTime = (ts: number) => { const m = Math.round((Date.now() - ts) / 60e3); if (m < 1) return 'just now'; if (m < 60) return `${m} min ago`; const h = Math.round(m / 60); if (h < 24) return `${h} h ago`; const d = Math.round(h / 24); return d === 1 ? 'yesterday' : `${d} days ago`; };
 const sessions: WidgetDef = {
-  type: 'sessions', title: 'Sessions', description: 'Save your open windows, close them without fear, search and restore later.', single: true,
+  type: 'sessions', title: 'Sessions', description: 'Save your open windows, close them without fear, search and restore later.', single: true, wide: true,
   defaultConfig: () => ({}), name: () => 'Sessions',
   async render(body, _actions, inst, ctx) {
     const { app } = ctx;
@@ -316,8 +318,11 @@ const sessions: WidgetDef = {
           el('button', { class: 'ghost small', type: 'button', disabled: !withTabs.length, onclick: () => void saveMany(withTabs, false) }, 'Save all'),
           el('button', { class: 'ghost small', type: 'button', disabled: !withTabs.some((w) => !w.current), title: 'Save every window, then close all of them except this one', onclick: () => void saveMany(withTabs.filter((w) => !w.current), true) }, 'Save & close others'))));
       withTabs.forEach((w, i) => {
-        openBox.append(el('div', { class: 'sess-win' },
-          el('span', { class: 't' }, el('strong', {}, w.current ? 'This window' : `Window ${i + 1}`), ` · ${w.tabs.length} tab${w.tabs.length === 1 ? '' : 's'}`, el('span', { class: 'muted' }, ` · ${topHosts(w.tabs).join(', ')}`)),
+        // The label is a button: clicking a window brings it to the front, so the list doubles as a switcher.
+        const label = el('button', { class: 't', type: 'button', disabled: w.current, title: w.current ? 'You are here' : `Switch to this window · ${topHosts(w.tabs, 5).join(', ')}`, onclick: () => void focusWindow(w.id) },
+          el('strong', {}, w.current ? 'This window' : `Window ${i + 1}`), ` · ${w.tabs.length} tab${w.tabs.length === 1 ? '' : 's'}`,
+          el('span', { class: 'muted' }, ` · ${w.activeTitle ?? topHosts(w.tabs).join(', ')}`));
+        openBox.append(el('div', { class: 'sess-win' }, label,
           el('button', { class: 'ghost small', type: 'button', onclick: () => void saveMany([w], false) }, 'Save'),
           el('button', { class: 'ghost small', type: 'button', title: w.current ? 'Saves this window and closes it, including this tab' : 'Save this window, then close it', onclick: () => void saveMany([w], true) }, 'Save & close')));
       });

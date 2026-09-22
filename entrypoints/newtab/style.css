@@ -188,7 +188,10 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .ctl { border: 0; background: transparent; color: var(--muted); border-radius: 6px; width: 26px; height: 26px; font-size: 14px; line-height: 1; display: grid; place-items: center; }
 .ctl:hover:not(:disabled) { background: var(--bg); color: var(--fg); }
 .ctl:disabled { opacity: 0.3; }
-.widget-body { display: grid; gap: 10px; align-content: start; }
+.widget-body { display: grid; gap: 10px; align-content: start; min-width: 0; }
+/* Grid items default to min-width:auto, so one nowrap label can widen a card past its column. Never. */
+.widget-body > * { min-width: 0; }
+.panels .widget.wide { grid-column: 1 / -1; }
 .setup { display: grid; gap: 10px; }
 .setup .row-actions { justify-content: flex-end; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 6px; }
@@ -224,11 +227,15 @@ body.focus .recipes, body.focus #corner, body.focus #examples, body.focus #first
 .perm-ask { display: grid; gap: 10px; }
 .sess-open { display: grid; gap: 2px; }
 .sess-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: var(--muted); padding-bottom: 6px; }
-.sess-win { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 8px; font-size: 14px; }
+.sess-win { display: flex; align-items: center; gap: 8px; padding: 6px 6px; border-radius: 8px; font-size: 14px; min-width: 0; }
+.sess-win .t { border: 0; background: transparent; color: inherit; font: inherit; text-align: left; padding: 0; cursor: pointer; }
+.sess-win .t:disabled { cursor: default; }
+.sess-win .t:not(:disabled):hover strong { text-decoration: underline; text-decoration-color: var(--accent); }
 .sess-win:hover { background: var(--bg); }
 .sess-win .t { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sess-saved { display: grid; gap: 0; }
-.sess-session { border-top: 1px solid var(--line); padding: 8px 0; display: grid; gap: 6px; }
+.sess-session { border-top: 1px solid var(--line); padding: 8px 0; display: grid; gap: 6px; min-width: 0; }
+.sess-open, .sess-saved, .sess-tabs { min-width: 0; }
 .sess-session:first-child { border-top: 0; }
 .sess-row { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .sess-row .t { flex: 1; min-width: 0; font-size: 12.5px; }
