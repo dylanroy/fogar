@@ -16,7 +16,11 @@ export default defineConfig({
       'A private new tab. Ask anything; answers come from a model running in your browser, or from a cloud endpoint you bring your own key for.',
     // activeTab + scripting: on a right-click "Ask Fogar about …", read the title, address, and text around the
     // selection from that one page, that one time. No install warning; nothing runs on pages otherwise.
-    permissions: ['storage', 'contextMenus', 'alarms', 'notifications', 'bookmarks', 'favicon', 'activeTab', 'scripting'],
+    // unlimitedStorage carries no install warning; saved sessions can outgrow the default quota.
+    // The e2e build takes `tabs` up front because Playwright cannot click Chrome's permission prompt.
+    permissions: ['storage', 'contextMenus', 'alarms', 'notifications', 'bookmarks', 'favicon', 'activeTab', 'scripting', 'unlimitedStorage', ...(E2E ? ['tabs'] : [])],
+    // `tabs` is asked for only when the Sessions widget is added; Chrome labels it "Read your browsing history".
+    optional_permissions: ['tabs'],
     // Cloud endpoints are user-chosen; their origin is requested at save time, never up front.
     optional_host_permissions: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'],
     // Model weights are data, not code. They are fetched from Hugging Face and cached in OPFS.

@@ -12,6 +12,11 @@ export function startMockServer(port = 0) {
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     const url = new URL(req.url, 'http://localhost');
 
+    if (req.method === 'GET' && url.pathname === '/invoice.html') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end('<!doctype html><html><head><meta charset="utf-8"><title>Quarterly Invoice from Globex</title></head><body><h1>Invoice 2026-Q3</h1><p>Total due: 4,200.</p></body></html>');
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/page.html') {
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(`<!doctype html><html><head><meta charset="utf-8"><title>Acme Careers: Senior Engineer</title></head><body>

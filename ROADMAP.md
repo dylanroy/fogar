@@ -28,6 +28,11 @@ Every proposed feature passes these five or it does not ship.
 - [x] Bookmark search as you type, and a natural-language bookmark finder that has the model classify the list.
 - [x] Landing page draft in `site/`.
 
+### Phase 3c: Sessions (closed 2026-09-22)
+- [x] Sessions widget: save open windows (per window or all, with or without closing), duplicates collapsed, auto-named from date and top sites; ranked search in the widget and from the ask bar; restore a window or a session with tabs created discarded; promote a tab or a whole session into an "Other bookmarks" folder named after it; rename, remove tabs, delete. Optional `tabs` permission requested when the widget is added. Sessions ride along in backups.
+- [ ] Safety net: an automatic snapshot of every open tab every ten minutes, keeping recent hours and days, so a crash or an over-eager cleanup is recoverable without pressing Save. Plus candidate.
+- [ ] Model-assisted: "find the tab about …" over saved tabs (the bookmark finder's machinery), and "sort this session into folders" proposing named groups that become bookmark folders or tab groups in one click. Plus candidate.
+
 ### Phase 3b: the assistant, not the demo (closed 2026-09-21)
 - [x] Qwen3.5 tiers (0.8B, 2B, 4B) with a device-based recommendation; thinking off; CPU fallback. Eval harness and numbers in the README.
 - [x] Follow-ups with conversation history; Markdown answers; older exchanges collapse.
@@ -94,7 +99,7 @@ Dylan's ask: connect Google Calendar and show a daily agenda on the new tab. Tha
 - `storage.sync` for todos and reminders across a Chrome profile. Recipes may exceed the 8 KB per-item quota, so they stay local unless chunked.
 - Ollama auto-detect on localhost as a one-click cloud option.
 - Firefox. It builds today, but extension pages lack SharedArrayBuffer there, so it would be single-threaded. Ship only if the WebGPU path makes that irrelevant.
-- Tab search from the ask bar. Needs the `tabs` permission and its install warning, so only with a clear ask.
+- ~~Tab search from the ask bar.~~ Superseded by the Sessions widget, which takes the `tabs` permission as an optional grant when the widget is added.
 - More widget types: Countdown, Clock, an RSS reading list, GitHub notifications with a personal token.
 
 ## Decided against
@@ -105,6 +110,7 @@ Dylan's ask: connect Google Calendar and show a daily agenda on the new tab. Tha
 - **Analytics in the extension.** Contradicts the pitch and complicates the listing.
 - **Scraping a search engine for grounding.** Breaks, violates terms, and gets store listings pulled. DuckDuckGo's Instant Answer API and Wikipedia's API are official, keyless, and CORS-open, so they are the free tier; DuckDuckGo's web results have no API and are not scraped. Full web results stay bring-your-own key.
 - **The `history` permission.** Scares people at install and invites review trouble. Bookmarks are enough.
+- **The `tabs` permission at install.** Chrome labels it "Read your browsing history". It exists only as an optional permission, asked for when someone adds the Sessions widget, with the reason stated in the widget.
 
 ## Sponsor slot rules
 

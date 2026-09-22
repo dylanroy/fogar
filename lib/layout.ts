@@ -1,7 +1,7 @@
 import { getItem, setItem, uid } from './store';
 
 /** Widgets are typed panels configured with data. The extension knows how to render each type; users pick, order, and configure. */
-export type WidgetType = 'todos' | 'reminders' | 'links' | 'notes' | 'agenda' | 'recipe' | 'weather';
+export type WidgetType = 'todos' | 'reminders' | 'links' | 'notes' | 'agenda' | 'recipe' | 'weather' | 'sessions';
 
 export interface WidgetInstance {
   id: string;

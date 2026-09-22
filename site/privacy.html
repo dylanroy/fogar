@@ -48,7 +48,7 @@
       <tr><td>Web grounding (off until you tick “Search the web first”)</td><td>Your question, as a search query</td><td>DuckDuckGo’s Instant Answer API (api.duckduckgo.com) and Wikipedia by default, with no key or account; or the search provider you chose and gave a key for</td></tr>
       <tr><td>Agenda widget (optional)</td><td>A request for the calendar address you pasted</td><td>Your calendar provider</td></tr>
       <tr><td>Weather widget (optional)</td><td>The city you typed, then its coordinates</td><td>Open-Meteo (open-meteo.com), which needs no account</td></tr>
-      <tr><td>Everything else</td><td><span class="zero">Nothing.</span> Todos, reminders, recipes, notes, links, bookmarks search, and settings all stay in your browser.</td><td>Nobody</td></tr>
+      <tr><td>Everything else</td><td><span class="zero">Nothing.</span> Todos, reminders, recipes, notes, links, saved sessions, bookmarks search, and settings all stay in your browser.</td><td>Nobody</td></tr>
     </tbody>
   </table>
   <p>The new tab page shows a live count of every network request it has made, by host, in Settings under “Network, this tab”. It is read from the browser's own timeline. If the count says zero, zero requests were made.</p>
@@ -66,6 +66,8 @@
       <tr><td>contextMenus</td><td>The right-click “Ask Fogar about …” item.</td></tr>
       <tr><td>activeTab, scripting</td><td>When you use that right-click item, reading the title, address, and text around your selection from that one page, that one time. Fogar never runs on pages otherwise, and what it reads goes only to the model you chose.</td></tr>
       <tr><td>favicon</td><td>Showing site icons next to bookmarks and links.</td></tr>
+      <tr><td>unlimitedStorage</td><td>Saved sessions can outgrow the default storage quota. No install warning.</td></tr>
+      <tr><td>Optional: tabs</td><td>Only if you add the Sessions widget: listing and saving the titles and addresses of your open tabs, on this device. Chrome labels this permission “Read your browsing history”; Fogar reads open tabs, not your history, and only while the widget is on the page.</td></tr>
       <tr><td>huggingface.co</td><td>Downloading the model file, once.</td></tr>
       <tr><td>Optional: any site you add</td><td>Requested one at a time when you save a cloud endpoint, a search key, or a calendar address, so the extension can reach that address and no other.</td></tr>
     </tbody>

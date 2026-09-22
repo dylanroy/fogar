@@ -406,6 +406,58 @@ check('right-click question carries page title, address, and excerpt; quotes not
   `click=${JSON.stringify(clickRes)} q="${ctxQ.trim()}" chip="${ctxChip}" title=${ctxSys.includes('Acme Careers')} url=${ctxSys.includes('/page.html')} excerpt=${ctxSys.includes('newsletter of the same name')}`);
 await newTab.close(); await webPage.close();
 
+// 12. Sessions widget: a second window with two real tabs is saved and closed, searchable, bookmarkable, restorable
+try {
+await page.goto(`${base}?e2e=1`);
+await page.waitForSelector('#recipe-chips .chip');
+const winBefore = await page.evaluate(() => chrome.windows.getAll().then((w) => w.length));
+await page.evaluate(async (port) => { await chrome.windows.create({ url: [`http://127.0.0.1:${port}/page.html`, `http://127.0.0.1:${port}/invoice.html`, `http://127.0.0.1:${port}/invoice.html`], focused: false }); }, mock.port);
+await page.waitForFunction(async () => { const titles = (await chrome.tabs.query({ url: 'http://127.0.0.1/*' })).map((t) => t.title ?? ''); return titles.some((t) => t.startsWith('Acme Careers')) && titles.filter((t) => t.startsWith('Quarterly Invoice')).length === 2; }, null, { timeout: 20000 });
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item:has-text("Sessions")');
+await page.waitForSelector('.widget[data-type="sessions"] .sess-win:has-text("Window")', { timeout: 10000 });
+const openText = await page.evaluate(() => document.querySelector('.widget[data-type="sessions"] .sess-head span')?.textContent ?? '');
+await page.click('.widget[data-type="sessions"] .sess-win:has-text("127.0.0.1") button:has-text("Save & close")');
+await page.waitForFunction((n) => chrome.windows.getAll().then((w) => w.length === n), winBefore, { timeout: 10000 });
+await page.waitForSelector('.widget[data-type="sessions"] .sess-session');
+const sessText = await page.evaluate(() => document.querySelector('.widget[data-type="sessions"] .sess-session')?.textContent ?? '');
+const toastText = await text('toast');
+check('sessions: save & close a window; duplicates dropped; window gone', /2 windows · 3 tabs open/.test(openText) && /2 tabs/.test(sessText) && /1 duplicate dropped/.test(toastText), `open="${openText}" session="${sessText.slice(0, 60)}"`);
+
+// 12b. search from the ask bar and inside the widget; bookmark all; remove one
+await page.fill('#prompt', 'quarterly invoice');
+await page.waitForSelector('#bookmark-hits:not([hidden]) .hit.saved', { timeout: 5000 }).catch(() => {});
+const askHit = await page.evaluate(() => document.querySelector('#bookmark-hits .hit.saved .t')?.textContent ?? '');
+await page.fill('#prompt', '');
+await page.fill('.widget[data-type="sessions"] input[type="search"]', 'acme');
+await page.waitForSelector('.widget[data-type="sessions"] .sess-saved .sess-tab');
+const widgetHit = await page.evaluate(() => document.querySelector('.widget[data-type="sessions"] .sess-saved .sess-tab a')?.textContent ?? '');
+await page.fill('.widget[data-type="sessions"] input[type="search"]', '');
+await page.waitForSelector('.widget[data-type="sessions"] .sess-session');
+await page.click('.widget[data-type="sessions"] .sess-session button:has-text("Bookmark all")');
+await page.waitForFunction(() => chrome.bookmarks.search({ title: 'Quarterly Invoice from Globex' }).then((r) => r.length >= 1), null, { timeout: 5000 });
+const folderOk = await page.evaluate(async () => { const hits = await chrome.bookmarks.search({ title: 'Quarterly Invoice from Globex' }); const parent = (await chrome.bookmarks.get(hits[0].parentId))[0]; return !parent.url && /127\.0\.0\.1/.test(parent.title); });
+await page.click('.widget[data-type="sessions"] .sess-name');
+await page.waitForSelector('.widget[data-type="sessions"] .sess-tabs .sess-tab');
+await page.hover('.widget[data-type="sessions"] .sess-tabs .sess-tab:has-text("Acme")');
+await page.click('.widget[data-type="sessions"] .sess-tabs .sess-tab:has-text("Acme") .x');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="sessions"] .sess-tabs .sess-tab').length === 1, null, { timeout: 5000 });
+check('sessions: ask-bar and widget search, bookmark all into a session folder, remove a tab', askHit === 'Quarterly Invoice from Globex' && widgetHit.includes('Acme Careers') && folderOk, `ask="${askHit}" widget="${widgetHit.slice(0, 30)}" folder=${folderOk}`);
+
+// 12c. restore reopens the window; delete removes the session
+await page.click('.widget[data-type="sessions"] .sess-session button:has-text("Restore")');
+await page.waitForFunction((n) => chrome.windows.getAll().then((w) => w.length === n + 1), winBefore, { timeout: 10000 });
+const restoredUrls = await page.evaluate(async () => (await chrome.tabs.query({ url: 'http://127.0.0.1/*' })).map((t) => t.url));
+await page.evaluate(async () => { const ws = await chrome.windows.getAll({ populate: true }); const cur = await chrome.windows.getCurrent(); for (const w of ws) if (w.id !== cur.id) await chrome.windows.remove(w.id); });
+page.once('dialog', (d) => { d.accept().catch(() => {}); }); // the delete confirm; a second handler must never race this one
+await page.click('.widget[data-type="sessions"] .sess-session .ctl[title="Delete this saved session"]');
+await page.waitForFunction(() => document.querySelector('.widget[data-type="sessions"] .sess-session') === null, null, { timeout: 5000 });
+check('sessions: restore reopens the saved window; delete removes the session', restoredUrls.length === 1 && /invoice\.html/.test(restoredUrls[0]), `restored: ${restoredUrls.join(', ')}`);
+} catch (err) {
+  check('sessions: flow completed without a thrown step', false, String(err.message ?? err).split('\n')[0].slice(0, 160));
+  await page.evaluate(async () => { const ws = await chrome.windows.getAll(); const cur = await chrome.windows.getCurrent(); for (const w of ws) if (w.id !== cur.id) await chrome.windows.remove(w.id).catch(() => {}); }).catch(() => {});
+}
+
 // 9. share link offers the recipe
 const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));
 await page.goto(`${base}?e2e=1&recipe=${shared}`);

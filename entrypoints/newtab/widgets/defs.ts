@@ -10,6 +10,11 @@ import { ensureOriginPermission } from '@/lib/settings';
 import { agendaWindow, expandEvents, parseIcs, type AgendaEvent } from '@/lib/ics';
 import { defaultUnit, describeWeather, fetchForecast, geocode, type Forecast, type Place } from '@/lib/weather';
 import { allRecipes, type Recipe } from '@/lib/recipes';
+import {
+  bookmarkSession, bookmarkTabs, closeWindows, deleteSession, hasTabsPermission, hostOf, loadSessions, openWindows, removeTab, renameSession,
+  requestTabsPermission, restoreSession, restoreWindow, saveSession, searchSavedTabs, SESSIONS_KEY, tabCount, topHosts, type OpenWindow, type Session,
+} from '@/lib/sessions';
+import { onItemChange } from '@/lib/store';
 
 export interface WidgetCtx {
   app: App;
@@ -268,5 +273,115 @@ const weather: WidgetDef = {
   configure(body, inst, ctx) { weatherSetup(body, inst, ctx, true); },
 };
 
-export const WIDGETS: WidgetDef[] = [todos, reminders, agenda, links, notes, weather, recipe];
+
+// ---------- Sessions ----------
+const relTime = (ts: number) => { const m = Math.round((Date.now() - ts) / 60e3); if (m < 1) return 'just now'; if (m < 60) return `${m} min ago`; const h = Math.round(m / 60); if (h < 24) return `${h} h ago`; const d = Math.round(h / 24); return d === 1 ? 'yesterday' : `${d} days ago`; };
+const sessions: WidgetDef = {
+  type: 'sessions', title: 'Sessions', description: 'Save your open windows, close them without fear, search and restore later.', single: true,
+  defaultConfig: () => ({}), name: () => 'Sessions',
+  async render(body, _actions, inst, ctx) {
+    const { app } = ctx;
+    if (!(await hasTabsPermission())) {
+      body.append(el('div', { class: 'perm-ask' },
+        el('p', { class: 'muted' }, 'To save and restore your windows, Fogar needs to read the titles and addresses of your open tabs. Chrome calls this permission “Read your browsing history”; Fogar only looks at open tabs, only when this widget is on the page, and everything it saves stays on this device.'),
+        el('div', { class: 'row-actions' }, el('button', { class: 'primary small', type: 'button', onclick: async () => {
+          const ok = await requestTabsPermission();
+          if (ok) ctx.remount(inst); else app.toast('Without that permission the Sessions widget cannot see your tabs.');
+        } }, 'Allow Fogar to see my tabs'))));
+      return;
+    }
+
+    const openBox = el('div', { class: 'sess-open' });
+    const search = el('input', { class: 'line-input', type: 'search', placeholder: 'Search saved tabs', autocomplete: 'off' });
+    const savedBox = el('div', { class: 'sess-saved' });
+    body.append(openBox, search, savedBox);
+    const expanded = new Set<string>();
+
+    // ---- open windows ----
+    const paintOpen = async () => {
+      const { windows, totalTabs } = await openWindows();
+      clear(openBox);
+      const withTabs = windows.filter((w) => w.tabs.length);
+      const saveMany = async (list: OpenWindow[], close: boolean) => {
+        const res = await saveSession(list);
+        if (!res) { app.toast('Nothing to save: only browser pages are open.'); return; }
+        app.toast(`Saved ${tabCount(res.session)} tab${tabCount(res.session) === 1 ? '' : 's'} as “${res.session.name}”${res.duplicates ? `, ${res.duplicates} duplicate${res.duplicates === 1 ? '' : 's'} dropped` : ''}.`);
+        if (close) await closeWindows(list.map((w) => w.id));
+        void paintOpen(); void paintSaved();
+      };
+      openBox.append(el('div', { class: 'sess-head' },
+        el('span', {}, `${windows.length} window${windows.length === 1 ? '' : 's'} · ${totalTabs} tab${totalTabs === 1 ? '' : 's'} open`),
+        el('span', { class: 'row-actions' },
+          el('button', { class: 'ghost small', type: 'button', disabled: !withTabs.length, onclick: () => void saveMany(withTabs, false) }, 'Save all'),
+          el('button', { class: 'ghost small', type: 'button', disabled: !withTabs.some((w) => !w.current), title: 'Save every window, then close all of them except this one', onclick: () => void saveMany(withTabs.filter((w) => !w.current), true) }, 'Save & close others'))));
+      withTabs.forEach((w, i) => {
+        openBox.append(el('div', { class: 'sess-win' },
+          el('span', { class: 't' }, el('strong', {}, w.current ? 'This window' : `Window ${i + 1}`), ` · ${w.tabs.length} tab${w.tabs.length === 1 ? '' : 's'}`, el('span', { class: 'muted' }, ` · ${topHosts(w.tabs).join(', ')}`)),
+          el('button', { class: 'ghost small', type: 'button', onclick: () => void saveMany([w], false) }, 'Save'),
+          el('button', { class: 'ghost small', type: 'button', title: w.current ? 'Saves this window and closes it, including this tab' : 'Save this window, then close it', onclick: () => void saveMany([w], true) }, 'Save & close')));
+      });
+    };
+
+    // ---- saved sessions ----
+    const tabRow = (s: Session, t: { id: string; url: string; title: string }, showSession: boolean) =>
+      el('div', { class: 'sess-tab' },
+        el('img', { src: favicon(t.url), alt: '' }),
+        el('a', { href: t.url, target: '_blank', rel: 'noopener', title: t.url }, t.title),
+        el('span', { class: 'h' }, showSession ? `${s.name} · ${hostOf(t.url)}` : hostOf(t.url)),
+        el('button', { class: 'bm', type: 'button', title: 'Bookmark into a folder named after this session', onclick: async () => { const r = await bookmarkTabs(s, [t]); app.toast(r.added ? `Bookmarked into “${s.name}”` : 'Already in that folder'); } }, '📑'),
+        el('button', { class: 'x', type: 'button', title: 'Remove from this session', onclick: async () => { await removeTab(s.id, t.id); void paintSaved(); } }, '×'));
+
+    const paintSaved = async () => {
+      const all = await loadSessions();
+      clear(savedBox);
+      const q = search.value.trim();
+      if (q) {
+        const hits = await searchSavedTabs(q, 40);
+        savedBox.append(el('p', { class: 'muted small-note' }, hits.length ? `${hits.length} saved tab${hits.length === 1 ? '' : 's'} match` : 'No saved tabs match.'));
+        for (const h of hits) savedBox.append(tabRow(h.session, h.tab, true));
+        return;
+      }
+      if (!all.length) { savedBox.append(el('p', { class: 'muted empty' }, 'Nothing saved yet. Save a window above and you can close it knowing every tab is one search away.')); return; }
+      for (const s of all) {
+        const n = tabCount(s);
+        const row = el('div', { class: 'sess-session', dataset: { id: s.id } });
+        const name = el('button', { class: 'sess-name', type: 'button', title: expanded.has(s.id) ? 'Collapse' : 'Show tabs', onclick: () => { if (expanded.has(s.id)) expanded.delete(s.id); else expanded.add(s.id); void paintSaved(); } }, `${expanded.has(s.id) ? '▾' : '▸'} ${s.name}`);
+        const rename = () => {
+          const input = el('input', { class: 'line-input', type: 'text', value: s.name });
+          const done = async () => { await renameSession(s.id, input.value); void paintSaved(); };
+          input.addEventListener('keydown', (e) => { if (e.key === 'Enter') void done(); if (e.key === 'Escape') void paintSaved(); });
+          input.addEventListener('blur', () => void done());
+          name.replaceWith(input); input.focus(); input.select();
+        };
+        // Name and meta on one line, actions on the next: in a narrow widget column the buttons would otherwise
+        // squeeze the name to nothing.
+        row.append(el('div', { class: 'sess-row' }, name,
+          el('span', { class: 'sess-meta' }, `${n} tab${n === 1 ? '' : 's'} · ${relTime(s.savedAt)}`)),
+          el('div', { class: 'sess-actions' },
+            el('button', { class: 'ghost small', type: 'button', title: 'Reopen every window in this session; tabs load when you click them', onclick: async () => { await restoreSession(s); app.toast(`Restored “${s.name}”`); void paintOpen(); } }, 'Restore'),
+            el('button', { class: 'ghost small', type: 'button', title: 'Copy every tab into a bookmark folder named after this session', onclick: async () => { const r = await bookmarkSession(s); app.toast(`${r.added} bookmarked into “${s.name}”${r.skipped ? `, ${r.skipped} already there` : ''}`); } }, 'Bookmark all'),
+            el('button', { class: 'ctl', type: 'button', title: 'Rename', onclick: rename }, '✎'),
+            el('button', { class: 'ctl', type: 'button', title: 'Delete this saved session', onclick: async () => { if (!confirm(`Delete “${s.name}” (${n} tabs)? This cannot be undone.`)) return; await deleteSession(s.id); void paintSaved(); } }, '×')));
+        if (expanded.has(s.id)) {
+          s.windows.forEach((w, i) => {
+            const tabs = el('div', { class: 'sess-tabs' });
+            if (s.windows.length > 1) tabs.append(el('div', { class: 'sess-row muted' }, el('span', { class: 't' }, `Window ${i + 1} · ${w.tabs.length} tabs`), el('button', { class: 'ghost small', type: 'button', onclick: async () => { await restoreWindow(w); void paintOpen(); } }, 'Restore window')));
+            for (const t of w.tabs) tabs.append(tabRow(s, t, false));
+            row.append(tabs);
+          });
+        }
+        savedBox.append(row);
+      }
+    };
+
+    search.addEventListener('input', debounce(() => void paintSaved(), 120));
+    onItemChange(SESSIONS_KEY, () => void paintSaved());
+    const repaintOpen = debounce(() => void paintOpen(), 400);
+    for (const ev of [browser.windows.onCreated, browser.windows.onRemoved, browser.tabs.onCreated, browser.tabs.onRemoved, browser.tabs.onUpdated] as Array<{ addListener(cb: () => void): void }>) ev.addListener(repaintOpen);
+    await paintOpen();
+    await paintSaved();
+  },
+};
+
+export const WIDGETS: WidgetDef[] = [todos, reminders, agenda, sessions, links, notes, weather, recipe];
 export const widgetDef = (type: WidgetType): WidgetDef => WIDGETS.find((w) => w.type === type)!;
