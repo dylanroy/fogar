@@ -35,6 +35,7 @@ Every proposed feature passes these five or it does not ship.
 - [x] Network ledger; backup and restore.
 - [x] Widgets as data: Agenda (iCal), Todos, Reminders, Links, Notes, Weather, Recipe. Reorder, configure, remove, add. Focus mode.
 - [x] Privacy policy, store listing copy, generated store assets, zipped build.
+- [x] Right-click questions carry the page (activeTab + scripting, session storage hand-off). "Dig deeper" on answers: search again, think longer (600-token budget), ask the other model; re-asks replace the exchange. Honesty line in the system prompt. Test build variant (WXT_E2E=1) so the suite exercises the real right-click path.
 
 ## Now: release candidate, v0.1
 

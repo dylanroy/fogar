@@ -27,7 +27,8 @@ When you want a bigger brain, switch to Cloud and bring your own key for OpenAI,
 • Agenda from any calendar's iCal address. Today and tomorrow, on every new tab.
 • Todos, Links, Notes, Weather (from Open-Meteo, no key). Pin the panels you want, in the order you want, or hit Focus for just the ask box.
 • Bookmarks: start typing to find one. Or ask "find bookmarks that are job postings" and the model sorts them for you.
-• Right-click any text on any page: "Ask Fogar about …".
+• Right-click any text on any page: "Ask Fogar about …". The page's title, address, and the text around your selection go along, so the answer comes from the page you were reading.
+• Dig deeper on any answer: search the web and answer again with sources, let the model think longer, or ask your cloud model the same question.
 • Arithmetic is computed, not guessed: "18% of 240" gives 43.2 every time.
 • Optional web grounding: add a Brave Search or Tavily key and Fogar answers factual questions from five live results, with sources.
 
@@ -46,6 +47,7 @@ Free. Open source. Made by Dylan Roy.
 - **bookmarks**: bookmark search as the user types, and removal on request.
 - **contextMenus**: the "Ask Fogar about …" right-click item.
 - **favicon**: site icons next to bookmarks and links.
+- **activeTab, scripting**: on a right-click "Ask Fogar about …", read the title, address, and text around the selection from that one page, that one time. Nothing runs on pages otherwise.
 - **host permission huggingface.co**: downloading the model file once.
 - **optional host permissions (https://*/*, localhost)**: requested individually when the user saves a cloud endpoint, search API key, or calendar address, so Fogar can reach exactly that address.
 - **chrome_url_overrides.newtab**: the product is a new tab page.

@@ -1,4 +1,5 @@
 import { REMINDERS_KEY, loadReminders, saveReminders, type Reminder } from '@/lib/reminders';
+import { CTX_KEY, extractPageContext, type PageContext } from '@/lib/page-context';
 
 const ALARM_PREFIX = 'fogar-reminder:';
 
@@ -43,6 +44,27 @@ function reconcile(): Promise<void> {
   return reconciling;
 }
 
+/**
+ * "Ask Fogar about …": read the page the user is on (activeTab grants this for the click), stash the context in
+ * session storage, and open a new tab that picks it up. If the page cannot be read, the selection alone is used.
+ */
+async function askAbout(tabId: number | undefined, frameId: number | undefined, selectionText: string): Promise<void> {
+  let ctx: PageContext = { title: '', url: '', selection: selectionText.replace(/\s+/g, ' ').trim(), excerpt: '' };
+  if (tabId !== undefined) {
+    try {
+      const target: any = { tabId };
+      if (frameId !== undefined) target.frameIds = [frameId];
+      const [res] = await browser.scripting.executeScript({ target, func: extractPageContext, args: [selectionText] });
+      if (res?.result) ctx = { ...ctx, ...(res.result as PageContext) };
+    } catch (err) {
+      console.warn('[fogar] could not read the page for context', err);
+    }
+  }
+  const id = Math.random().toString(36).slice(2, 10);
+  await browser.storage.session.set({ [CTX_KEY(id)]: ctx });
+  await browser.tabs.create({ url: browser.runtime.getURL(`/newtab.html?ctx=${id}` as any) });
+}
+
 export default defineBackground(() => {
   browser.runtime.onInstalled.addListener(async () => {
     // removeAll first: on an extension update the old item still exists and create() would throw on the duplicate id.
@@ -56,12 +78,17 @@ export default defineBackground(() => {
   });
   browser.runtime.onMessage.addListener((msg: any, _sender, sendResponse) => {
     if (msg?.type === 'reminders.changed') { void reconcile().then(() => sendResponse({ ok: true })); return true; }
+    if (import.meta.env.WXT_E2E === '1' && msg?.type === 'test.contextClick') {
+      // Test build only: the context menu cannot be clicked from automation, so the suite drives the same path here.
+      void askAbout(msg.tabId, undefined, msg.selectionText).then(() => sendResponse({ ok: true }), (err) => sendResponse({ ok: false, error: String(err) }));
+      return true;
+    }
     return false;
   });
 
-  browser.contextMenus.onClicked.addListener((info) => {
+  browser.contextMenus.onClicked.addListener((info, tab) => {
     if (info.menuItemId !== 'fogar-ask' || !info.selectionText) return;
-    void browser.tabs.create({ url: browser.runtime.getURL(`/newtab.html?q=${encodeURIComponent(info.selectionText)}`) });
+    void askAbout(tab?.id, info.frameId, info.selectionText);
   });
 
   browser.alarms.onAlarm.addListener(async (alarm) => {

@@ -7,14 +7,21 @@
 //   6. todos persist across reload
 //   7. reminders parse, confirm, save, and create a chrome.alarms entry
 //   8. bookmark search as you type
-// Usage: npm run build && npm run test:spike   (HEADED=1 to watch, GPU=1 for WebGPU, VERBOSE=1 for all console lines)
+// Usage: npm run test:spike   (HEADED=1 to watch, GPU=1 for WebGPU, VERBOSE=1 for all console lines)
+// The suite builds its own test variant (WXT_E2E=1 → .output-e2e) with a host permission for the mock server, so
+// the right-click page-context path can run for real. The store build in .output is untouched.
 import { chromium } from 'playwright';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
 import { startMockServer } from './mock-openai.mjs';
 
-const ext = resolve('.output/chrome-mv3');
+if (process.env.SKIP_BUILD !== '1') {
+  const build = spawnSync('npx', ['wxt', 'build'], { stdio: 'inherit', env: { ...process.env, WXT_E2E: '1' } });
+  if (build.status !== 0) { console.error('e2e build failed'); process.exit(1); }
+}
+const ext = resolve('.output-e2e/chrome-mv3');
 const userDataDir = mkdtempSync(join(tmpdir(), 'fogar-smoke-'));
 const headless = process.env.HEADED !== '1';
 const gpu = process.env.GPU === '1' ? '1' : '0';
@@ -85,6 +92,33 @@ await page.press('#prompt', 'Enter');
 await page.waitForFunction(() => document.body.dataset.status === 'done' && document.querySelector('#answer strong') !== null, null, { timeout: 30000 });
 const md = await page.evaluate(() => ({ strong: document.querySelector('#answer strong')?.textContent, items: document.querySelectorAll('#answer li').length, h: document.querySelector('#answer h5')?.textContent, code: document.querySelector('#answer code')?.textContent, raw: document.getElementById('answer')?.textContent ?? '' }));
 check('markdown renders (heading, list, bold, code)', md.strong === 'one' && md.items === 2 && md.h === 'Title' && md.code === 'code' && !md.raw.includes('**'), JSON.stringify(md).slice(0, 120));
+
+// 3d. Dig deeper → "Search the web and answer again": grounded re-ask replaces the ungrounded exchange
+await page.goto(`${base}?e2e=1&cloud=${mock.port}&ground=${mock.port}&groundoff=1`);
+await page.fill('#prompt', 'Who is the US president?');
+await page.press('#prompt', 'Enter');
+await waitDone(30000);
+const ungroundedSources = await page.evaluate(() => document.querySelectorAll('#sources li').length);
+await page.click('#answer-card .dig-btn');
+const digItems = await page.evaluate(() => [...document.querySelectorAll('#answer-card .dig-menu .menu-item strong')].map((n) => n.textContent));
+await page.click('#answer-card .dig-menu .menu-item:has-text("Search the web and answer again")');
+await page.waitForFunction(() => document.querySelectorAll('#thread .answer-card').length === 2 && document.body.dataset.status === 'done', null, { timeout: 30000 });
+const regroundedSources = await page.evaluate(() => document.querySelectorAll('#sources li').length);
+const digMsgs = mock.server.lastRequest?.messages ?? [];
+const superseded = !digMsgs.some((m) => /mock cloud says hello/.test(m.content));
+check('dig deeper: search again grounds the re-ask and replaces the old exchange', ungroundedSources === 0 && regroundedSources === 2 && superseded && digItems.includes('Search the web and answer again'), `menu: ${digItems.join(' / ')}; sources ${ungroundedSources}→${regroundedSources}; old answer dropped=${superseded}`);
+
+// 3e. Dig deeper → "Ask the cloud model" from a local answer (cloud configured but not selected)
+await page.goto(`${base}?smoke=1&model=smoke&altcloud=${mock.port}`);
+await waitDone(120000);
+const localAnswer = await text('answer');
+await page.click('#answer-card .dig-btn');
+const localItems = await page.evaluate(() => [...document.querySelectorAll('#answer-card .dig-menu .menu-item strong')].map((n) => n.textContent));
+await page.click('#answer-card .dig-menu .menu-item:has-text("Ask the cloud model")');
+await page.waitForFunction(() => document.querySelectorAll('#thread .answer-card').length === 2 && document.body.dataset.status === 'done', null, { timeout: 30000 });
+const cloudLabel = await text('answer-label');
+const cloudReask = mock.server.lastRequest?.messages ?? [];
+check('dig deeper: ask the cloud model re-asks the same question there', cloudLabel === 'Cloud answer' && cloudReask.at(-1)?.content === 'Once upon a time' && !cloudReask.some((m) => m.content === localAnswer) && !localItems.includes('Think longer') /* the smoke model cannot think */ && (await text('status')).includes('Smoke test'), `menu: ${localItems.join(' / ')}; label ${cloudLabel}`);
 
 // 4. grounding
 await page.goto(`${base}?smoke=1&cloud=${mock.port}&ground=${mock.port}`);
@@ -293,6 +327,26 @@ await page.fill('#recipe-panel textarea', '{ "name": "Broken" ');
 await page.click('#recipe-panel .primary');
 const importError = await text('toast');
 check('recipe import forgives pasted JSON and explains failures', importedLabels.includes('Text') && importedLabels.includes('Tone') && importedLabels.includes('Extra') && /not valid JSON/.test(importError), `labels ${importedLabels.join(', ')}; error "${importError.slice(0, 60)}"`);
+
+// 11. right-click "Ask Fogar about …" carries the page: title, address, excerpt; quotes not doubled
+await page.goto(`${base}?e2e=1&cloud=${mock.port}`); // saves cloud settings so the new tab is ready to answer
+const webPage = await context.newPage();
+await webPage.goto(`http://127.0.0.1:${mock.port}/page.html`);
+const newTabPromise = context.waitForEvent('page', { timeout: 15000 });
+const clickRes = await page.evaluate(async () => {
+  const tabs = await chrome.tabs.query({});
+  const target = tabs.find((t) => (t.url || '').includes('/page.html'));
+  return chrome.runtime.sendMessage({ type: 'test.contextClick', tabId: target?.id, selectionText: '"The Micro Startups Guy"' });
+});
+const newTab = await newTabPromise;
+await newTab.waitForFunction(() => document.body.dataset.status === 'done', null, { timeout: 30000 });
+const ctxQ = await newTab.evaluate(() => document.querySelector('#answer-card .answer-q')?.childNodes[0]?.textContent ?? '');
+const ctxChip = await newTab.evaluate(() => document.querySelector('#answer-card .ctx-chip')?.textContent ?? '');
+const ctxSys = (mock.server.lastRequest?.messages ?? []).find((m) => m.role === 'system')?.content ?? '';
+check('right-click question carries page title, address, and excerpt; quotes not doubled',
+  clickRes?.ok === true && ctxQ.trim() === 'Explain this: “The Micro Startups Guy”' && ctxChip.startsWith('from 127.0.0.1') && ctxSys.includes('Acme Careers: Senior Engineer') && ctxSys.includes('newsletter of the same name') && ctxSys.includes('/page.html'),
+  `click=${JSON.stringify(clickRes)} q="${ctxQ.trim()}" chip="${ctxChip}" title=${ctxSys.includes('Acme Careers')} url=${ctxSys.includes('/page.html')} excerpt=${ctxSys.includes('newsletter of the same name')}`);
+await newTab.close(); await webPage.close();
 
 // 9. share link offers the recipe
 const shared = await page.evaluate(() => btoa(JSON.stringify({ version: 1, id: 'shared-test', name: 'Shared Test', description: 'd', inputs: [{ key: 'text', label: 'Text', type: 'textarea' }], template: 'Do {{text}}' })).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''));

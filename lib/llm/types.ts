@@ -1,7 +1,13 @@
 export type Role = 'system' | 'user' | 'assistant';
 export interface Message { role: Role; content: string }
 
-export interface AskOpts { maxTokens?: number; temperature?: number }
+export interface AskOpts {
+  maxTokens?: number;
+  temperature?: number;
+  /** Let a thinking model reason before it answers. Reasoning tokens go to onReasoning, never into the answer. */
+  think?: boolean;
+  onReasoning?: (token: string) => void;
+}
 export interface Provider {
   /** Stream answer tokens for a conversation. */
   ask(messages: Message[], signal: AbortSignal, opts?: AskOpts): AsyncIterable<string>;
@@ -48,4 +54,4 @@ export const DEFAULT_SETTINGS: Settings = {
 };
 
 export const SYSTEM_PROMPT =
-  "You are Fogar, a concise assistant running in the user's browser. Answer directly, in plain language, in a few sentences unless asked for more.";
+  "You are Fogar, a concise assistant running in the user's browser. Answer directly, in plain language, in a few sentences unless asked for more. If you do not know something or are not sure, say so plainly instead of guessing. Never invent names, dates, quotes, or numbers.";

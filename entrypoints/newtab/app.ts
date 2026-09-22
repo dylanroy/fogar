@@ -10,6 +10,7 @@ import { bookmarksAvailable, removeBookmark } from '@/lib/bookmarks';
 import { BOOKMARK_INTENT, bookmarkCriterion, findBookmarks } from '@/lib/bookmark-agent';
 import { renderMarkdown } from '@/lib/markdown';
 import { tryCalculate } from '@/lib/calc';
+import { contextBlock, type PageContext } from '@/lib/page-context';
 import type { DeviceProfile } from '@/lib/device';
 import type { ModelSpec } from '@/lib/llm/models';
 
@@ -22,9 +23,32 @@ export interface AskOptions {
   ground?: boolean;
   /** The plain question: shown on the card, used as the search query, and stored in history. */
   question?: string;
+  /** Let the model reason first (local thinking models only). */
+  think?: boolean;
+  /** Answer with this provider instead of the current mode's. */
+  provider?: Provider;
+  /** The page a right-click question came from. */
+  context?: PageContext | null;
 }
 
-const FACTUAL = /^(who|what|when|where|which|how many|how much|how old|is|are|was|were|did|does|do)\b/i;
+/** One question and its answer, as shown on a card. "Dig deeper" re-asks and replaces it. */
+export interface Exchange {
+  question: string;
+  answer: string;
+  context: PageContext | null;
+  grounded: boolean;
+  thought: boolean;
+  via: Mode;
+}
+
+export interface QuestionOptions {
+  ground?: boolean;
+  think?: boolean;
+  provider?: Provider;
+  context?: PageContext | null;
+  /** Remove this earlier exchange from the conversation before asking, so the new answer replaces it. */
+  supersede?: Exchange | null;
+}
 const HISTORY_CHAR_BUDGET = 9000; // ~2,500 tokens of context left for the conversation; the rest is for the answer
 
 /** Shared state and the core actions every panel needs. UI modules attach to this. */
@@ -43,6 +67,18 @@ export class App {
   async init(): Promise<void> {
     this.settings = await loadSettings();
     $('thread-clear').onclick = () => this.clearThread();
+    // One listener closes any open "Dig deeper" menu on an outside click.
+    document.addEventListener('click', (e) => {
+      for (const m of document.querySelectorAll<HTMLElement>('.dig-menu:not([hidden])')) {
+        if (!m.parentElement!.contains(e.target as Node)) { m.hidden = true; m.parentElement!.querySelector('.dig-btn')?.setAttribute('aria-expanded', 'false'); }
+      }
+    });
+  }
+
+  /** Cloud is usable when an endpoint and model are set; a key is optional for localhost servers like Ollama. */
+  cloudConfigured(): boolean {
+    const c = this.settings.cloud;
+    return Boolean(c.endpoint && c.model && (c.apiKey || /localhost|127\.0\.0\.1/.test(c.endpoint)));
   }
 
   async save(): Promise<void> {
@@ -188,6 +224,13 @@ export class App {
     return { card, answer, links, sources, stats };
   }
 
+  /** Drop one exchange from the conversation. Used when a better answer replaces it. */
+  private forgetExchange(ex: Exchange): void {
+    for (let i = 0; i + 1 < this.history.length; i += 2) {
+      if (this.history[i]!.content === ex.question && this.history[i + 1]!.content === ex.answer) { this.history.splice(i, 2); return; }
+    }
+  }
+
   private pushHistory(user: string, assistant: string): void {
     if (!assistant.trim()) return;
     this.history.push({ role: 'user', content: user }, { role: 'assistant', content: assistant });
@@ -199,12 +242,14 @@ export class App {
   }
 
   /** Ask a plain question. Arithmetic is computed, bookmark questions go to the finder, the rest to the model with the conversation so far. */
-  async askQuestion(question: string, ground: boolean): Promise<void> {
+  async askQuestion(question: string, opts: QuestionOptions = {}): Promise<void> {
     const calc = tryCalculate(question);
     if (calc) { this.showCalculation(question, calc.display, calc.expression); return; }
-    if (BOOKMARK_INTENT.test(question) && bookmarksAvailable()) { await this.findBookmarks(question); return; }
-    const messages: Message[] = [{ role: 'system', content: SYSTEM_PROMPT }, ...this.history, { role: 'user', content: question }];
-    await this.ask(messages, { question, ground });
+    if (!opts.context && BOOKMARK_INTENT.test(question) && bookmarksAvailable()) { await this.findBookmarks(question); return; }
+    if (opts.supersede) this.forgetExchange(opts.supersede);
+    const system = opts.context ? `${SYSTEM_PROMPT}\n\n${contextBlock(opts.context)}` : SYSTEM_PROMPT;
+    const messages: Message[] = [{ role: 'system', content: system }, ...this.history, { role: 'user', content: question }];
+    await this.ask(messages, { question, ground: opts.ground, think: opts.think, provider: opts.provider, context: opts.context ?? null });
   }
 
   showCalculation(question: string, display: string, expression: string): void {
@@ -223,10 +268,31 @@ export class App {
     const signal = this.abort.signal;
     const lastUser = [...messages].reverse().find((m) => m.role === 'user')?.content ?? '';
     const question = opts.question ?? lastUser;
-    const { card, answer, sources: sourcesEl, stats } = this.newCard(opts.label ?? 'Answer', opts.label && !opts.question ? undefined : question);
+    const provider = opts.provider ?? this.provider();
+    const via: Mode = opts.provider ? (opts.provider instanceof CloudProvider ? 'cloud' : 'local') : this.settings.mode;
+    const think = !!opts.think && via === 'local' && !!this.local.loaded?.canThink;
+    const label = opts.label ?? (think ? 'Thought longer' : opts.provider ? (via === 'cloud' ? 'Cloud answer' : 'Local answer') : 'Answer');
+    const { card, answer, sources: sourcesEl, stats } = this.newCard(label, opts.label && !opts.question ? undefined : question);
+    if (opts.context) {
+      let host = opts.context.url; try { host = new URL(opts.context.url).host.replace(/^www\./, ''); } catch { /* keep */ }
+      card.querySelector('.answer-q')?.append(' ', el('a', { class: 'ctx-chip', href: opts.context.url, target: '_blank', rel: 'noopener', title: opts.context.title || opts.context.url }, `from ${host}`));
+    }
     document.body.dataset.status = 'answering';
     $('stop-btn').hidden = false;
     this.refreshReadiness();
+
+    // Thinking streams into a collapsed block above the answer, so the monologue is there but not in the way.
+    const thinking = { box: null as HTMLDetailsElement | null, summary: null as HTMLElement | null, thought: null as HTMLElement | null, text: '', startedAt: performance.now() };
+    const onReasoning = (t: string) => {
+      if (!thinking.box) {
+        thinking.summary = el('summary', {}, 'Thinking…');
+        thinking.thought = el('div', { class: 'thought' });
+        thinking.box = el('details', { class: 'thinking' }, thinking.summary, thinking.thought);
+        answer.before(thinking.box);
+      }
+      thinking.text += t; thinking.thought!.textContent = thinking.text;
+    };
+    const markThought = () => { if (thinking.summary && thinking.summary.textContent === 'Thinking…') thinking.summary.textContent = `Thought for ${((performance.now() - thinking.startedAt) / 1000).toFixed(1)} s`; };
 
     let sources: Source[] = [];
     let raw = ''; let frame = 0;
@@ -247,21 +313,25 @@ export class App {
         }
         this.setStatus('Answering…');
       }
-      for await (const token of this.provider().ask(messages, signal)) {
+      for await (const token of provider.ask(messages, signal, { think, onReasoning })) {
         if (!firstAt) firstAt = performance.now();
+        markThought();
         tokens++;
         raw += token;
         if (!frame) frame = requestAnimationFrame(paint);
       }
       if (frame) cancelAnimationFrame(frame);
       paint();
+      markThought();
+      if (!raw.trim() && thinking.text) {
+        answer.textContent = 'The model used all its room thinking and never reached an answer. Try again, or ask something narrower.';
+        if (thinking.box) thinking.box.open = true;
+      }
       const total = performance.now() - t0;
       const gen = Math.max(1, total - (firstAt - t0));
-      stats.textContent = `${tokens} tokens · first token ${Math.round(firstAt - t0)} ms · ${(tokens / (gen / 1000)).toFixed(1)} tok/s${sources.length ? ` · ${sources.length} sources` : ''}`;
+      stats.textContent = `${tokens} tokens · first token ${Math.round(firstAt - t0)} ms · ${(tokens / (gen / 1000)).toFixed(1)} tok/s${sources.length ? ` · ${sources.length} sources` : ''}${thinking.text ? ` · ${thinking.text.length} chars of thinking` : ''}`;
       this.pushHistory(question, raw);
-      if (!sources.length && this.settings.mode === 'local' && !opts.label && FACTUAL.test(question) && !groundingConfigured(this.settings.grounding)) {
-        card.append(el('div', { class: 'nudge' }, 'Small local models guess at facts. ', el('a', { href: '#grounding-settings', onclick: () => { $<HTMLDetailsElement>('settings').open = true; } }, 'Add a search key'), ' to answer from web results with sources.'));
-      }
+      if (!opts.label) this.attachDigMenu(card, { question, answer: raw, context: opts.context ?? null, grounded: sources.length > 0, thought: think, via });
       document.body.dataset.status = 'done';
     } catch (err) {
       if (frame) cancelAnimationFrame(frame);
@@ -279,6 +349,48 @@ export class App {
       $('stop-btn').hidden = true;
       this.refreshReadiness();
     }
+  }
+
+  /**
+   * "Dig deeper": the ways that actually produce a better answer. Each re-asks the same question with the
+   * conversation as it was, and the new card replaces this one in the model's memory.
+   */
+  private attachDigMenu(card: HTMLElement, ex: Exchange): void {
+    const actions = card.querySelector('.answer-actions');
+    if (!actions) return;
+    const menu = el('div', { class: 'menu dig-menu', role: 'menu', hidden: true });
+    const btn = el('button', { class: 'ghost small dig-btn', type: 'button', 'aria-haspopup': 'menu', 'aria-expanded': 'false' } as any, 'Dig deeper');
+    btn.onclick = (e: MouseEvent) => {
+      e.stopPropagation();
+      // Older cards toggle open on a head click; the menu must not double as that toggle.
+      menu.hidden = !menu.hidden; btn.setAttribute('aria-expanded', String(!menu.hidden));
+      if (!menu.hidden) fill();
+    };
+    const item = (title: string, note: string, onclick: (() => void) | null, disabled = false) =>
+      el('button', { class: 'menu-item', type: 'button', role: 'menuitem', disabled, onclick: () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); onclick?.(); } } as any,
+        el('strong', {}, title), el('span', { class: 'muted' }, note));
+    const reask = (extra: QuestionOptions) => void this.askQuestion(ex.question, { context: ex.context, supersede: ex, ...extra });
+    const fill = () => {
+      clear(menu);
+      const groundOk = groundingConfigured(this.settings.grounding);
+      menu.append(ex.grounded
+        ? item('Search the web and answer again', 'This answer already used web results.', null, true)
+        : groundOk
+          ? item('Search the web and answer again', 'Five live results, cited. Best for facts, names, and anything recent.', () => reask({ ground: true }))
+          : item('Search the web and answer again', 'Needs a Brave Search or Tavily key. Free tiers cover most people. Opens Settings.', () => { $<HTMLDetailsElement>('settings').open = true; $('grounding-settings').scrollIntoView({ block: 'center', behavior: 'smooth' }); }));
+      if (this.settings.mode === 'local' && this.local.loaded?.canThink) {
+        menu.append(ex.thought
+          ? item('Think longer', 'This answer already used thinking.', null, true)
+          : item('Think longer', 'Lets the model reason before answering. Slower, better on multi-step questions.', () => reask({ think: true })));
+      }
+      if (ex.via === 'local' && this.cloudConfigured()) {
+        menu.append(item('Ask the cloud model', `Same question and conversation, answered by ${this.settings.cloud.model}.`, () => reask({ provider: new CloudProvider(this.settings.cloud) })));
+      } else if (ex.via === 'cloud' && this.local.loaded) {
+        menu.append(item('Ask the local model', `Same question, answered by ${this.local.loaded.label} on this device.`, () => reask({ provider: this.local })));
+      }
+    };
+    menu.onclick = (e: MouseEvent) => e.stopPropagation();
+    actions.prepend(el('span', { class: 'menu-wrap dig' }, btn, menu));
   }
 
   /** The model cannot see bookmarks, so the finder reads them and lets the model pick. Results are links, not prose. */

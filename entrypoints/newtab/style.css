@@ -101,8 +101,16 @@ textarea:focus, input:focus, select:focus { outline: none; border-color: var(--a
 .answer hr { border: 0; border-top: 1px solid var(--line); margin: 10px 0; }
 .answer a { color: inherit; text-decoration: underline; text-decoration-color: var(--accent); }
 .answer .big { font-family: var(--serif); font-size: 34px; line-height: 1.1; }
-.nudge { font-size: 12.5px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; }
-.nudge a { color: inherit; }
+.ctx-chip { font-style: normal; font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 1px 8px; text-decoration: none; white-space: nowrap; }
+.ctx-chip:hover { border-color: var(--accent); color: var(--fg); }
+.dig-menu { width: 300px; }
+.dig .menu-item strong { font-size: 14px; }
+details.thinking { border: 1px dashed var(--line); border-radius: 10px; padding: 6px 12px; font-size: 13px; color: var(--muted); }
+details.thinking summary { cursor: pointer; list-style: none; }
+details.thinking summary::-webkit-details-marker { display: none; }
+details.thinking summary::before { content: "›"; display: inline-block; margin-right: 8px; color: var(--accent); transition: transform 0.15s; }
+details.thinking[open] summary::before { transform: rotate(90deg); }
+details.thinking .thought { white-space: pre-wrap; margin-top: 6px; max-height: 260px; overflow: auto; line-height: 1.5; font-size: 13px; }
 .answer-card.past { padding: 10px 20px; }
 .answer-card.past .answer-head { cursor: pointer; align-items: center; }
 .answer-card.past .answer-q::before { content: "›"; display: inline-block; margin-right: 8px; color: var(--accent); transition: transform 0.15s; }

@@ -12,6 +12,16 @@ export function startMockServer(port = 0) {
     if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
     const url = new URL(req.url, 'http://localhost');
 
+    if (req.method === 'GET' && url.pathname === '/page.html') {
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.end(`<!doctype html><html><head><meta charset="utf-8"><title>Acme Careers: Senior Engineer</title></head><body>
+<h1>Senior Engineer, Platform</h1>
+<p>Acme builds tooling for small teams. This role reports to Priya Natarajan, who runs the platform group.</p>
+<p>You may know Priya as "The Micro Startups Guy" from the newsletter of the same name, which she has written since 2021 and which covers one-person software companies.</p>
+<p>The role is remote in US time zones. Interviews are two rounds. Salary range is posted below.</p>
+</body></html>`);
+      return;
+    }
     if (req.method === 'GET' && url.pathname === '/agenda.ics') {
       const pad = (n) => String(n).padStart(2, '0');
       const local = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;

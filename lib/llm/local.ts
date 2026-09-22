@@ -51,6 +51,10 @@ export class LocalProvider implements Provider {
         useCache: true,
         // Qwen3 and Qwen3.5 think out loud by default. A new tab wants the answer, not the monologue.
         default_template_kwargs: { enable_thinking: false },
+        // When "Think longer" turns reasoning on for one question, cap it. Measured without a cap, the 0.8B spent
+        // 1,500 tokens thinking and never answered. llama.cpp closes the thought at the budget and injects this line.
+        reasoning_budget_tokens: 600,
+        reasoning_budget_message: 'That is enough thinking. I will answer now.',
         progressCallback: ({ loaded, total }: { loaded: number; total: number }) => onProgress(total ? loaded / total : 0, loaded, total),
       } as any,
     );
@@ -58,35 +62,50 @@ export class LocalProvider implements Provider {
 
   async *ask(messages: Message[], signal: AbortSignal, opts: AskOpts = {}): AsyncIterable<string> {
     if (!this.wllama || !this.loaded) throw new Error('No local model loaded');
+    const think = !!opts.think && !!this.loaded.canThink;
     // The stream:true overload's type omits abortSignal, but the implementation honours it.
     const stream = (await this.wllama.createChatCompletion({
       messages,
       stream: true,
-      max_tokens: opts.maxTokens ?? 768,
+      max_tokens: opts.maxTokens ?? (think ? 2048 : 768),
       temperature: opts.temperature ?? 0.4,
       abortSignal: signal,
+      // Per-call override of the load-time default (thinking off). Qwen3 templates read enable_thinking.
+      chat_template_kwargs: { enable_thinking: think },
     } as any)) as unknown as AsyncIterable<any>;
-    // Belt and braces: if a template still emits a think block, hold it back rather than show it.
-    let buffer = ''; let inThink = false; let started = false;
+
+    // Reasoning arrives either as a separate delta field or inline as <think>…</think>. Either way it is routed
+    // to onReasoning and kept out of the answer. A partial closing tag is held back until it resolves.
+    let buf = ''; let mode: 'start' | 'think' | 'answer' = 'start';
+    const reason = (t: string) => { if (t) opts.onReasoning?.(t); };
     for await (const chunk of stream) {
       if (signal.aborted) break;
-      const token: string | undefined = chunk?.choices?.[0]?.delta?.content;
+      const delta = chunk?.choices?.[0]?.delta;
+      const separate: string | undefined = delta?.reasoning_content ?? delta?.reasoning;
+      if (separate) { reason(separate); continue; }
+      const token: string | undefined = delta?.content;
       if (!token) continue;
-      if (!started) {
-        buffer += token;
-        if (buffer.trimStart().startsWith('<think>')) { inThink = true; started = true; buffer = ''; continue; }
-        if (buffer.length < 7 && '<think>'.startsWith(buffer.trimStart())) continue; // could still become <think>
-        started = true; yield buffer; buffer = ''; continue;
+      if (mode === 'answer') { yield token; continue; }
+      buf += token;
+      if (mode === 'start') {
+        const lead = buf.trimStart();
+        if (lead.startsWith('<think>')) { mode = 'think'; buf = lead.slice(7); }
+        else if (lead.length < 7 && '<think>'.startsWith(lead)) continue; // could still become <think>
+        else { mode = 'answer'; const out = buf; buf = ''; yield out; continue; }
       }
-      if (inThink) {
-        buffer += token;
-        const end = buffer.indexOf('</think>');
-        if (end >= 0) { inThink = false; const rest = buffer.slice(end + 8).replace(/^\s+/, ''); buffer = ''; if (rest) yield rest; }
-        continue;
+      // mode === 'think'
+      const close = buf.indexOf('</think>');
+      if (close >= 0) {
+        reason(buf.slice(0, close));
+        const rest = buf.slice(close + 8).replace(/^\s+/, '');
+        buf = ''; mode = 'answer';
+        if (rest) yield rest;
+      } else if (buf.length > 8) {
+        reason(buf.slice(0, -8)); buf = buf.slice(-8);
       }
-      yield token;
     }
-    if (!started && buffer) yield buffer;
+    if (mode === 'start' && buf) yield buf;
+    if (mode === 'think' && buf) reason(buf); // ran out of tokens mid-thought: the caller sees an empty answer
   }
 
   /** Total bytes of model files cached in OPFS, and a way to clear them. */

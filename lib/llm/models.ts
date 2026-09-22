@@ -7,6 +7,8 @@ export interface ModelSpec {
   approxMB: number;
   /** Rough resident memory while loaded, for the recommendation and the picker note. */
   needsGB: number;
+  /** Supports a reasoning mode (Qwen3 family: enable_thinking in the chat template). */
+  canThink?: boolean;
   note: string;
 }
 
@@ -23,28 +25,28 @@ export const MODELS: ModelSpec[] = [
     id: 'qwen3-0.6b', tier: 'smallest',
     label: 'Smallest: Qwen3 0.6B',
     repo: 'unsloth/Qwen3-0.6B-GGUF', file: 'Qwen3-0.6B-Q4_K_M.gguf',
-    approxMB: 400, needsGB: 2,
+    approxMB: 400, needsGB: 2, canThink: true,
     note: 'For machines with little memory. Fine for rewrites, weak on everything else.',
   },
   {
     id: 'qwen3.5-0.8b', tier: 'fast',
     label: 'Fast: Qwen3.5 0.8B',
     repo: 'unsloth/Qwen3.5-0.8B-GGUF', file: 'Qwen3.5-0.8B-Q4_K_M.gguf',
-    approxMB: 533, needsGB: 3,
+    approxMB: 533, needsGB: 3, canThink: true,
     note: 'Quick rewrites and summaries. Loads in about a second once cached.',
   },
   {
     id: 'qwen3.5-2b', tier: 'balanced',
     label: 'Balanced: Qwen3.5 2B',
     repo: 'unsloth/Qwen3.5-2B-GGUF', file: 'Qwen3.5-2B-Q4_K_M.gguf',
-    approxMB: 1281, needsGB: 5,
+    approxMB: 1281, needsGB: 5, canThink: true,
     note: 'Noticeably smarter. The right choice on a recent laptop with WebGPU.',
   },
   {
     id: 'qwen3.5-4b', tier: 'best',
     label: 'Best: Qwen3.5 4B',
     repo: 'unsloth/Qwen3.5-4B-GGUF', file: 'Qwen3.5-4B-Q4_K_M.gguf',
-    approxMB: 2741, needsGB: 8,
+    approxMB: 2741, needsGB: 8, canThink: true,
     note: '2.7 GB download. Needs WebGPU and 16 GB of memory to feel good.',
   },
 ];

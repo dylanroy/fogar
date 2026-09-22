@@ -16,7 +16,10 @@ Release candidate v0.1.0. Everything below works end to end and is covered by `n
 - Opt-in web grounding with a Brave Search or Tavily key: five snippets, citations, sources.
 - Recipes: data-only prompt forms. Four built-ins. Create, edit, import, export, share as a link, pin to the page.
 - Widgets, as data: Agenda (any iCal feed, recurring events included), Todos, Reminders (plain-language parser, confirm, `chrome.alarms`, notifications, Google Calendar link), Links, Notes, Weather (Open-Meteo, no key), Recipe. Reorder, configure, remove, add. Focus mode.
-- Right-click "Ask Fogar about …". Bookmark search as you type.
+- Right-click "Ask Fogar about …" carries the page along: title, address, and the text around the selection go in front of the model, so a small model answers from the page it was on instead of guessing.
+- "Dig deeper" on every answer: search the web and answer again (grounded, cited), think longer (reasoning mode with a 600-token budget, local thinking models), or ask the other model (cloud or local). Each re-ask replaces the earlier exchange in the conversation.
+- The system prompt tells the model to say when it does not know rather than invent names, dates, or numbers.
+- Bookmark search as you type.
 - A network ledger that counts every request this tab made, by host. Backup and restore of everything.
 - Landing page and privacy policy in `site/`. Store listing copy and generated assets in `store/`.
 
@@ -33,6 +36,8 @@ Not yet: store submission, public repo, domains. See [ROADMAP.md](ROADMAP.md).
 | Qwen3.5 4B Q4 | 2.7 GB | 3.2 s | 44 tok/s | right | right | right | right | right |
 
 The 4B is the first tier that behaves like an assistant, which is why it is recommended wherever the GPU can carry it. The rewrite template now carries a one-shot example so the smaller tiers rewrite instead of reply, and arithmetic never reaches the model.
+
+**Thinking mode** (`THINK=1 node scripts/eval-models.mjs`, 0.8B, WebGPU, 600-token reasoning budget): about 6.8 s of visible thinking before the first answer token, then the same 92 tok/s. It fixed the two reasoning-shaped failures, 18% of 240 (43.2) and the bookmark sort (all three postings), and did not help the rewrite or the date extraction. Without the budget the 0.8B thought for 1,500 tokens and never answered, which is why the budget exists.
 
 ## Stack
 

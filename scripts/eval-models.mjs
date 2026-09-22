@@ -10,6 +10,7 @@ const ext = resolve('.output/chrome-mv3');
 const models = (process.env.MODELS || 'qwen3.5-0.8b,qwen3.5-2b').split(',');
 const gpu = process.env.GPU === '0' ? '0' : '1';
 const channel = process.env.CHANNEL || 'chromium';
+const think = process.env.THINK === '1' ? '1' : '0';
 const userDataDir = process.env.PROFILE || mkdtempSync(join(tmpdir(), 'fogar-eval-')); // reuse PROFILE= to keep downloads between runs
 const context = await chromium.launchPersistentContext(userDataDir, {
   channel, headless: process.env.HEADED !== '1',
@@ -23,7 +24,7 @@ page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text().slice
 const all = [];
 for (const model of models) {
   const t0 = Date.now();
-  await page.goto(`chrome-extension://${extId}/newtab.html?eval=1&model=${model}&gpu=${gpu}`);
+  await page.goto(`chrome-extension://${extId}/newtab.html?eval=1&model=${model}&gpu=${gpu}&think=${think}`);
   await page.waitForFunction(() => document.body.dataset.status === 'done', null, { timeout: 20 * 60 * 1000 });
   const out = JSON.parse(await page.evaluate(() => document.getElementById('eval-out').textContent));
   out.wallMs = Date.now() - t0; out.channel = channel;
@@ -31,7 +32,7 @@ for (const model of models) {
   console.log(`\n=== ${model}  gpu=${gpu} (${out.cpuFallback ? 'fell back to CPU' : gpu === '1' ? 'WebGPU' : 'CPU'})  load ${out.loadMs} ms  wall ${out.wallMs} ms ===`);
   if (!out.loaded) { console.log('  LOAD FAILED:', out.error); continue; }
   for (const r of out.results) {
-    console.log(`  [${r.name}] first ${r.firstTokenMs} ms · ${r.tokPerSec ?? '?'} tok/s · ${r.tokens} tok`);
+    console.log(`  [${r.name}] first ${r.firstTokenMs} ms · ${r.tokPerSec ?? '?'} tok/s · ${r.tokens} tok${r.reasoningChars ? ` · thought ${r.reasoningChars} chars: "${r.reasoningHead.replace(/\n/g, ' ').slice(0, 90)}…"` : ''}`);
     console.log('    ' + r.text.replace(/\n/g, '\n    '));
   }
 }

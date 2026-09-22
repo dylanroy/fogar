@@ -1,20 +1,26 @@
 import { defineConfig } from 'wxt';
 import { wllamaMv3 } from './lib/vite-plugin-wllama-mv3';
 
+// WXT_E2E=1 builds a test variant into .output-e2e with a host permission for the local mock server, so the
+// end-to-end suite can exercise the real right-click path (scripting.executeScript on a web page).
+const E2E = process.env.WXT_E2E === '1';
+
 // Fogar manifest. Everything here is deliberate; see README "Manifest V3 constraints".
 export default defineConfig({
   srcDir: '.',
-  outDir: '.output',
+  outDir: E2E ? '.output-e2e' : '.output',
   manifest: ({ command }) => ({
     name: 'Fogar',
     short_name: 'Fogar',
     description:
       'A private new tab. Ask anything; answers come from a model running in your browser, or from a cloud endpoint you bring your own key for.',
-    permissions: ['storage', 'contextMenus', 'alarms', 'notifications', 'bookmarks', 'favicon'],
+    // activeTab + scripting: on a right-click "Ask Fogar about …", read the title, address, and text around the
+    // selection from that one page, that one time. No install warning; nothing runs on pages otherwise.
+    permissions: ['storage', 'contextMenus', 'alarms', 'notifications', 'bookmarks', 'favicon', 'activeTab', 'scripting'],
     // Cloud endpoints are user-chosen; their origin is requested at save time, never up front.
     optional_host_permissions: ['https://*/*', 'http://localhost/*', 'http://127.0.0.1/*'],
     // Model weights are data, not code. They are fetched from Hugging Face and cached in OPFS.
-    host_permissions: ['https://huggingface.co/*', 'https://*.huggingface.co/*', 'https://*.hf.co/*'],
+    host_permissions: ['https://huggingface.co/*', 'https://*.huggingface.co/*', 'https://*.hf.co/*', ...(E2E ? ['http://127.0.0.1/*'] : [])],
     content_security_policy: {
       // 'wasm-unsafe-eval' is the only relaxation MV3 allows for script-src. No blob:, no remote code.
       // localhost is permitted only for unpacked extensions, which is what `wxt` dev mode loads.

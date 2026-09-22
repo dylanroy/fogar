@@ -59,7 +59,7 @@ export function initAskBar(app: App, deps: AskBarDeps): void {
     if (calc) { app.showCalculation(q, calc.display, calc.expression); prompt.value = ''; refreshExamples(); return; }
     // Before a model is ready the box still does something useful: a plain web search.
     if (!app.isReady() && !app.isBusy()) { webSearch(q); return; }
-    void app.askQuestion(q, ground.checked && !$('ground-toggle').hidden);
+    void app.askQuestion(q, { ground: ground.checked && !$('ground-toggle').hidden });
     prompt.value = ''; refreshExamples();
   };
 

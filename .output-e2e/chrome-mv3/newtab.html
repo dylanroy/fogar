@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Tab</title>
+    <script type="module" crossorigin src="/chunks/newtab-9vK_iFv7.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/newtab-BlYHBp1j.css">
+  </head>
+  <body data-status="idle">
+    <main class="page">
+      <header class="top">
+        <div>
+          <div class="brand">Fogar</div>
+          <div id="today" class="today"></div>
+        </div>
+        <div class="top-actions">
+        <button id="focus-toggle" class="ghost small" type="button" aria-pressed="false" title="Hide everything except the ask box and the conversation">Focus</button>
+        <div class="mode" role="radiogroup" aria-label="Where answers come from">
+          <button id="mode-local" class="mode-btn" role="radio" aria-checked="true" aria-label="On this device" title="On this device. Nothing you type leaves this browser.">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5" /><path d="M1 13h14" /></svg><span>Device</span>
+          </button>
+          <button id="mode-cloud" class="mode-btn" role="radio" aria-checked="false" aria-label="Cloud, with your own key" title="Cloud, with your own key. Sent only to the endpoint you set.">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z" /></svg><span>Cloud</span>
+          </button>
+        </div>
+        </div>
+      </header>
+
+      <section id="firstrun" class="card firstrun" hidden>
+        <h2>How should Fogar answer?</h2>
+        <p class="muted">You can change this any time from Settings.</p>
+        <div class="choices">
+          <button class="choice" data-choice="local">
+            <strong>On this device</strong>
+            <span id="firstrun-rec">Downloads a model once. After that nothing you type leaves this browser.</span>
+          </button>
+          <button class="choice" data-choice="cloud">
+            <strong>Cloud, with your own key</strong>
+            <span>OpenAI, OpenRouter, Groq, Ollama on localhost, anything OpenAI-compatible. Your key stays in this browser.</span>
+          </button>
+          <button class="choice" data-choice="later">
+            <strong>Just a search box for now</strong>
+            <span>Todos, reminders, and bookmark search still work. Pick a model later.</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="ask-section" class="ask">
+        <form id="ask-form">
+          <div class="askbox">
+            <textarea id="prompt" rows="2" placeholder="Ask anything, or start typing to find a bookmark" autofocus></textarea>
+            <div id="bookmark-hits" class="hits" hidden></div>
+          </div>
+          <div class="ask-row">
+            <span id="status" class="status">Loading…</span>
+            <span class="ask-actions">
+              <label id="ground-toggle" class="toggle" hidden title="Fetch a few web results and answer from them"><input type="checkbox" id="ground"> Search the web first</label>
+              <a id="web-search" class="muted link" href="#" hidden>Search the web instead</a>
+              <button id="stop-btn" class="ghost" type="button" hidden>Stop</button>
+              <button id="ask-btn" class="primary" type="submit" disabled>Ask</button>
+            </span>
+          </div>
+        </form>
+        <div id="examples" class="examples" aria-label="Things to try"></div>
+        <div id="progress" class="progress" hidden><div id="progress-bar" class="progress-bar"></div><span id="progress-text"></span></div>
+        <div id="thread" class="thread">
+          <div id="thread-head" class="thread-head" hidden><span class="muted">Follow-ups stay in this conversation.</span><button id="thread-clear" class="ghost small" type="button">New conversation</button></div>
+        </div>
+      </section>
+
+      <section class="recipes">
+        <div class="row-head">
+          <h2>Recipes</h2>
+          <span class="row-actions">
+            <button id="recipe-import" class="ghost small" type="button">Import</button>
+            <button id="recipe-new" class="ghost small" type="button">New recipe</button>
+          </span>
+        </div>
+        <div id="recipe-chips" class="chips"></div>
+        <div id="recipe-panel" class="card" hidden></div>
+      </section>
+
+      <section class="corner" id="corner">
+        <div class="row-head">
+          <h2>Your corner</h2>
+          <span class="row-actions menu-wrap">
+            <button id="widget-add" class="ghost small" type="button" aria-haspopup="menu" aria-expanded="false">Add widget</button>
+            <div id="widget-menu" class="menu" role="menu" hidden></div>
+          </span>
+        </div>
+        <div id="widgets" class="panels"></div>
+        <p id="corner-empty" class="muted empty" hidden>Nothing pinned. Add a widget to make this tab yours.</p>
+      </section>
+
+      <details id="settings" class="settings">
+        <summary>Settings</summary>
+        <fieldset id="local-settings">
+          <legend>Local model</legend>
+          <label>Model <select id="model"></select></label>
+          <label class="inline"><input type="checkbox" id="gpu"> Use WebGPU <span id="gpu-note" class="muted"></span></label>
+          <div class="row-actions"><button id="load-btn" class="primary" type="button">Download and load</button><span id="model-note" class="muted"></span></div>
+          <p class="muted"><span id="cache-line">Cached models: checking…</span> · <a id="clear-cache" class="link" href="#">Clear</a></p>
+        </fieldset>
+        <fieldset id="cloud-settings">
+          <legend>Cloud endpoint (OpenAI-compatible)</legend>
+          <label>Base URL <input id="cloud-endpoint" type="url" placeholder="https://api.openai.com/v1"></label>
+          <label>API key <input id="cloud-key" type="password" autocomplete="off" placeholder="sk-…"></label>
+          <label>Model <input id="cloud-model" type="text" placeholder="gpt-4o-mini"></label>
+          <div class="row-actions"><button id="cloud-save" class="primary" type="button">Save</button><span class="muted">Works with OpenAI, OpenRouter, Groq, or Ollama at http://localhost:11434/v1. The key is stored only in this browser.</span></div>
+        </fieldset>
+        <fieldset id="grounding-settings">
+          <legend>Web grounding (optional)</legend>
+          <p class="muted">A small local model is a good summarizer and a poor encyclopedia. With a search key, Fogar fetches five results first and answers from them with citations. Off unless you turn it on.</p>
+          <label>Provider
+            <select id="ground-provider">
+              <option value="none">Off</option>
+              <option value="brave">Brave Search API (free tier: 2,000 queries a month)</option>
+              <option value="tavily">Tavily (free tier: 1,000 queries a month)</option>
+            </select>
+          </label>
+          <label>API key <input id="ground-key" type="password" autocomplete="off" placeholder="Paste your key"></label>
+          <label class="inline"><input type="checkbox" id="ground-default"> Search the web first by default</label>
+          <div class="row-actions"><button id="ground-save" class="primary" type="button">Save</button><span id="ground-note" class="muted"></span></div>
+        </fieldset>
+        <fieldset>
+          <legend>Network, this tab</legend>
+          <p class="muted">Every request this page has made since it opened, counted by host from the browser's own timeline. Nothing inferred.</p>
+          <ul id="ledger-list" class="ledger-list"><li class="muted">No requests yet.</li></ul>
+        </fieldset>
+        <fieldset>
+          <legend>Your data</legend>
+          <p class="muted">Todos, reminders, recipes, notes, and settings live in this browser's extension storage. Nothing is sent anywhere unless you set a cloud endpoint or a search key, and then only to the address you typed.</p>
+          <div class="row-actions">
+            <button id="backup-btn" class="ghost small" type="button">Download a backup</button>
+            <button id="restore-btn" class="ghost small" type="button">Restore from a backup</button>
+            <button id="export-btn" class="ghost small" type="button">Copy recipes as JSON</button>
+            <input id="restore-file" type="file" accept="application/json,.json" hidden>
+          </div>
+        </fieldset>
+      </details>
+
+      <footer class="foot">
+        <span id="promo"></span>
+        <span class="foot-right"><a id="ledger-pill" class="ledger-pill" href="#ledger-list" title="Open the network ledger">network: 0 requests</a><a class="muted link" href="https://fogar.ai" target="_blank" rel="noopener">fogar.ai</a></span>
+      </footer>
+    </main>
+    <div id="toast" class="toast" hidden></div>
+    <pre id="eval-out" hidden></pre>
+  </body>
+</html>
