@@ -68,7 +68,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .warn { color: var(--accent); }
 .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
 
-.page { width: min(780px, 92vw); margin: 0 auto; padding: 9vh 0 8vh; display: grid; gap: 36px; }
+.page { width: min(max(var(--cols-w), var(--width-w)), var(--page-vw)); margin: 0 auto; padding: 9vh 0 8vh; display: grid; gap: 36px; }
 
 /* header */
 .top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; }
@@ -236,6 +236,22 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 .item .x, .item .cal { border: 0; background: transparent; color: var(--muted); font-size: 15px; padding: 2px 6px; border-radius: 6px; opacity: 0; transition: opacity 0.1s; text-decoration: none; }
 .item:hover .x, .item:hover .cal { opacity: 1; }
 .item .x:hover { color: var(--accent); }
+/* Todos reorder: drag a row or its grip and the rows it passes slide out of the way; ↑ and ↓ on the grip move it too.
+   The grip sits in the card's left margin, so the list lines up with the input exactly as it did before. */
+#todo-list { position: relative; } /* the rows' offsetParent, so a drag measures slots in the list's own coordinates */
+#todo-list .item { position: relative; transition: transform 0.15s ease; user-select: none; }
+#todo-list .item input.edit { user-select: text; }
+#todo-list .grip { position: absolute; top: 0; bottom: 0; left: -16px; width: 14px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: grab; touch-action: none; opacity: 0; transition: opacity 0.1s; }
+:root[data-density="compact"] #todo-list .grip { left: -14px; }
+#todo-list .grip path { stroke-width: 3.2; stroke-linecap: round; }
+#todo-list .item:hover .grip, #todo-list .grip:focus-visible { opacity: 1; }
+#todo-list .grip:hover { color: var(--fg); }
+#todo-list .grip:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+#todo-list .item.editing .grip { opacity: 0; pointer-events: none; }
+#todo-list .item.dragging { z-index: 1; transition: none; background: var(--card); box-shadow: 0 0 0 1px var(--line), 0 10px 24px -12px rgb(0 0 0 / 0.45); }
+#todo-list .item.dragging, #todo-list .item.dragging * { cursor: grabbing; }
+#todo-list .item.dragging .text { background: none; }
+@media (prefers-reduced-motion: reduce) { #todo-list .item { transition: none; } }
 .empty { padding: 4px; }
 .confirm { display: grid; gap: 10px; padding: 12px 14px; border-radius: 12px; background: var(--accent-soft); font-size: 14px; }
 .confirm .row-actions { justify-content: flex-end; }
@@ -385,11 +401,20 @@ code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0
 :root[data-recipes="hidden"] .recipes { display: none; }
 :root[data-columns="2"] .panels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 :root[data-columns="3"] .panels { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-:root[data-columns="3"]:not([data-arrangement="sidebar"]) .page { width: min(1040px, 92vw); }
+:root[data-columns="4"] .panels { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+/* The page is as wide as the columns need or the width asks, whichever is more; the window caps it. */
+:root { --cols-w: 780px; --width-w: 0px; --page-vw: 92vw; --rail: 380px; --side-w: 1440px; --side-vw: 94vw; }
+:root[data-columns="3"] { --cols-w: 1040px; }
+:root[data-columns="4"] { --cols-w: 1320px; }
+:root[data-width="wide"] { --width-w: 1280px; --page-vw: 94vw; --rail: 480px; --side-w: 1680px; --side-vw: 96vw; }
+:root[data-width="full"] { --width-w: 100vw; --page-vw: 96vw; --rail: 560px; --side-w: 100vw; --side-vw: 98vw; }
+/* Four columns need room; on a narrower window they fold to two rather than squeeze. */
+@media (max-width: 1100px) { :root[data-columns="4"] .panels { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 760px) { :root[data-columns="3"] .panels, :root[data-columns="4"] .panels { grid-template-columns: minmax(0, 1fr); } }
 @media (min-width: 1300px) {
   :root[data-arrangement="sidebar"]:not(.focus) .page {
-    width: min(1440px, 94vw); column-gap: 44px; align-items: start;
-    grid-template-columns: minmax(0, 1fr) 380px;
+    width: min(var(--side-w), var(--side-vw)); column-gap: 44px; align-items: start;
+    grid-template-columns: minmax(0, 1fr) var(--rail);
     grid-template-rows: auto auto auto auto 1fr auto;
     grid-template-areas: "top top" "firstrun corner" "ask corner" "recipes corner" "settings corner" "foot foot";
   }
@@ -660,3 +685,27 @@ a.ghost { text-decoration: none; display: inline-flex; align-items: center; }
 .widget > .row-head { align-items: flex-start; }
 .widget > .row-head h2 { line-height: 26px; }
 .widget-actions { justify-content: flex-end; row-gap: 4px; }
+/* A card is one column no wider than the card: a long header control (a model picker) shrinks or wraps instead
+   of stretching the card's grid, which pushed the whole body past the right edge. */
+.widget.panel { grid-template-columns: minmax(0, 1fr); }
+.widget > .row-head { min-width: 0; flex-wrap: wrap; row-gap: 6px; }
+.widget > .row-head h2 { flex: 0 0 auto; }
+.widget-actions { min-width: 0; flex: 1 1 auto; }
+.widget-actions > select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.wr-sample .t { display: flex; align-items: center; gap: 8px; }
+.wr-use { flex: 0 0 auto; width: auto; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.wr-open { all: unset; cursor: pointer; flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wr-open:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+.wr-sample.off .wr-open, .wr-sample.off .meta { opacity: 0.55; }
+.wr-sample-editor .wr-text { min-height: 180px; }
+.wr-count { font-size: 12px; flex: 1 1 auto; }
+.wr-sample-editor .wr-row > .line-input { flex: 0 1 200px; min-width: 120px; }
+.wr-stale { font-size: 12.5px; color: var(--accent); }
+.wr-stale[hidden] { display: none; }
+.wr-subhead { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); }
+.wr-history { display: grid; gap: 2px; padding-top: 6px; border-top: 1px solid var(--line); }
+.wr-version { font-size: 12.5px; color: var(--muted); }
+.wr-version .acts { opacity: 1; }
+.wr-amends { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
+.wr-amends > p { margin: 0; font-size: 12.5px; }
+.wr-amend .t { white-space: normal; }

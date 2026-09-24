@@ -3,8 +3,9 @@ import { clear, debounce, el } from '@/lib/dom';
 import { getItem, setItem, uid } from '@/lib/store';
 import { choices, loadProfiles, providerFor, type ChoiceId } from '@/lib/chat-models';
 import {
-  LOCAL_PROFILE_CHARS, OPS, OUTPUT_TOKENS, PROFILE_WORDS, SAMPLE_BUDGET, TEXT_BUDGET, cleanOutput, countWords, distillMessages, newRegister,
-  normalizeVoiceData, samplesThatFit, transformMessages, wantsNoEmDash, type Register,
+  AMENDMENT_MAX, HISTORY_MAX, LOCAL_PROFILE_CHARS, MAX_AMENDMENTS, OPS, OUTPUT_TOKENS, PROFILE_WORDS, SAMPLE_BUDGET, TEXT_BUDGET, cleanOutput,
+  countWords, distillMessages, newRegister, normalizeVoiceData, samplesChangedSince, samplesThatFit, transformMessages, wantsNoEmDash,
+  type Register, type Sample, type VoiceProfile,
 } from '@/lib/voice';
 import { acceptFilesInto } from '../ui/attach';
 import { cacheKey, field, relTime, setupForm, type WidgetCtx, type WidgetDef } from './shared';
@@ -13,7 +14,8 @@ import { cacheKey, field, relTime, setupForm, type WidgetCtx, type WidgetDef } f
  * Writing: rewrite, tighten, warm up, or draft text in your own voice. A better Draft & rewrite, because it
  * knows who is writing. The voice is distilled once from samples of your real writing into a profile that
  * rides along on every run; registers (Email, Chat, Essay, and any you add) are modes under that one voice,
- * with rules that are followed to the letter. Samples, profile, registers, and the last run live in extension
+ * with rules that are followed to the letter. Samples stay editable, and one-line corrections ride on top of the profile
+ * and survive every distill; earlier profiles are kept. Samples, profile, registers, and the last run live in extension
  * storage, ride along in backups, and go to a model only when you press the button, and only to the model you
  * picked in the header. One widget is one voice: a second widget can carry a client's or a brand's.
  */
@@ -37,6 +39,8 @@ export const writing: WidgetDef = {
     const register = (): Register | null => d.registers.find((r) => r.id === d.registerId) ?? null;
     let view: View = 'write';
     let abort: AbortController | null = null;
+    /** Open the Voice view with the correction box focused: the way from a result that is not you to fixing it. */
+    let focusAmend = false;
 
     // ---- which model writes: the device model, the Settings endpoint, or a profile added in an LLM Chat widget ----
     const pick = el('select', { class: 'line-input wr-model', title: 'Which model writes' });
@@ -112,8 +116,9 @@ export const writing: WidgetDef = {
         if (!d.output) return;
         text.value = d.output.text; d.input = text.value; writeNow(); text.focus();
       } }, 'Use as input');
+      const fixBtn = el('button', { class: 'ghost small wr-not-me', type: 'button', title: 'Add a one-line correction that every run follows from now on', onclick: () => { focusAmend = true; view = 'voice'; paint(); } }, 'Not me?');
       const copyBtn = el('button', { class: 'ghost small wr-copy', type: 'button', onclick: async () => { await navigator.clipboard.writeText(d.output?.text ?? outText.textContent ?? ''); app.toast('Copied'); } }, 'Copy');
-      const out = el('div', { class: 'wr-out', hidden: !d.output }, el('div', { class: 'wr-out-head' }, outMeta, el('span', { class: 'row-actions' }, useBtn, copyBtn)), outText);
+      const out = el('div', { class: 'wr-out', hidden: !d.output }, el('div', { class: 'wr-out-head' }, outMeta, el('span', { class: 'row-actions' }, fixBtn, useBtn, copyBtn)), outText);
       const showOutput = () => {
         if (!d.output) { out.hidden = true; return; }
         out.hidden = false; outText.textContent = d.output.text;
@@ -133,7 +138,7 @@ export const writing: WidgetDef = {
         if (src.length > budget) { app.toast(isLocal() ? `The model on this device handles about ${words(budget).toLocaleString()} words at a time. Shorten the text, or pick a cloud model in the header.` : 'That is more text than one run can carry. Split it up.'); return; }
         const provider = await ready(); if (!provider) return;
         const reg = register(); const model = modelName(); const op = d.op;
-        const messages = transformMessages({ profile: d.profile?.text ?? null, register: reg, op, text: src, instruction: ins, profileChars: isLocal() ? LOCAL_PROFILE_CHARS : undefined });
+        const messages = transformMessages({ profile: d.profile?.text ?? null, amendments: d.amendments.map((a) => a.text), register: reg, op, text: src, instruction: ins, profileChars: isLocal() ? LOCAL_PROFILE_CHARS : undefined });
         abort = new AbortController(); go.disabled = true; stop.hidden = false; status.textContent = 'Writing…';
         out.hidden = false; out.classList.add('streaming'); outText.textContent = '';
         outMeta.textContent = `${reg?.name ?? 'No register'} · ${op} · ${model}`;
@@ -163,45 +168,102 @@ export const writing: WidgetDef = {
       }
     }
 
-    // ---------- Voice: samples in, a profile out ----------
+    // ---------- Voice: samples in, a profile out, corrections on top ----------
     function paintVoice() {
+      const inUse = () => d.samples.filter((s) => s.use);
+      const nextVersion = () => Math.max(d.profile?.version ?? 0, ...d.history.map((h) => h.version)) + 1;
+      // Where a sample came from: the registers first, since that is what a sample teaches, then the usual places.
+      const sourcesId = `wr-sources-${inst.id}`;
+      const sources = el('datalist', { id: sourcesId });
+      for (const n of [...new Set([...d.registers.map((r) => r.name.trim().toLowerCase()), 'email', 'slack', 'blog', 'doc'].filter(Boolean))]) sources.append(new Option(n));
+      const sourceInput = (value = '') => {
+        const i = el('input', { class: 'line-input wr-sample-source', type: 'text', value, placeholder: 'Where from? e.g. email, slack, blog', autocomplete: 'off' });
+        i.setAttribute('list', sourcesId); // a read-only property, so the attribute
+        return i;
+      };
+
       const list = el('div', { class: 'wr-list' });
+      const sampleRow = (s: Sample): HTMLElement => {
+        const use = el('input', { type: 'checkbox', class: 'wr-use', checked: s.use, title: s.use ? 'Used when distilling. Uncheck to keep it without using it.' : 'Not used when distilling. Check to use it.', 'aria-label': 'Use when distilling' } as any);
+        use.onchange = () => { s.use = use.checked; writeNow(); paintList(); paintDistill(); };
+        const row = el('div', { class: `wr-item wr-sample${s.use ? '' : ' off'}` },
+          el('span', { class: 't' }, use,
+            el('button', { class: 'wr-open', type: 'button', title: 'Open to read or edit', onclick: () => openSample(s, row) }, el('span', { class: 'wr-tag' }, s.source || 'sample'), s.text.replace(/\s+/g, ' ').slice(0, 140))),
+          el('span', { class: 'acts' },
+            el('button', { class: 'ctl', type: 'button', title: 'Edit this sample', onclick: () => openSample(s, row) }, '✎'),
+            el('button', { class: 'ctl', type: 'button', title: 'Remove this sample', onclick: () => {
+              if (s.text.length > 400 && !confirm('Remove this sample? Its text goes with it.')) return;
+              d.samples.splice(d.samples.indexOf(s), 1); writeNow(); paintList(); paintDistill();
+            } }, '×')),
+          el('span', { class: 'meta' }, `${countWords(s.text).toLocaleString()} words · ${s.editedAt ? `edited ${relTime(s.editedAt)}` : `added ${relTime(s.addedAt)}`}${s.use ? '' : ' · not used when distilling'}`));
+        return row;
+      };
+      /** The whole sample, in place of its row: the text and where it came from, both editable. */
+      const openSample = (s: Sample, row: HTMLElement) => {
+        const ta = el('textarea', { class: 'wr-text wr-sample-edit', value: s.text, spellcheck: false });
+        acceptFilesInto(ta, app);
+        const src = sourceInput(s.source);
+        const close = () => paintList();
+        const saveIt = () => {
+          let t = ta.value.trim();
+          if (!t) { app.toast('A sample needs some text. Remove it instead if you are done with it.'); ta.focus(); return; }
+          if (t.length > SAMPLE_MAX) { t = t.slice(0, SAMPLE_MAX); app.toast(`Kept the first ${SAMPLE_MAX.toLocaleString()} characters of that sample.`); }
+          const source = src.value.trim().toLowerCase().slice(0, 24);
+          if (t !== s.text || source !== s.source) { s.text = t; s.source = source; s.editedAt = Date.now(); writeNow(); }
+          paintList(); paintDistill();
+        };
+        ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); saveIt(); } if (e.key === 'Escape') close(); });
+        const ed = el('div', { class: 'wr-editor wr-sample-editor' },
+          ta,
+          el('div', { class: 'wr-row' }, src,
+            el('span', { class: 'muted wr-count' }, `${countWords(s.text).toLocaleString()} words · added ${relTime(s.addedAt)}`),
+            el('span', { class: 'row-actions' },
+              el('button', { class: 'ghost small', type: 'button', onclick: close }, 'Cancel'),
+              el('button', { class: 'primary small wr-save-sample', type: 'button', onclick: saveIt }, 'Save sample'))));
+        ta.addEventListener('input', () => { (ed.querySelector('.wr-count') as HTMLElement).textContent = `${countWords(ta.value).toLocaleString()} words · added ${relTime(s.addedAt)}`; });
+        row.replaceWith(ed); ta.focus();
+      };
       const paintList = () => {
         clear(list);
         if (!d.samples.length) list.append(el('p', { class: 'muted empty' }, 'No samples yet. Paste three to five pieces of your real writing below: a couple of emails, a few chat messages, something longer if you have it.'));
-        for (const s of d.samples) {
-          list.append(el('div', { class: 'wr-item wr-sample' },
-            el('span', { class: 't', title: s.text.slice(0, 400) }, el('span', { class: 'wr-tag' }, s.source || 'sample'), s.text.replace(/\s+/g, ' ').slice(0, 140)),
-            el('span', { class: 'acts' }, el('button', { class: 'ctl', type: 'button', title: 'Remove this sample', onclick: () => { d.samples.splice(d.samples.indexOf(s), 1); writeNow(); paintList(); paintDistill(); } }, '×')),
-            el('span', { class: 'meta' }, `${countWords(s.text).toLocaleString()} words · added ${relTime(s.addedAt)}`)));
-        }
+        for (const s of d.samples) list.append(sampleRow(s));
       };
       paintList();
       const sampleText = el('textarea', { class: 'wr-text wr-sample-text', placeholder: 'Paste one piece of your writing, as you actually sent it. Or drop a file here.', spellcheck: false });
       acceptFilesInto(sampleText, app);
-      const source = el('input', { class: 'line-input wr-sample-source', type: 'text', placeholder: 'Where from? e.g. email, slack, blog', autocomplete: 'off' });
+      const source = sourceInput();
       const add = () => {
         let t = sampleText.value.trim();
         if (!t) { app.toast('Paste some of your writing first.'); sampleText.focus(); return; }
         if (t.length > SAMPLE_MAX) { t = t.slice(0, SAMPLE_MAX); app.toast(`Kept the first ${SAMPLE_MAX.toLocaleString()} characters of that sample.`); }
-        d.samples.push({ id: uid(), text: t, source: source.value.trim().toLowerCase().slice(0, 24), addedAt: Date.now() });
+        d.samples.push({ id: uid(), text: t, source: source.value.trim().toLowerCase().slice(0, 24), addedAt: Date.now(), editedAt: 0, use: true });
         sampleText.value = ''; writeNow(); paintList(); paintDistill(); sampleText.focus();
       };
       source.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); add(); } });
+      sampleText.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); add(); } });
 
       const distillBtn = el('button', { class: 'primary small wr-distill', type: 'button', onclick: () => void distill() }, 'Distill my voice');
       const stop = el('button', { class: 'ghost small', type: 'button', hidden: true, onclick: () => abort?.abort() }, 'Stop');
-      // Two lines: what pressing the button will send (repainted as samples and the model change), and how the last press went.
+      // Three lines: whether the profile has fallen behind the samples, what pressing the button will send, and how the last press went.
+      const staleNote = el('span', { class: 'wr-stale', hidden: true });
       const budgetNote = el('span', { class: 'muted wr-budget' });
       const note = el('span', { class: 'muted wr-status' });
       const paintDistill = () => {
-        distillBtn.disabled = !d.samples.length || !!abort;
-        distillBtn.textContent = d.profile ? `Distill again (v${d.profile.version + 1})` : 'Distill my voice';
+        const using = inUse();
+        distillBtn.disabled = !using.length || !!abort;
+        distillBtn.textContent = d.profile ? `Distill again (v${nextVersion()})` : 'Distill my voice';
+        const changed = samplesChangedSince(d.profile, d.samples);
+        // Nothing new to learn from: the button steps back so it does not invite a pointless rebuild.
+        distillBtn.classList.toggle('primary', !d.profile || !!changed);
+        distillBtn.classList.toggle('ghost', !!d.profile && !changed);
+        staleNote.hidden = !d.profile || !changed;
+        if (d.profile && changed) staleNote.textContent = `${changed} change${changed === 1 ? '' : 's'} to your samples since v${d.profile.version}. Distill again to fold ${changed === 1 ? 'it' : 'them'} in; v${d.profile.version} is kept.`;
         const budget = SAMPLE_BUDGET[mode()];
-        const used = samplesThatFit(d.samples, budget);
-        budgetNote.textContent = !d.samples.length ? ''
-          : used < d.samples.length ? `Uses the first ${used} of ${d.samples.length} samples: the model on this device reads about ${words(budget).toLocaleString()} words at a time. Pick a cloud model in the header to use them all.`
-            : `Sends ${d.samples.length} sample${d.samples.length === 1 ? '' : 's'} to ${modelName()}, once.`;
+        const used = samplesThatFit(using, budget);
+        const off = d.samples.length - using.length;
+        budgetNote.textContent = !using.length ? (d.samples.length ? 'Check at least one sample to distill from.' : '')
+          : used < using.length ? `Uses the first ${used} of ${using.length} checked samples: the model on this device reads about ${words(budget).toLocaleString()} words at a time. Uncheck some to choose which, or pick a cloud model in the header to use them all.`
+            : `Sends ${using.length} sample${using.length === 1 ? '' : 's'}${off ? ` (${off} unchecked)` : ''} to ${modelName()}, once.`;
       };
       paintDistill();
       pick.addEventListener('change', paintDistill);
@@ -210,28 +272,42 @@ export const writing: WidgetDef = {
       const summary = el('summary', {});
       const profText = el('div', { class: 'wr-profile-text' });
       const profBody = el('div', { class: 'wr-profile-body' });
+      const describe = (p: VoiceProfile) => `v${p.version} · from ${p.samples} sample${p.samples === 1 ? '' : 's'} · ${p.model}${p.edited ? ' · edited' : ''} · ${relTime(p.builtAt)}`;
       const paintSummary = () => {
         if (!d.profile) { profBox.hidden = true; return; }
         profBox.hidden = false;
-        summary.textContent = `Voice profile v${d.profile.version} · from ${d.profile.samples} sample${d.profile.samples === 1 ? '' : 's'} · ${d.profile.model} · ${relTime(d.profile.builtAt)}`;
+        summary.textContent = `Voice profile ${describe(d.profile)}`;
         profText.textContent = d.profile.text;
+      };
+      const restore = (h: VoiceProfile) => {
+        d.history.splice(d.history.indexOf(h), 1);
+        if (d.profile) d.history.unshift(d.profile);
+        d.profile = h; writeNow(); paintNav(); paintSummary(); paintProfileBody(); paintDistill();
+        app.toast(`Back on voice v${h.version}.`);
       };
       const paintProfileBody = () => {
         clear(profBody);
         profBody.append(profText, el('div', { class: 'row-actions' },
           el('button', { class: 'ghost small', type: 'button', onclick: editProfile }, 'Edit'),
           el('button', { class: 'ghost small', type: 'button', onclick: async () => { await navigator.clipboard.writeText(d.profile?.text ?? ''); app.toast('Profile copied'); } }, 'Copy')));
+        if (d.history.length) {
+          profBody.append(el('div', { class: 'wr-history' },
+            el('span', { class: 'wr-subhead' }, 'Earlier versions'),
+            ...d.history.map((h) => el('div', { class: 'wr-item wr-version' },
+              el('span', { class: 't', title: h.text.slice(0, 400) }, describe(h)),
+              el('span', { class: 'acts' }, el('button', { class: 'ghost small', type: 'button', title: 'Write with this version again; the current one is kept', onclick: () => restore(h) }, 'Restore'))))));
+        }
       };
       const editProfile = () => {
         const ta = el('textarea', { class: 'wr-text wr-profile-edit', value: d.profile?.text ?? '', spellcheck: false });
         clear(profBody);
         profBody.append(
-          el('p', { class: 'muted' }, 'The profile is plain text. Fix what the model got wrong, or add a rule; it rides along on every run as written.'),
+          el('p', { class: 'muted' }, 'The profile is plain text and rides along on every run as written. Hand edits last until you distill again, and the version they are in is kept below then. For a fix that should outlast every distill, add a correction instead.'),
           ta,
           el('div', { class: 'row-actions' },
             el('button', { class: 'ghost small', type: 'button', onclick: paintProfileBody }, 'Cancel'),
             el('button', { class: 'primary small', type: 'button', onclick: () => {
-              if (d.profile && ta.value.trim()) { d.profile.text = ta.value.trim(); writeNow(); }
+              if (d.profile && ta.value.trim() && ta.value.trim() !== d.profile.text) { d.profile.text = ta.value.trim(); d.profile.edited = true; writeNow(); }
               paintSummary(); paintProfileBody();
             } }, 'Save profile')));
         ta.focus();
@@ -239,11 +315,43 @@ export const writing: WidgetDef = {
       paintProfileBody(); paintSummary();
       profBox.append(summary, profBody);
 
+      // ---- corrections: one line each, on every run, through every distill ----
+      const amendList = el('div', { class: 'wr-list' });
+      const amendInput = el('input', { class: 'line-input wr-amend-input', type: 'text', placeholder: 'e.g. I never say "reach out"; I sign emails with just "D"', autocomplete: 'off', maxlength: AMENDMENT_MAX } as any);
+      const paintAmend = () => {
+        clear(amendList);
+        for (const a of d.amendments) {
+          const row = el('div', { class: 'wr-item wr-amend' },
+            el('span', { class: 't', title: a.text }, a.text),
+            el('span', { class: 'acts' },
+              el('button', { class: 'ctl', type: 'button', title: 'Edit', onclick: () => {
+                const inp = el('input', { class: 'line-input', type: 'text', value: a.text, maxlength: AMENDMENT_MAX } as any);
+                const done = (keep: boolean) => { if (keep && inp.value.trim()) { a.text = inp.value.trim(); writeNow(); } paintAmend(); };
+                inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); done(true); } if (e.key === 'Escape') done(false); });
+                inp.addEventListener('blur', () => done(true));
+                row.replaceWith(inp); inp.focus();
+              } }, '✎'),
+              el('button', { class: 'ctl', type: 'button', title: 'Remove', onclick: () => { d.amendments.splice(d.amendments.indexOf(a), 1); writeNow(); paintAmend(); } }, '×')),
+            el('span', { class: 'meta' }, `added ${relTime(a.at)}`));
+          amendList.append(row);
+        }
+      };
+      const addAmend = () => {
+        const t = amendInput.value.trim();
+        if (!t) { amendInput.focus(); return; }
+        if (d.amendments.length >= MAX_AMENDMENTS) { app.toast(`That is ${MAX_AMENDMENTS} corrections. Distill again so the profile takes them in, then remove a few.`); return; }
+        d.amendments.push({ id: uid(), text: t.slice(0, AMENDMENT_MAX), at: Date.now() });
+        amendInput.value = ''; writeNow(); paintAmend(); amendInput.focus();
+      };
+      amendInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addAmend(); } });
+      paintAmend();
+
       async function distill() {
-        if (abort || !d.samples.length) return;
+        const using = inUse();
+        if (abort || !using.length) return;
         const provider = await ready(); if (!provider) return;
         const m = mode();
-        const { messages, used } = distillMessages(inst.config.author || 'You', d.samples, SAMPLE_BUDGET[m], PROFILE_WORDS[m]);
+        const { messages, used } = distillMessages(inst.config.author || 'You', using, SAMPLE_BUDGET[m], PROFILE_WORDS[m], d.amendments.map((a) => a.text));
         abort = new AbortController(); paintDistill(); stop.hidden = false; note.textContent = 'Reading your samples…';
         profBox.hidden = false; profBox.open = true; summary.textContent = 'Distilling…';
         clear(profBody); profBody.append(profText); profText.textContent = '';
@@ -256,7 +364,9 @@ export const writing: WidgetDef = {
           }
           if (frame) cancelAnimationFrame(frame);
           if (!raw.trim()) throw new Error('the model returned nothing');
-          d.profile = { text: raw.trim(), version: (d.profile?.version ?? 0) + 1, builtAt: Date.now(), samples: used, model: modelName() };
+          // The version this replaces is kept, hand edits and all.
+          if (d.profile) d.history = [d.profile, ...d.history].slice(0, HISTORY_MAX);
+          d.profile = { text: raw.trim(), version: nextVersion(), builtAt: Date.now(), samples: used, model: modelName(), basis: using.map((s) => s.id), edited: false };
           writeNow(); paintNav();
           note.textContent = `Voice v${d.profile.version} is ready. Every run now writes as you.`;
         } catch (err) {
@@ -268,13 +378,19 @@ export const writing: WidgetDef = {
       }
 
       pane.append(
-        el('p', { class: 'muted' }, 'Your voice is distilled from samples of your real writing: what you actually sent, not what you wish you had. Three to five pieces across a couple of registers is plenty to start. Samples stay in this browser and go to the model only when you distill.'),
-        list, sampleText,
+        el('p', { class: 'muted' }, 'Your voice is distilled from samples of your real writing: what you actually sent, not what you wish you had. Three to five pieces across a couple of registers is plenty to start. Open any sample to fix or trim it. Samples stay in this browser and go to the model only when you distill.'),
+        sources, list, sampleText,
         el('div', { class: 'wr-row' }, source, el('button', { class: 'ghost small wr-add-sample', type: 'button', onclick: add }, 'Add sample')),
         el('div', { class: 'wr-run' }, distillBtn, stop, note),
-        budgetNote,
+        staleNote, budgetNote,
         profBox,
+        el('div', { class: 'wr-amends' },
+          el('span', { class: 'wr-subhead' }, 'Corrections'),
+          el('p', { class: 'muted' }, 'When a result is not you, say so here in one line. Every run follows these over the profile, and distilling again keeps them.'),
+          amendList,
+          el('div', { class: 'wr-row' }, amendInput, el('button', { class: 'ghost small wr-add-amend', type: 'button', onclick: addAmend }, 'Add correction'))),
       );
+      if (focusAmend) { focusAmend = false; requestAnimationFrame(() => { amendInput.scrollIntoView({ block: 'center' }); amendInput.focus(); }); }
     }
 
     // ---------- Registers: one voice, several modes ----------
@@ -347,7 +463,7 @@ export const writing: WidgetDef = {
         await ctx.save(inst); ctx.remount(inst);
       }, () => ctx.remount(inst)),
       el('div', { class: 'row-actions' }, el('button', { class: 'ghost small', type: 'button', onclick: async () => {
-        if (!confirm('Forget this voice? The samples, the profile, and the registers go back to the defaults. This cannot be undone.')) return;
+        if (!confirm('Forget this voice? The samples, the profile and its earlier versions, the corrections, and the registers go back to the defaults. This cannot be undone.')) return;
         await setItem(cacheKey(inst), null); ctx.remount(inst);
       } }, 'Forget this voice')),
     );

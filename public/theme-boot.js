@@ -15,7 +15,7 @@
     var l = JSON.parse(localStorage.getItem('fogar.layout') || 'null');
     if (l) {
       root.setAttribute('data-ask', l.ask || 'top'); root.setAttribute('data-arrangement', l.arrangement || 'stack');
-      root.setAttribute('data-columns', String(l.columns || 'auto')); root.setAttribute('data-recipes', l.showRecipes === false ? 'hidden' : 'shown');
+      root.setAttribute('data-columns', String(l.columns || 'auto')); root.setAttribute('data-width', l.width || 'normal'); root.setAttribute('data-recipes', l.showRecipes === false ? 'hidden' : 'shown');
       if (l.focus) root.classList.add('focus');
     }
   } catch (e) { /* first run, or storage blocked: the defaults in the stylesheet apply */ }

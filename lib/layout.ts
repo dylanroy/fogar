@@ -14,7 +14,9 @@ export interface WidgetInstance {
 export type AskPlacement = 'top' | 'centered';
 /** How the page uses a wide window: one column as on narrow windows, or widgets in a right-hand rail. */
 export type Arrangement = 'stack' | 'sidebar';
-export type Columns = 'auto' | 2 | 3;
+export type Columns = 'auto' | 2 | 3 | 4;
+/** How much of a wide window the page uses; wider pages make wider columns. */
+export type PageWidth = 'normal' | 'wide' | 'full';
 
 export interface Layout {
   version: 1;
@@ -24,6 +26,7 @@ export interface Layout {
   ask: AskPlacement;
   arrangement: Arrangement;
   columns: Columns;
+  width: PageWidth;
   showRecipes: boolean;
 }
 
@@ -37,6 +40,7 @@ export const DEFAULT_LAYOUT: Layout = {
   ask: 'top',
   arrangement: 'stack',
   columns: 'auto',
+  width: 'normal',
   showRecipes: true,
 };
 
@@ -45,7 +49,7 @@ export const loadLayout = async (): Promise<Layout> => ({ ...DEFAULT_LAYOUT, ...
 export const saveLayout = async (l: Layout): Promise<void> => {
   await setItem(KEY, l);
   // Mirror the page-shape fields so public/theme-boot.js can lay the page out before the first paint.
-  try { localStorage.setItem(KEY, JSON.stringify({ ask: l.ask, arrangement: l.arrangement, columns: l.columns, showRecipes: l.showRecipes, focus: l.focus })); } catch { /* fine */ }
+  try { localStorage.setItem(KEY, JSON.stringify({ ask: l.ask, arrangement: l.arrangement, columns: l.columns, width: l.width, showRecipes: l.showRecipes, focus: l.focus })); } catch { /* fine */ }
 };
 
 /** The layout as attributes on the root element; the stylesheet does the rest. */
@@ -53,6 +57,7 @@ export function applyLayoutAttrs(l: Layout, root: HTMLElement = document.documen
   root.dataset.ask = l.ask;
   root.dataset.arrangement = l.arrangement;
   root.dataset.columns = String(l.columns);
+  root.dataset.width = l.width ?? 'normal';
   root.dataset.recipes = l.showRecipes ? 'shown' : 'hidden';
   root.classList.toggle('focus', l.focus);
 }

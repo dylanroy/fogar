@@ -11,7 +11,7 @@ export interface WidgetsUI {
   layout: Layout;
   ensure(type: WidgetType): Promise<void>;
   /** Change the page shape (ask placement, arrangement, columns, recipes row, focus); persists and repaints. */
-  update(patch: Partial<Pick<Layout, 'ask' | 'arrangement' | 'columns' | 'showRecipes' | 'focus'>>): Promise<void>;
+  update(patch: Partial<Pick<Layout, 'ask' | 'arrangement' | 'columns' | 'width' | 'showRecipes' | 'focus'>>): Promise<void>;
 }
 
 /** Renders the layout, owns the controls (reorder, configure, full screen, hide, add), and the Focus toggle. */
@@ -204,7 +204,7 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
   focusBtn.onclick = async () => { layout.focus = !layout.focus; await persist(); paintFocus(); };
   paintFocus();
 
-  async function update(patch: Partial<Pick<Layout, 'ask' | 'arrangement' | 'columns' | 'showRecipes' | 'focus'>>) {
+  async function update(patch: Partial<Pick<Layout, 'ask' | 'arrangement' | 'columns' | 'width' | 'showRecipes' | 'focus'>>) {
     Object.assign(layout, patch);
     await persist();
     paintFocus();

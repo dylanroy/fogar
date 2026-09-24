@@ -16,14 +16,31 @@ export interface Register {
   /** Rules followed exactly, e.g. "no em dashes; sign off with my first name". */
   notes: string;
 }
-export interface Sample { id: string; text: string; /** Where it came from: email, slack, post… */ source: string; addedAt: number }
-export interface VoiceProfile { text: string; version: number; builtAt: number; samples: number; model: string }
+export interface Sample {
+  id: string; text: string; /** Where it came from: email, slack, post… */ source: string; addedAt: number;
+  /** Changed after it was added; 0 if never. A profile built before this is out of date. */
+  editedAt: number;
+  /** Read when distilling. Off keeps a sample without letting it shape the voice, or makes room in the local window. */
+  use: boolean;
+}
+export interface VoiceProfile {
+  text: string; version: number; builtAt: number; samples: number; model: string;
+  /** The samples in use when it was distilled, to tell what changed since; null for a profile from before this was kept. */
+  basis: string[] | null;
+  /** Changed by hand since it was distilled. */
+  edited: boolean;
+}
+/** A one-line correction ("I never say 'reach out'") that rides along on every run and outlasts every distill. */
+export interface Amendment { id: string; text: string; at: number }
 export type Op = 'rewrite' | 'tighten' | 'warmer' | 'draft';
 export interface Output { text: string; op: Op; register: string; version: number | null; model: string; at: number }
 export interface VoiceData {
   version: 1;
   samples: Sample[];
   profile: VoiceProfile | null;
+  /** Earlier profiles, newest first: distilling again, or restoring one, never throws a version away. */
+  history: VoiceProfile[];
+  amendments: Amendment[];
   registers: Register[];
   /** The register in use; empty for the plain voice with no register constraints. */
   registerId: string;
@@ -64,12 +81,18 @@ export const PROFILE_WORDS = { local: 300, cloud: 700 } as const;
 export const OUTPUT_TOKENS = { local: 700, cloud: 2000 } as const;
 /** The profile as sent on a local run, so a hand-edited epic cannot crowd out the text. */
 export const LOCAL_PROFILE_CHARS = 3000;
+/** The same for the corrections on a local run. */
+export const LOCAL_AMENDMENT_CHARS = 1200;
+export const MAX_AMENDMENTS = 30;
+export const AMENDMENT_MAX = 300;
+/** Earlier profiles kept for restoring. */
+export const HISTORY_MAX = 5;
 
 export const newRegister = (r: Partial<Omit<Register, 'id'>> = {}): Register => ({ id: uid(), name: '', formality: '', length: '', notes: '', ...r });
 
 export function newVoiceData(): VoiceData {
   const registers = DEFAULT_REGISTERS.map((r) => newRegister(r));
-  return { version: 1, samples: [], profile: null, registers, registerId: registers[0]!.id, op: 'rewrite', input: '', instruction: '', output: null };
+  return { version: 1, samples: [], profile: null, history: [], amendments: [], registers, registerId: registers[0]!.id, op: 'rewrite', input: '', instruction: '', output: null };
 }
 
 /** Whatever storage holds, as a usable VoiceData: missing parts get defaults, and an old shape never crashes the widget. */
@@ -81,17 +104,22 @@ export function normalizeVoiceData(raw: unknown): VoiceData {
     ? r.registers.filter((x) => x && typeof x.name === 'string').map((x) => ({ id: String(x.id || uid()), name: x.name, formality: String(x.formality ?? ''), length: String(x.length ?? ''), notes: String(x.notes ?? '') }))
     : fresh.registers;
   const samples: Sample[] = Array.isArray(r.samples)
-    ? r.samples.filter((s) => s && typeof s.text === 'string' && s.text.trim()).map((s) => ({ id: String(s.id || uid()), text: s.text, source: String(s.source ?? ''), addedAt: Number(s.addedAt) || Date.now() }))
+    ? r.samples.filter((s) => s && typeof s.text === 'string' && s.text.trim()).map((s) => ({ id: String(s.id || uid()), text: s.text, source: String(s.source ?? ''), addedAt: Number(s.addedAt) || Date.now(), editedAt: Number(s.editedAt) || 0, use: s.use !== false }))
     : [];
-  const profile: VoiceProfile | null = r.profile && typeof r.profile.text === 'string' && r.profile.text.trim()
-    ? { text: r.profile.text, version: Number(r.profile.version) || 1, builtAt: Number(r.profile.builtAt) || Date.now(), samples: Number(r.profile.samples) || 0, model: String(r.profile.model ?? '') }
+  const toProfile = (p: Partial<VoiceProfile> | null | undefined): VoiceProfile | null => p && typeof p.text === 'string' && p.text.trim()
+    ? { text: p.text, version: Number(p.version) || 1, builtAt: Number(p.builtAt) || Date.now(), samples: Number(p.samples) || 0, model: String(p.model ?? ''), basis: Array.isArray(p.basis) ? p.basis.map(String) : null, edited: !!p.edited }
     : null;
+  const profile = toProfile(r.profile);
+  const history = Array.isArray(r.history) ? r.history.map(toProfile).filter((p): p is VoiceProfile => !!p).slice(0, HISTORY_MAX) : [];
+  const amendments: Amendment[] = Array.isArray(r.amendments)
+    ? r.amendments.filter((a) => a && typeof a.text === 'string' && a.text.trim()).map((a) => ({ id: String(a.id || uid()), text: a.text.trim().slice(0, AMENDMENT_MAX), at: Number(a.at) || Date.now() })).slice(0, MAX_AMENDMENTS)
+    : [];
   const op: Op = OPS.some((o) => o.id === r.op) ? (r.op as Op) : 'rewrite';
   const registerId = typeof r.registerId === 'string' && (r.registerId === '' || registers.some((x) => x.id === r.registerId)) ? r.registerId : (registers[0]?.id ?? '');
   const output: Output | null = r.output && typeof r.output.text === 'string' && r.output.text
     ? { text: r.output.text, op: OPS.some((o) => o.id === r.output!.op) ? r.output.op : 'rewrite', register: String(r.output.register ?? ''), version: r.output.version == null ? null : Number(r.output.version) || null, model: String(r.output.model ?? ''), at: Number(r.output.at) || Date.now() }
     : null;
-  return { version: 1, samples, profile, registers, registerId, op, input: typeof r.input === 'string' ? r.input : '', instruction: typeof r.instruction === 'string' ? r.instruction : '', output };
+  return { version: 1, samples, profile, history, amendments, registers, registerId, op, input: typeof r.input === 'string' ? r.input : '', instruction: typeof r.instruction === 'string' ? r.instruction : '', output };
 }
 
 export const countWords = (s: string): number => (s.match(/\S+/g) ?? []).length;
@@ -112,6 +140,31 @@ export function samplesThatFit(samples: Sample[], budget: number): number {
     left -= Math.min(s.text.length, left); used++;
   }
   return used;
+}
+
+/**
+ * How many changes to the samples in use since this profile was distilled: added, edited, removed, or switched
+ * on or off. Null when the profile predates keeping track, so the widget says nothing rather than guess.
+ */
+export function samplesChangedSince(p: VoiceProfile | null, samples: Sample[]): number | null {
+  if (!p?.basis) return null;
+  const basis = new Set(p.basis);
+  const inUse = samples.filter((s) => s.use);
+  const now = new Set(inUse.map((s) => s.id));
+  let n = 0;
+  for (const s of inUse) if (!basis.has(s.id) || s.editedAt > p.builtAt) n++;
+  for (const id of basis) if (!now.has(id)) n++;
+  return n;
+}
+
+/** The corrections as the model reads them: a list, cut to a budget on the small local window. */
+function amendmentBlock(amendments: string[], budget?: number): string {
+  const lines: string[] = []; let left = budget ?? Infinity;
+  for (const a of amendments.map((x) => x.trim()).filter(Boolean)) {
+    if (a.length + 3 > left) break;
+    lines.push(`- ${a}`); left -= a.length + 3;
+  }
+  return lines.join('\n');
 }
 
 // ---------- distilling a voice ----------
@@ -140,7 +193,7 @@ The anti-patterns: phrases, structures, or tones that would read as "not them", 
  * The distill call: the samples that fit the budget, in the order they were added, and the six headings the
  * profile is written under. Returns how many samples went in, so the widget can say so.
  */
-export function distillMessages(author: string, samples: Sample[], budget: number, words: number): { messages: Message[]; used: number } {
+export function distillMessages(author: string, samples: Sample[], budget: number, words: number, amendments: string[] = []): { messages: Message[]; used: number } {
   const picked: string[] = [];
   let left = budget;
   for (const s of samples) {
@@ -149,7 +202,9 @@ export function distillMessages(author: string, samples: Sample[], budget: numbe
     picked.push(`[Sample ${picked.length + 1}${s.source ? ` · ${s.source}` : ''}]\n${text}`);
     left -= text.length;
   }
-  const user = `## Author\n${author.trim() || 'You'}\n\n## Writing samples\n${picked.join('\n\n---\n\n')}\n\n---\n\nProduce the voice profile under exactly these headings. Be concrete, and keep the whole profile under ${words} words.\n\n${DISTILL_HEADINGS}\n\nOutput only the profile under these six headings. No preamble.`;
+  const fixes = amendmentBlock(amendments, budget === SAMPLE_BUDGET.local ? LOCAL_AMENDMENT_CHARS : undefined);
+  const corrections = fixes ? `## Corrections the author has made to earlier profiles\nThe profile must not contradict these.\n${fixes}\n\n` : '';
+  const user = `## Author\n${author.trim() || 'You'}\n\n## Writing samples\n${picked.join('\n\n---\n\n')}\n\n---\n\n${corrections}Produce the voice profile under exactly these headings. Be concrete, and keep the whole profile under ${words} words.\n\n${DISTILL_HEADINGS}\n\nOutput only the profile under these six headings. No preamble.`;
   return { messages: [{ role: 'system', content: DISTILL_SYSTEM }, { role: 'user', content: user }], used: picked.length };
 }
 
@@ -185,6 +240,8 @@ export interface TransformInput {
   op: Op;
   text: string;
   instruction: string;
+  /** The author's corrections; they override the profile where the two disagree. */
+  amendments?: string[];
   /** Cap on the profile as sent, for the small local window. */
   profileChars?: number;
 }
@@ -193,8 +250,10 @@ export function transformMessages(o: TransformInput): Message[] {
   const profile = o.profile?.trim()
     ? (o.profileChars && o.profile.length > o.profileChars ? cut(o.profile.trim(), o.profileChars) : o.profile.trim())
     : '(no voice profile yet: write in a neutral, plainly human voice)';
+  const fixes = amendmentBlock(o.amendments ?? [], o.profileChars ? LOCAL_AMENDMENT_CHARS : undefined);
   const parts = [
     `## The author's voice profile\n${profile}`,
+    fixes ? `## The author's own corrections (these override the profile where the two disagree)\n${fixes}` : '',
     `## Register: ${o.register?.name.trim() || 'default'}\n${registerGuidance(o.register)}`,
     `## Operation: ${o.op}\n${OP_GUIDANCE[o.op]}`,
     o.instruction.trim() ? `## Instruction from the user (the intent: what to do, or what to say)\n${o.instruction.trim()}` : '',

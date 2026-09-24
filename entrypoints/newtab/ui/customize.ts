@@ -48,7 +48,8 @@ export function initCustomize(app: App, widgets: WidgetsUI, theme: Theme): void 
     menu.append(el('div', { class: 'cz-title' }, 'Layout'));
     menu.append(group('Ask box', seg([['top', 'Top'], ['centered', 'Centered']], L.ask, 'ask', (v) => void widgets.update({ ask: v }).then(paint))));
     menu.append(group('Wide windows', seg([['stack', 'One column'], ['sidebar', 'Sidebar']], L.arrangement, 'arrangement', (v) => void widgets.update({ arrangement: v }).then(paint))));
-    menu.append(group('Widget columns', seg([['auto', 'Auto'], ['2', '2'], ['3', '3']], String(L.columns), 'columns', (v) => void widgets.update({ columns: v === 'auto' ? 'auto' : (Number(v) as 2 | 3) }).then(paint))));
+    menu.append(group('Widget columns', seg([['auto', 'Auto'], ['2', '2'], ['3', '3'], ['4', '4']], String(L.columns), 'columns', (v) => void widgets.update({ columns: v === 'auto' ? 'auto' : (Number(v) as 2 | 3 | 4) }).then(paint))));
+    menu.append(group('Page width', seg([['normal', 'Normal'], ['wide', 'Wide'], ['full', 'Full']], L.width ?? 'normal', 'width', (v) => void widgets.update({ width: v }).then(paint))));
     menu.append(group('Recipes row', seg([['shown', 'Shown'], ['hidden', 'Hidden']], L.showRecipes ? 'shown' : 'hidden', 'recipes', (v) => void widgets.update({ showRecipes: v === 'shown' }).then(paint))));
 
     menu.append(el('div', { class: 'row-actions cz-foot' },
@@ -59,7 +60,7 @@ export function initCustomize(app: App, widgets: WidgetsUI, theme: Theme): void 
       el('button', { class: 'ghost small', type: 'button', dataset: { reset: 'all' }, onclick: async () => {
         Object.assign(theme, DEFAULT_THEME);
         applyTheme(theme); await saveTheme(theme);
-        await widgets.update({ ask: DEFAULT_LAYOUT.ask, arrangement: DEFAULT_LAYOUT.arrangement, columns: DEFAULT_LAYOUT.columns, showRecipes: DEFAULT_LAYOUT.showRecipes });
+        await widgets.update({ ask: DEFAULT_LAYOUT.ask, arrangement: DEFAULT_LAYOUT.arrangement, columns: DEFAULT_LAYOUT.columns, width: DEFAULT_LAYOUT.width, showRecipes: DEFAULT_LAYOUT.showRecipes });
         paint(); app.toast('Back to the defaults. Your widgets are untouched.');
       } }, 'Reset'),
     ));

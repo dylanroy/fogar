@@ -4,7 +4,7 @@
 //   3. cloud mode against a local mock OpenAI server (SSE parser, bearer header)
 //   4. web grounding against a mock Brave endpoint (snippets reach the model, sources render, citation shows)
 //   5. built-in recipe run (template filled, system prompt applied)
-//   6. todos persist across reload
+//   6. todos persist across reload, edit in place, and reorder by drag and with the arrow keys
 //   7. reminders parse, confirm, save, and create a chrome.alarms entry
 //   8. bookmark search as you type
 //   9. widgets: inbox (Gmail feed and API), feed (RSS, Atom, a site that advertises its feed, a search), Jira,
@@ -274,6 +274,47 @@ await page.press('#todo-list .item input.edit', 'Enter');
 await page.waitForSelector('#todo-list .item .text');
 const afterEmpty = await page.evaluate(() => document.querySelector('#todo-list .item .text')?.textContent);
 check('todos edit in place: Enter saves, Escape cancels, empty keeps the old text', edited === 'Write blog post one' && afterEscape === 'Write blog post one' && afterEmpty === 'Write blog post one', `${edited} / ${afterEscape} / ${afterEmpty}`);
+
+// 6c. reorder by dragging, by the grip or by the row itself: Escape mid-drag puts it back, a drag that starts on the
+// text does not open the editor, and the order survives a reload. Then the arrow keys on the grip.
+for (const t of ['Call the plumber', 'Book flights']) { await page.fill('#todo-input', t); await page.press('#todo-input', 'Enter'); }
+await page.waitForFunction(() => document.querySelectorAll('#todo-list .item').length === 4);
+const todoOrder = async () => (await page.evaluate(() => [...document.querySelectorAll('#todo-list .item .text')].map((n) => n.textContent))).join(' | ');
+const todoBox = (i, part = '') => page.locator(`#todo-list .item:nth-child(${i + 1}) ${part}`.trim()).boundingBox();
+async function dragTodo(from, toY, { escape = false } = {}) {
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(from.x, toY, { steps: 12 });
+  if (escape) await page.keyboard.press('Escape');
+  await page.mouse.up();
+}
+const [ta, tb, tc, td] = (await todoOrder()).split(' | '); // newest first
+const grip0 = await todoBox(0, '.grip'); const lastRow = await todoBox(3);
+await dragTodo({ x: grip0.x + grip0.width / 2, y: grip0.y + grip0.height / 2 }, lastRow.y + lastRow.height - 2); // top one to the bottom, by its grip
+const byGrip = await todoOrder();
+let textBox = await todoBox(0, '.text');
+await dragTodo({ x: textBox.x + 8, y: textBox.y + textBox.height / 2 }, lastRow.y + lastRow.height - 2, { escape: true });
+const afterEscapeDrag = await todoOrder();
+textBox = await todoBox(2, '.text'); const firstRow = await todoBox(0);
+await dragTodo({ x: textBox.x + 8, y: textBox.y + textBox.height / 2 }, firstRow.y + 2); // third one to the top, by its text
+const byText = await todoOrder();
+const editorOpened = await page.evaluate(() => !!document.querySelector('#todo-list input.edit'));
+const wantOrder = [td, tb, tc, ta].join(' | ');
+await page.waitForFunction(async (want) => ((await chrome.storage.local.get('fogar.todos'))['fogar.todos'] ?? []).map((t) => t.text).join(' | ') === want, wantOrder, { timeout: 5000 }).catch(() => {});
+await page.reload();
+await page.waitForSelector('#todo-list .item');
+const reloadedOrder = await todoOrder();
+check('todos reorder by drag: grip or row, Escape puts it back, no editor after a drag, the order survives a reload',
+  byGrip === [tb, tc, td, ta].join(' | ') && afterEscapeDrag === byGrip && byText === wantOrder && !editorOpened && reloadedOrder === wantOrder,
+  `${byGrip} / ${afterEscapeDrag} / ${byText} / editor ${editorOpened} / ${reloadedOrder}`);
+const todoAt = (i, want) => page.waitForFunction(([n, w]) => document.querySelector(`#todo-list .item:nth-child(${n}) .text`)?.textContent === w, [i, want], { timeout: 5000 }).catch(() => {});
+await page.focus('#todo-list .item:nth-child(1) .grip');
+await page.keyboard.press('ArrowDown'); await todoAt(2, td);
+await page.keyboard.press('ArrowDown'); await todoAt(3, td);
+await page.keyboard.press('ArrowUp'); await todoAt(2, td);
+const keyOrder = await todoOrder();
+const focusOn = await page.evaluate(() => document.activeElement?.closest('#todo-list .item')?.querySelector('.text')?.textContent ?? '');
+check('todos move with the arrow keys on the grip, and focus stays with the todo', keyOrder === [tb, td, tc, ta].join(' | ') && focusOn === td, `${keyOrder} / focus on ${focusOn}`);
 
 // 7. reminders
 await page.fill('#reminder-input', 'remind me to stretch in 5 minutes');
@@ -601,14 +642,27 @@ const lay1 = await page.evaluate(() => ({ ask: document.documentElement.dataset.
 await page.click('#customize-menu [data-arrangement="stack"]');
 await page.click('#customize-menu [data-columns="3"]');
 const lay2 = await page.evaluate(() => ({ panelCols: getComputedStyle(document.getElementById('widgets')).gridTemplateColumns.trim().split(/\s+/).length, pageCols: getComputedStyle(document.querySelector('.page')).gridTemplateColumns.trim().split(/\s+/).length }));
+await page.click('#customize-menu [data-columns="4"]');
+const pageW = () => page.evaluate(() => Math.round(document.querySelector('.page').getBoundingClientRect().width));
+const w4 = await pageW();
+const lay4 = await page.evaluate(() => ({ panelCols: getComputedStyle(document.getElementById('widgets')).gridTemplateColumns.trim().split(/\s+/).length }));
+await page.click('#customize-menu [data-width="full"]');
+const wFull = await pageW();
+await page.click('#customize-menu [data-width="normal"]'); await page.click('#customize-menu [data-columns="3"]');
+const wNormal3 = await pageW();
+await page.click('#customize-menu [data-width="wide"]');
+const wWide3 = await pageW();
+check('customize: four columns widen the page; page width goes normal, wide, or full',
+  lay4.panelCols === 4 && w4 === 1320 && wFull === Math.round(1440 * 0.96) && wNormal3 === 1040 && wWide3 === 1280,
+  JSON.stringify({ lay4, w4, wFull, wNormal3, wWide3 }));
 await page.reload(); await page.waitForSelector('#customize-btn');
-const lay3 = await page.evaluate(() => ({ ask: document.documentElement.dataset.ask, columns: document.documentElement.dataset.columns, recipes: document.documentElement.dataset.recipes, mirrored: JSON.parse(localStorage.getItem('fogar.layout') || '{}').columns }));
-check('customize: layout options apply and persist', lay1.ask === 'centered' && lay1.pageCols === 2 && lay1.recipes === 'none' && lay1.askMin > 300 && lay2.panelCols === 3 && lay2.pageCols === 1 && lay3.ask === 'centered' && lay3.columns === '3' && lay3.recipes === 'hidden' && lay3.mirrored === 3, JSON.stringify({ lay1, lay2, lay3 }));
+const lay3 = await page.evaluate(() => ({ ask: document.documentElement.dataset.ask, columns: document.documentElement.dataset.columns, width: document.documentElement.dataset.width, recipes: document.documentElement.dataset.recipes, mirrored: JSON.parse(localStorage.getItem('fogar.layout') || '{}').columns }));
+check('customize: layout options apply and persist', lay1.ask === 'centered' && lay1.pageCols === 2 && lay1.recipes === 'none' && lay1.askMin > 300 && lay2.panelCols === 3 && lay2.pageCols === 1 && lay3.ask === 'centered' && lay3.columns === '3' && lay3.width === 'wide' && lay3.recipes === 'hidden' && lay3.mirrored === 3, JSON.stringify({ lay1, lay2, lay3 }));
 await page.setViewportSize({ width: 1280, height: 800 });
 await page.click('#customize-btn'); await page.click('#customize-menu [data-reset="all"]');
 await page.waitForFunction(() => document.documentElement.dataset.ask === 'top' && !document.documentElement.dataset.theme && getComputedStyle(document.documentElement).getPropertyValue('--h').trim() === '40', null, { timeout: 5000 }).catch(() => {});
-const resetState = await page.evaluate(() => ({ theme: document.documentElement.dataset.theme ?? null, h: getComputedStyle(document.documentElement).getPropertyValue('--h').trim(), ask: document.documentElement.dataset.ask, columns: document.documentElement.dataset.columns, recipes: document.documentElement.dataset.recipes }));
-check('customize: reset returns theme and layout to the defaults, widgets untouched', resetState.theme === null && resetState.h === '40' && resetState.ask === 'top' && resetState.columns === 'auto' && resetState.recipes === 'shown' && (await page.evaluate(() => document.querySelectorAll('#widgets .widget').length)) > 0, JSON.stringify(resetState));
+const resetState = await page.evaluate(() => ({ width: document.documentElement.dataset.width, theme: document.documentElement.dataset.theme ?? null, h: getComputedStyle(document.documentElement).getPropertyValue('--h').trim(), ask: document.documentElement.dataset.ask, columns: document.documentElement.dataset.columns, recipes: document.documentElement.dataset.recipes }));
+check('customize: reset returns theme and layout to the defaults, widgets untouched', resetState.theme === null && resetState.h === '40' && resetState.ask === 'top' && resetState.columns === 'auto' && resetState.width === 'normal' && resetState.recipes === 'shown' && (await page.evaluate(() => document.querySelectorAll('#widgets .widget').length)) > 0, JSON.stringify(resetState));
 
 // 15. drag a widget by its title to reorder; the order persists
 await page.evaluate(() => chrome.storage.local.set({ 'fogar.layout': { version: 1, widgets: [{ id: 'todos', type: 'todos', config: {} }, { id: 'reminders', type: 'reminders', config: {} }], focus: false, ask: 'top', arrangement: 'stack', columns: 'auto', showRecipes: true } }));
@@ -990,6 +1044,12 @@ await page.click('#widget-menu .menu-item[data-widget="writing"]');
 await page.waitForSelector('.widget[data-type="writing"] .wr-text');
 const wrPick = await page.evaluate(() => { const s = document.querySelector('.widget[data-type="writing"] .wr-model'); return { value: s?.value, text: s?.selectedOptions[0]?.text }; });
 const wrHint = await page.evaluate(() => document.querySelector('.widget[data-type="writing"] .wr-hint')?.textContent ?? '');
+// In a narrow column (four across) the card holds its header and body: nothing runs past the right edge.
+await page.evaluate(() => { document.documentElement.dataset.columns = '4'; });
+for (const v of ['Voice', 'Registers', 'Write']) await page.click(`.widget[data-type="writing"] .wr-nav button:has-text("${v}")`);
+const wrNarrow = await page.evaluate(() => { const c = document.querySelector('.widget[data-type="writing"]'); const r = c.getBoundingClientRect(); const over = [...c.querySelectorAll('*')].filter((n) => n.getBoundingClientRect().right > r.right + 1 && n.getClientRects().length).map((n) => n.className).slice(0, 5); return { width: Math.round(r.width), over, scroll: c.scrollWidth > c.clientWidth + 1 }; });
+await page.evaluate(() => { document.documentElement.dataset.columns = 'auto'; });
+check('writing: in a four-column layout the card is narrow and nothing in it runs past its edge', wrNarrow.width < 320 && !wrNarrow.over.length && !wrNarrow.scroll, JSON.stringify(wrNarrow));
 await page.click('.widget[data-type="writing"] .wr-nav button:has-text("Voice")');
 await page.waitForSelector('.widget[data-type="writing"] .wr-sample-text');
 await page.fill('.widget[data-type="writing"] .wr-sample-text', 'Honestly, the export flow is done. Two small bugs left in restore; both are mine and both are easy.');
@@ -1043,16 +1103,47 @@ check('writing: a new register with rules is saved and selected; the run carries
     && wrOut.text === 'Sounds like you, and nobody else.' && /^In your voice · LinkedIn · tighten · voice v1 · Fogar cloud/.test(wrOut.meta ?? '') && /em dashes removed/.test(wrOut.status ?? ''),
   `regs=${wrRegs.names.join(',')} sel="${wrSelected}" out="${wrOut.text}" meta="${wrOut.meta}"`);
 
+// Samples stay editable after they are added; the profile says when it has fallen behind them; a correction rides
+// along on every run and through a second distill, which keeps v1 for restoring.
+await page.click('.widget[data-type="writing"] .wr-out .wr-not-me');
+await page.waitForFunction(() => document.activeElement?.classList.contains('wr-amend-input'), null, { timeout: 5000 });
+const wrStale0 = await page.evaluate(() => ({ stale: !document.querySelector('.widget[data-type="writing"] .wr-stale')?.hidden, ghost: document.querySelector('.widget[data-type="writing"] .wr-distill')?.classList.contains('ghost') }));
+await page.fill('.widget[data-type="writing"] .wr-amend-input', 'I never say "reach out"');
+await page.press('.widget[data-type="writing"] .wr-amend-input', 'Enter');
+await page.click('.widget[data-type="writing"] .wr-sample:nth-child(1) .wr-open');
+await page.waitForSelector('.widget[data-type="writing"] .wr-sample-edit');
+const wrFull = await page.inputValue('.widget[data-type="writing"] .wr-sample-edit');
+await page.fill('.widget[data-type="writing"] .wr-sample-edit', 'Honestly, the export flow is done. One small bug left in restore, and it is mine.');
+await page.click('.widget[data-type="writing"] .wr-save-sample');
+await page.uncheck('.widget[data-type="writing"] .wr-sample:nth-child(2) .wr-use');
+const wrStale = await page.evaluate(() => { const w = document.querySelector('.widget[data-type="writing"]'); return { note: w.querySelector('.wr-stale')?.hidden ? '' : w.querySelector('.wr-stale')?.textContent, primary: w.querySelector('.wr-distill')?.classList.contains('primary'), label: w.querySelector('.wr-distill')?.textContent, budget: w.querySelector('.wr-budget')?.textContent, first: w.querySelector('.wr-sample .wr-open')?.textContent, meta: w.querySelector('.wr-sample .meta')?.textContent, off: w.querySelector('.wr-sample:nth-child(2)')?.classList.contains('off') }; });
+await page.click('.widget[data-type="writing"] .wr-distill');
+await page.waitForFunction(() => /^Voice profile v2/.test(document.querySelector('.widget[data-type="writing"] .wr-profile summary')?.textContent ?? ''), null, { timeout: 20000 });
+const distill2 = mock.server.lastRequest?.messages?.at(-1)?.content ?? '';
+const wrV2 = await page.evaluate(() => { const w = document.querySelector('.widget[data-type="writing"]'); return { history: [...w.querySelectorAll('.wr-version .t')].map((n) => n.textContent), stale: !w.querySelector('.wr-stale')?.hidden }; });
+check('writing: a sample opens in full and saves edited; unchecked samples sit out; the profile says it is behind; a second distill takes the edit and the correction and keeps v1',
+  !wrStale0.stale && wrStale0.ghost && wrFull.startsWith('Honestly, the export flow is done. Two small bugs')
+    && /One small bug left/.test(wrStale.first ?? '') && /edited/.test(wrStale.meta ?? '') && wrStale.off && /^2 changes to your samples since v1/.test(wrStale.note ?? '') && wrStale.primary && wrStale.label === 'Distill again (v2)' && /1 unchecked/.test(wrStale.budget ?? '')
+    && /One small bug left in restore/.test(distill2) && !/Dear Priya/.test(distill2) && /## Corrections the author has made[^\n]*\n[^\n]*\n- I never say "reach out"/.test(distill2)
+    && wrV2.history.length === 1 && /^v1 · from 2 samples/.test(wrV2.history[0] ?? '') && !wrV2.stale,
+  JSON.stringify({ wrStale0, wrStale, wrV2, full: wrFull.slice(0, 40) }));
+await page.click('.widget[data-type="writing"] .wr-nav button:has-text("Write")');
+await page.click('.widget[data-type="writing"] .wr-go');
+await page.waitForFunction(() => { const w = document.querySelector('.widget[data-type="writing"]'); return !!w && !w.querySelector('.wr-out.streaming') && /voice v2/.test(w.querySelector('.wr-out-meta')?.textContent ?? ''); }, null, { timeout: 20000 });
+const wrRun2 = mock.server.lastRequest?.messages?.at(-1)?.content ?? '';
+check('writing: every run carries the corrections after the profile, and says which voice version wrote it',
+  /## The author's voice profile\n[\s\S]*## The author's own corrections[^\n]*\n- I never say "reach out"\n\n## Register: LinkedIn/.test(wrRun2), wrRun2.slice(0, 300));
+
 await page.reload();
 await page.waitForSelector('.widget[data-type="writing"] .wr-out-text');
 const wrAfter = await page.evaluate(async () => {
   const w = document.querySelector('.widget[data-type="writing"]');
   const key = `fogar.widget.${w.dataset.id}`;
   const stored = (await chrome.storage.local.get(key))[key];
-  return { input: w.querySelector('.wr-text')?.value, out: w.querySelector('.wr-out-text')?.textContent, register: w.querySelector('.wr-register')?.selectedOptions[0]?.text, op: w.querySelector('.wr-ops [aria-pressed="true"]')?.textContent, samples: stored?.samples?.length, version: stored?.profile?.version, registers: stored?.registers?.length, hint: !!w.querySelector('.wr-hint'), brand: w.querySelector('.wr-brand a')?.href };
+  return { input: w.querySelector('.wr-text')?.value, out: w.querySelector('.wr-out-text')?.textContent, register: w.querySelector('.wr-register')?.selectedOptions[0]?.text, op: w.querySelector('.wr-ops [aria-pressed="true"]')?.textContent, samples: stored?.samples?.length, version: stored?.profile?.version, history: stored?.history?.map((h) => h.version).join(), amendments: stored?.amendments?.length, used: stored?.samples?.map((s) => s.use).join(), registers: stored?.registers?.length, hint: !!w.querySelector('.wr-hint'), brand: w.querySelector('.wr-brand a')?.href };
 });
 check('writing: samples, profile, registers, the register and operation in use, the text, and the last result persist across tabs; the card credits Dickens',
-  wrAfter.input === 'so we shipped the thing, finally, after a lot of back and forth' && wrAfter.out === 'Sounds like you, and nobody else.' && wrAfter.register === 'LinkedIn' && wrAfter.op === 'Tighten' && wrAfter.samples === 2 && wrAfter.version === 1 && wrAfter.registers === 4 && !wrAfter.hint && /^https:\/\/dickens\.ai\//.test(wrAfter.brand ?? ''),
+  wrAfter.input === 'so we shipped the thing, finally, after a lot of back and forth' && wrAfter.out === 'Sounds like you, and nobody else.' && wrAfter.register === 'LinkedIn' && wrAfter.op === 'Tighten' && wrAfter.samples === 2 && wrAfter.version === 2 && wrAfter.history === '1' && wrAfter.amendments === 1 && wrAfter.used === 'true,false' && wrAfter.registers === 4 && !wrAfter.hint && /^https:\/\/dickens\.ai\//.test(wrAfter.brand ?? ''),
   JSON.stringify(wrAfter));
 
 mock.server.close();
