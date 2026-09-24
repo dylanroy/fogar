@@ -194,10 +194,10 @@
   .faq details p { padding: 0 0 22px; color: var(--ink-2); max-width: 62ch; }
 
   /* use-case pages */
-  .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
   .case { display: grid; gap: 10px; align-content: start; padding: 24px 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
   .case:hover { border-color: var(--ash); transform: translateY(-2px); }
-  .case h3 { font-size: 21px; }
+  .case h3 { font-size: 20px; }
   .case p { color: var(--ink-2); font-size: 15.5px; }
   .case .more { font-family: var(--mono); font-size: 12px; color: var(--ember); margin-top: 6px; }
 
@@ -244,6 +244,7 @@
           <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
           <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
           <a href="/write"><b>Writing</b><span>Rewrite, reply, summarize, on your device</span></a>
+          <a href="/voice"><b>Your voice</b><span>Rewrite and draft as yourself, in any register</span></a>
           <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
         </div>
       </details>
@@ -337,6 +338,7 @@
     </div>
     <div class="features">
       <div class="feature"><span class="eyebrow">Recipes</span><div><h3>Prompt forms you can share</h3><p>Draft and rewrite, reply to a message, summarize, explain simply. Make your own with a small form builder, then share it as a link. Recipes are data, never code.</p></div></div>
+      <div class="feature"><span class="eyebrow">Your voice</span><div><h3>Sounds like you, not the model</h3><p>Paste a few things you actually wrote and distill them once into a voice profile you can read and edit. Every rewrite, tighten-up, or draft comes back in that voice. Registers keep email, chat, and essays apart; add your own, with rules followed to the letter.</p></div></div>
       <div class="feature"><span class="eyebrow">Reminders</span><div><h3>"Call the dentist tomorrow at 9"</h3><p>Plain words in, a confirmed time out. Fires as a Chrome notification. One click adds it to Google Calendar, with no account connection needed.</p></div></div>
       <div class="feature"><span class="eyebrow">Agenda</span><div><h3>Today and tomorrow, from any calendar</h3><p>Paste your calendar’s private iCal address. Google, Outlook, iCloud, anything. Recurring events included, no account connection.</p></div></div>
       <div class="feature"><span class="eyebrow">Widgets</span><div><h3>Pin the panels you want</h3><p>Todos, links, notes, weather with no API key, a favorite recipe. Drag them into order, hide them, or hit Focus and keep only the ask box.</p></div></div>
@@ -359,6 +361,7 @@
       <a class="case" href="/tabs"><span class="eyebrow">Tabs</span><h3>Twenty windows. Close them all.</h3><p>Save a window and close it knowing each tab is one search away. Restore, promote to bookmarks, or export.</p><span class="more">About Sessions</span></a>
       <a class="case" href="/bookmarks"><span class="eyebrow">Bookmarks</span><h3>Find the one you half remember.</h3><p>Type a few letters, typos forgiven. Or name a topic and let a model on your device sort the list.</p><span class="more">About bookmark search</span></a>
       <a class="case" href="/write"><span class="eyebrow">Writing</span><h3>Paste the draft. Nobody else reads it.</h3><p>Rewrite, reply, summarize, explain, with forms you can make and share as a link.</p><span class="more">About recipes</span></a>
+      <a class="case" href="/voice"><span class="eyebrow">Your voice</span><h3>Sounds like you. Not like the model.</h3><p>A few samples of your real writing, distilled once. Rewrite, tighten, or draft in it, with registers for email, chat, and more.</p><span class="more">About the Writing widget</span></a>
       <a class="case" href="/today"><span class="eyebrow">Your day</span><h3>Today and tomorrow, every new tab.</h3><p>Any calendar’s agenda, reminders in plain words, a todo list, and the weather. No account to connect.</p><span class="more">About the agenda</span></a>
     </div>
   </section>
@@ -453,7 +456,7 @@
           <a class="btn btn-ember" href="fogar-chrome.zip" download>Download for Chrome</a>
           <a class="btn btn-quiet" href="https://github.com/dylanroy/fogar">Get the source</a>
         </div>
-        <p class="cta-note">Version 0.1.0, a 2.6 MB zip. Prefer to wait for the store? <a href="https://dylanroy.com/?ref=fogar">Get notified when it ships.</a></p>
+        <p class="cta-note">Version 0.1.0, a 7.3 MB zip. Prefer to wait for the store? <a href="https://dylanroy.com/?ref=fogar">Get notified when it ships.</a></p>
       </div>
       <div>
         <ol class="how">
@@ -467,7 +470,7 @@
   </section>
 
   <footer>
-    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/write">Writing</a> · <a href="/today">Your day</a></span>
+    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/today">Your day</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="#honest">Sponsorship</a></span>
   </footer>

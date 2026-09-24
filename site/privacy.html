@@ -32,7 +32,7 @@
 <div class="wrap">
   <a class="brand" href="/">Fogar</a>
   <h1>Privacy policy</h1>
-  <p class="mono">Effective 2026-09-22 · applies to the Fogar browser extension</p>
+  <p class="mono">Effective 2026-09-23 · applies to the Fogar browser extension</p>
 
   <p>Fogar is a new tab page that answers questions using a language model running inside your browser, or a cloud model you connect with your own key. It has no server, no accounts, and no analytics. This page says exactly what leaves your browser and when.</p>
 
@@ -45,10 +45,18 @@
     <tbody>
       <tr><td>Answers, on this device</td><td><span class="zero">Nothing.</span> The model file is downloaded once from Hugging Face (huggingface.co) and cached in your browser. Your questions are processed locally.</td><td>Hugging Face, once, for the model file only</td></tr>
       <tr><td>Answers, cloud with your key</td><td>Your prompt, the conversation in this tab, and your API key</td><td>Only the endpoint you typed in Settings</td></tr>
+      <tr><td>Files you attach to a question</td><td>Read inside the page and held in memory for that tab only, never stored. On this device: <span class="zero">nothing</span> is sent. In cloud mode, the part of the text that fits the prompt goes with your question.</td><td>Nobody, or only the endpoint you typed</td></tr>
       <tr><td>Web grounding (off until you tick “Search the web first”)</td><td>Your question, as a search query</td><td>DuckDuckGo’s Instant Answer API (api.duckduckgo.com) and Wikipedia by default, with no key or account; or the search provider you chose and gave a key for</td></tr>
       <tr><td>Agenda widget (optional)</td><td>A request for the calendar address you pasted</td><td>Your calendar provider</td></tr>
       <tr><td>Weather widget (optional)</td><td>The city you typed, then its coordinates</td><td>Open-Meteo (open-meteo.com), which needs no account</td></tr>
-      <tr><td>Everything else</td><td><span class="zero">Nothing.</span> Todos, reminders, recipes, notes, links, saved sessions, bookmarks search, and settings all stay in your browser.</td><td>Nobody</td></tr>
+      <tr><td>Inbox widget (optional)</td><td>A request for Gmail’s unread feed, using the Google session already in this browser; or, if you connect an OAuth client you created in your own Google project, a Gmail API search with the token Google gave you. Senders, subjects, and snippets are cached in extension storage for a few minutes.</td><td>Google (mail.google.com or gmail.googleapis.com), and nobody else. Fogar has no server in between and no OAuth client of its own</td></tr>
+      <tr><td>Feed widget (optional)</td><td>A request for each feed address you added, or the words you typed to the search provider you picked</td><td>The feed’s own site; Google News, Hacker News (hnrss.org), Reddit, or Bing for searches</td></tr>
+      <tr><td>Jira widget (optional)</td><td>Your JQL query, with the API token you pasted</td><td>The Jira site you named</td></tr>
+      <tr><td>LLM Chat widget (optional)</td><td>That widget’s conversation and the key of the model profile you picked</td><td>On this device: <span class="zero">nothing</span>. Otherwise only the endpoint of the profile you chose (Anthropic, OpenAI, Ollama on this computer, and so on)</td></tr>
+      <tr><td>Canvas widget (optional)</td><td>When you ask the model to draw: the drawing’s shapes, as text, and your instruction</td><td>The model you chose: on this device, or your own endpoint</td></tr>
+      <tr><td>Notebook widget (optional)</td><td>A photo you add is downscaled in the page. Read on this device: <span class="zero">nothing</span> is sent. Read with a model you connected: the downscaled photo goes to that endpoint, once. Photos are never stored.</td><td>Nobody, or only the endpoint you chose</td></tr>
+      <tr><td>Writing widget (optional)</td><td>Your writing samples, once, when you press Distill; then the distilled voice profile, the register’s rules, and the text you are rewriting, on each run. On this device: <span class="zero">nothing</span> is sent. Samples, profile, and registers are stored in this browser and ride along in backups.</td><td>Nobody, or only the model endpoint you picked in the widget’s header</td></tr>
+      <tr><td>Everything else</td><td><span class="zero">Nothing.</span> Todos, reminders, recipes, notes, post-its, notebook pages, canvases, chats, links, saved sessions, bookmarks search, and settings all stay in your browser.</td><td>Nobody</td></tr>
     </tbody>
   </table>
   <p>The new tab page shows a live count of every network request it has made, by host, in Settings under “Network, this tab”. It is read from the browser's own timeline. If the count says zero, zero requests were made.</p>
@@ -68,13 +76,14 @@
       <tr><td>favicon</td><td>Showing site icons next to bookmarks and links.</td></tr>
       <tr><td>unlimitedStorage</td><td>Saved sessions can outgrow the default storage quota. No install warning.</td></tr>
       <tr><td>Optional: tabs</td><td>Only if you add the Sessions widget: listing, searching and saving the titles and addresses of your open tabs, on this device. Chrome labels this permission “Read your browsing history”; Fogar reads open tabs, not your history, and only while the widget is on the page.</td></tr>
+      <tr><td>Optional: identity</td><td>Only if you connect Gmail through your own OAuth client in the Inbox widget: opening Google’s sign-in window. The token Google returns is stored in this browser and sent only to Google.</td></tr>
       <tr><td>huggingface.co</td><td>Downloading the model file, once.</td></tr>
-      <tr><td>Optional: any site you add</td><td>Requested one at a time when you save a cloud endpoint, a search key, or a calendar address, so the extension can reach that address and no other.</td></tr>
+      <tr><td>Optional: any site you add</td><td>Requested one at a time when you save a cloud endpoint, a search key, a calendar address, a feed, a Jira site, or a chat model, or connect Gmail, so the extension can reach that address and no other.</td></tr>
     </tbody>
   </table>
 
   <h2>Third parties</h2>
-  <p>Hugging Face hosts the model files. DuckDuckGo and Wikipedia answer grounding lookups when you ask for them. Open-Meteo provides weather if you add the widget. Your chosen model, search, and calendar providers receive what the table above says and are governed by their own policies. Fogar has no relationship with any of them and receives nothing from them.</p>
+  <p>Hugging Face hosts the model files. DuckDuckGo and Wikipedia answer grounding lookups when you ask for them. Open-Meteo provides weather if you add the widget. Google receives the Inbox widget’s requests if you add it; the feed sites and search providers, your Jira site, and the model providers you connect receive what the table above says. All of them are governed by their own policies. Fogar has no relationship with any of them and receives nothing from them.</p>
 
   <h2>Children</h2>
   <p>Fogar is not directed at children under 13 and, collecting nothing, holds no data about anyone.</p>

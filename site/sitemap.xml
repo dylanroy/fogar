@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://fogar.ai/</loc><lastmod>2026-09-22</lastmod></url>
-  <url><loc>https://fogar.ai/tabs</loc><lastmod>2026-09-22</lastmod></url>
-  <url><loc>https://fogar.ai/bookmarks</loc><lastmod>2026-09-22</lastmod></url>
-  <url><loc>https://fogar.ai/write</loc><lastmod>2026-09-22</lastmod></url>
-  <url><loc>https://fogar.ai/today</loc><lastmod>2026-09-22</lastmod></url>
-  <url><loc>https://fogar.ai/privacy</loc><lastmod>2026-09-22</lastmod></url>
+  <url><loc>https://fogar.ai/</loc><lastmod>2026-09-24</lastmod></url>
+  <url><loc>https://fogar.ai/tabs</loc><lastmod>2026-09-24</lastmod></url>
+  <url><loc>https://fogar.ai/bookmarks</loc><lastmod>2026-09-24</lastmod></url>
+  <url><loc>https://fogar.ai/write</loc><lastmod>2026-09-24</lastmod></url>
+  <url><loc>https://fogar.ai/today</loc><lastmod>2026-09-24</lastmod></url>
+  <url><loc>https://fogar.ai/voice</loc><lastmod>2026-09-24</lastmod></url>
+  <url><loc>https://fogar.ai/privacy</loc><lastmod>2026-09-24</lastmod></url>
 </urlset>

@@ -1,11 +1,14 @@
 // Runs the free grounding provider against the real DuckDuckGo and Wikipedia APIs from Node (type stripping).
 // Usage: node scripts/try-grounding.mjs "Who is the US president?" "What is OPFS?"
+// The defaults show both ends: an entity question comes back with sources, and a question with no subject in it
+// ("bullets from the document") comes back with none, where Wikipedia's search alone would return four articles
+// that happen to use the word "bullets".
 import { searchWeb } from '../lib/grounding.ts';
 // Wikipedia's API policy wants an identifying User-Agent; a browser supplies one, Node does not.
 const realFetch = globalThis.fetch;
 globalThis.fetch = (u, o = {}) => realFetch(u, { ...o, headers: { ...(o.headers || {}), 'User-Agent': 'Fogar grounding probe (https://fogar.ai)' } });
 const g = { provider: 'free', apiKey: '', byDefault: false };
-const questions = process.argv.slice(2).length ? process.argv.slice(2) : ['Who is the US president?', 'What is OPFS?', 'the micro startups guy'];
+const questions = process.argv.slice(2).length ? process.argv.slice(2) : ['Who is the US president?', 'What is OPFS?', 'the micro startups guy', 'Give me some bullets from the document'];
 for (const q of questions) {
   const t0 = Date.now();
   try {

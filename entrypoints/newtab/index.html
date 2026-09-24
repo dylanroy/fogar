@@ -53,7 +53,23 @@
       <section id="ask-section" class="ask">
         <form id="ask-form">
           <div class="askbox">
-            <textarea id="prompt" rows="2" placeholder="Ask anything, or start typing to find a bookmark" autofocus></textarea>
+            <!-- The frame is the visible box. The textarea grows with the text; the controls live inside, the
+                 way the attach and send buttons of any chat do, so the row below is only status. -->
+            <div id="askframe" class="askframe">
+              <textarea id="prompt" rows="2" placeholder="" aria-label="Ask Fogar" autofocus></textarea>
+              <div id="attachments" class="attachments" hidden></div>
+              <div class="ask-inner">
+                <button id="attach-btn" class="icon-btn" type="button" title="Attach a PDF, Word, or text file. Read here, never uploaded." aria-label="Attach a file">
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>
+                </button>
+                <input id="attach-input" type="file" multiple hidden accept=".pdf,.docx,.txt,.text,.md,.markdown,.csv,.tsv,.json,.xml,.yaml,.yml,.log,.html,.htm,.ics,text/*,application/pdf,application/json,application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <span class="ask-spacer"></span>
+                <button id="stop-btn" class="ghost small" type="button" hidden>Stop</button>
+                <button id="ask-btn" class="send" type="submit" disabled title="Ask (Enter)" aria-label="Ask">
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>
+                </button>
+              </div>
+            </div>
             <div id="bookmark-hits" class="hits" hidden></div>
           </div>
           <div class="ask-row">
@@ -61,12 +77,11 @@
             <span class="ask-actions">
               <label id="ground-toggle" class="toggle" hidden title="Fetch a few web results and answer from them"><input type="checkbox" id="ground" /> Search the web first</label>
               <a id="web-search" class="muted link" href="#" hidden>Search the web instead</a>
-              <button id="stop-btn" class="ghost" type="button" hidden>Stop</button>
-              <button id="ask-btn" class="primary" type="submit" disabled>Ask</button>
             </span>
           </div>
         </form>
         <div id="examples" class="examples" aria-label="Things to try"></div>
+        <div id="help-card" class="card help" hidden></div>
         <div id="progress" class="progress" hidden><div id="progress-bar" class="progress-bar"></div><span id="progress-text"></span></div>
         <div id="thread" class="thread">
           <div id="thread-head" class="thread-head" hidden><span class="muted">Follow-ups stay in this conversation.</span><button id="thread-clear" class="ghost small" type="button">New conversation</button></div>
@@ -115,7 +130,7 @@
         </fieldset>
         <fieldset id="grounding-settings">
           <legend>Web grounding</legend>
-          <p class="muted">A small local model is a good writer and a poor encyclopedia. Tick “Search the web first” under the ask box and Fogar looks the question up before answering, then cites what it found. The free option needs no key and knows well-known people, places, and topics, not news or niche sites. Your question goes only to the provider below, and only when you tick the box.</p>
+          <p class="muted">A small local model is a good writer and a poor encyclopedia. Tick “Search the web first” under the ask box and Fogar looks the question up before answering, then cites what it found; only results the answer cites are listed. A question about an attached file is answered from the file instead. The free option needs no key and knows well-known people, places, and topics, not news or niche sites. Your question goes only to the provider below, and only when you tick the box.</p>
           <label>Provider
             <select id="ground-provider">
               <option value="free">Free: DuckDuckGo instant answers + Wikipedia (no key)</option>

@@ -2,6 +2,7 @@ node_modules/
 .output/
 .wxt/
 public/wllama/
+public/tesseract/
 *.log
 .DS_Store
 .env

@@ -194,10 +194,10 @@
   .faq details p { padding: 0 0 22px; color: var(--ink-2); max-width: 62ch; }
 
   /* use-case pages */
-  .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
   .case { display: grid; gap: 10px; align-content: start; padding: 24px 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
   .case:hover { border-color: var(--ash); transform: translateY(-2px); }
-  .case h3 { font-size: 21px; }
+  .case h3 { font-size: 20px; }
   .case p { color: var(--ink-2); font-size: 15.5px; }
   .case .more { font-family: var(--mono); font-size: 12px; color: var(--ember); margin-top: 6px; }
 
@@ -294,6 +294,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
           <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
           <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
           <a href="/write" aria-current="page"><b>Writing</b><span>Rewrite, reply, summarize, on your device</span></a>
+          <a href="/voice"><b>Your voice</b><span>Rewrite and draft as yourself, in any register</span></a>
           <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
         </div>
       </details>
@@ -387,9 +388,10 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
   <section id="more">
     <div class="section-head">
       <span class="eyebrow">Also for writing</span>
-      <h2 class="measure">Three more ways in, when a form is too much.</h2>
+      <h2 class="measure">Four more ways in, when a form is too much.</h2>
     </div>
     <div class="features">
+      <div class="feature"><span class="eyebrow">Your voice</span><div><h3>Rewrite as yourself</h3><p>The Writing widget goes one further than a recipe: it learns your voice from a few samples of what you actually sent, keeps registers for email, chat, and essays, and rewrites, tightens, or drafts in it. <a href="/voice">How it works.</a></p></div></div>
       <div class="feature"><span class="eyebrow">Ask box</span><div><h3>Just type</h3><p>“Rewrite this politely: can’t make the 3pm, thursday instead?” works without a recipe. Follow-ups keep the thread, so “shorter” and “now as an email” do what you mean.</p></div></div>
       <div class="feature"><span class="eyebrow">Right-click</span><div><h3>“Ask Fogar about …”</h3><p>Select text on any page and right-click. The page’s title, address, and the text around your selection go along, so the explanation is about what you were reading, not a guess.</p></div></div>
       <div class="feature"><span class="eyebrow">Dig deeper</span><div><h3>When the first answer is not enough</h3><p>One menu on every answer: search the web and answer again with sources, let the model think longer, or ask your cloud model the same question. The better answer replaces the first.</p></div></div>
@@ -439,7 +441,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
           <a class="btn btn-ember" href="fogar-chrome.zip" download>Download for Chrome</a>
           <a class="btn btn-quiet" href="https://github.com/dylanroy/fogar">Get the source</a>
         </div>
-        <p class="cta-note">Version 0.1.0, a 2.6 MB zip. Prefer to wait for the store? <a href="https://dylanroy.com/?ref=fogar">Get notified when it ships.</a></p>
+        <p class="cta-note">Version 0.1.0, a 7.3 MB zip. Prefer to wait for the store? <a href="https://dylanroy.com/?ref=fogar">Get notified when it ships.</a></p>
       </div>
       <div>
         <ol class="how">
@@ -452,7 +454,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
     </div>
   </section>
   <footer>
-    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/write" aria-current="page">Writing</a> · <a href="/today">Your day</a></span>
+    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/write" aria-current="page">Writing</a> · <a href="/voice">Your voice</a> · <a href="/today">Your day</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>

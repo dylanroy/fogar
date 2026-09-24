@@ -7,16 +7,21 @@
   "scripts": {
     "gen:wllama": "node scripts/gen-wllama-workers.mjs",
     "gen:icons": "node scripts/gen-icons.mjs",
-    "dev": "npm run gen:wllama && wxt",
-    "build": "npm run gen:wllama && wxt build",
-    "zip": "npm run gen:wllama && wxt zip",
+    "gen:tesseract": "node scripts/gen-tesseract.mjs",
+    "gen": "npm run gen:wllama && npm run gen:tesseract",
+    "dev": "npm run gen && wxt",
+    "build": "npm run gen && wxt build",
+    "zip": "npm run gen && wxt zip",
     "postinstall": "wxt prepare",
     "test:spike": "node scripts/spike-smoke.mjs",
     "shots": "node scripts/screenshot.mjs",
     "site": "node scripts/build-site.mjs"
   },
   "dependencies": {
-    "@wllama/wllama": "3.6.1"
+    "@wllama/wllama": "3.6.1",
+    "fflate": "^0.8.3",
+    "pdfjs-dist": "^6.3.289",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "playwright": "^1.50.0",

@@ -12,6 +12,7 @@ import { detectDevice, recommendModel } from '@/lib/device';
 import { browser } from 'wxt/browser';
 import { CTX_KEY, type PageContext } from '@/lib/page-context';
 import { applyTheme, decodeThemeShare, loadTheme, saveTheme } from '@/lib/theme';
+import { ATTACHMENT_BUDGET, attachmentBlock, type Attachment } from '@/lib/attachments';
 import { initCustomize } from './ui/customize';
 
 const params = new URLSearchParams(location.search);
@@ -126,6 +127,9 @@ async function runEval(app: App) {
     ['math', 'What is 18% of 240? Answer with just the number.'],
     ['classify', 'You sort bookmarks. Reply with only the numbers of the items that are job postings, comma separated, or NONE.\n\nCriterion: job postings\n\n1. Senior Backend Engineer | Acme Careers (acme.com)\n2. How to cook risotto (seriouseats.com)\n3. Staff Engineer, Platform - Globex (jobs.lever.co)\n4. React docs (react.dev)\n5. Weekend hikes near Denver (alltrails.com)\n6. Data Analyst opening at Initech (greenhouse.io)'],
     ['extract', 'Extract a JSON object with keys label and datetime (ISO 8601) from: "remind me to call the dentist tomorrow at 9am". Today is 2026-09-21T16:00:00. Return only JSON.'],
+    // A two-page letter (915 words) in front of the model, the way an attached file arrives. First-token time here is the
+    // cost of reading a document; the answer checks that the facts near the end survived.
+    ['document', 'Who sent the irrigation invoice, how much is it, and when is it due? Answer in one sentence.', `${DEFAULT_SYS}\n\n${attachmentBlock([evalDocument()], ATTACHMENT_BUDGET.local)}`],
   ];
   if (ok) {
     for (const [name, prompt, sys] of PROMPTS) {
@@ -143,6 +147,27 @@ async function runEval(app: App) {
   }
   $('eval-out').textContent = JSON.stringify(out);
   document.body.dataset.status = 'done';
+}
+
+/** A synthetic two-page letter of 915 words, under the local attachment budget, with the facts the eval asks for near the end. */
+function evalDocument(): Attachment {
+  const filler = [
+    'The board met on the second Tuesday of the month to review the quarter.',
+    'Attendance was complete, and the minutes of the previous meeting were approved without amendment.',
+    'The facilities report noted that the roof repair on the north building finished ahead of schedule.',
+    'Membership renewals came in slightly above the forecast, driven by the family tier.',
+    'The treasurer presented the cash position and the outstanding invoices, none of which were overdue.',
+    'A proposal to move the newsletter to a quarterly cadence was tabled for the next meeting.',
+    'The volunteer coordinator reported forty-two active volunteers, up from thirty-eight in the spring.',
+    'Two grant applications remain open; decisions are expected before the end of the year.',
+  ];
+  const paras = ['Riverside Community Garden Association', "Minutes and treasurer's letter, autumn quarter"];
+  for (let i = 0; i < 20; i++) paras.push(`${filler[i % filler.length]} ${filler[(i * 3 + 1) % filler.length]} ${filler[(i * 5 + 2) % filler.length]}`);
+  paras.push('Payment request: the irrigation contractor, Hollis & Vane, has invoiced 4,850 dollars for the drip lines, due on November 14. The treasurer recommends paying it from the maintenance reserve.');
+  paras.push('Next meeting: December 9, in the potting shed, at 7 pm.');
+  const text = paras.join('\n\n');
+  const words = text.split(/\s+/).length;
+  return { id: 'eval', name: 'minutes.txt', kind: 'text', text, words, wordsKept: words, truncated: false };
 }
 
 void main();

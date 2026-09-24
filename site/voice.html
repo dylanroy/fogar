@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Find any bookmark as you type, or by asking · Fogar</title>
-<meta name="description" content="Type a few letters in the new tab and matching bookmarks appear, typos forgiven. Or ask for a topic and a model running on your device sorts your bookmarks. Nothing leaves the machine." />
-<link rel="canonical" href="https://fogar.ai/bookmarks" />
+<title>Write in your own voice, on your own device · Fogar</title>
+<meta name="description" content="Fogar's Writing widget learns your voice from a few samples of your real writing, then rewrites, tightens, or drafts in it, with registers for email, chat, essays, and any you add. The model runs inside Chrome; your samples never leave." />
+<link rel="canonical" href="https://fogar.ai/voice" />
 <meta property="og:site_name" content="Fogar" />
-<meta property="og:title" content="Find any bookmark as you type, or by asking · Fogar" />
-<meta property="og:description" content="Type a few letters in the new tab and matching bookmarks appear, typos forgiven. Or ask for a topic and a model running on your device sorts your bookmarks. Nothing leaves the machine." />
-<meta property="og:url" content="https://fogar.ai/bookmarks" />
+<meta property="og:title" content="Write in your own voice, on your own device · Fogar" />
+<meta property="og:description" content="A few samples of your real writing, distilled once. Then every rewrite and draft sounds like you, not the model. Runs inside Chrome." />
+<meta property="og:url" content="https://fogar.ai/voice" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://fogar.ai/og.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -270,16 +270,26 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .mock .caret { animation: none; } .toast { transition: none; } }
 </style>
 <style>
-  .finder { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; display: grid; gap: 10px; font-size: 14px; line-height: 1.5; }
-  .finder .lead-line { font-size: 15px; }
-  .finder ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
-  .finder .looked { font-size: 12px; color: var(--ash); }
-  .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 48px; }
-  .two > div { display: grid; gap: 12px; align-content: start; }
-  .two p { color: var(--ink-2); font-size: 16px; }
-  @media (max-width: 880px) { .two { grid-template-columns: 1fr; gap: 36px; } }
+  .wr { gap: 12px; }
+  .wr .card-h { font-size: 18px; }
+  .segs { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--line); }
+  .segs span { border-radius: 999px; padding: 4px 11px; font-size: 12px; color: var(--ash); line-height: 1.2; white-space: nowrap; }
+  .segs span.on { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+  .wr .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .wr .box.tall { min-height: 64px; }
+  .wr .out { border-top: 1px dashed var(--line-2); padding-top: 12px; font-size: 14px; line-height: 1.55; display: grid; gap: 8px; }
+  .wr .out .body { white-space: pre-wrap; }
+  .stage .ledger { margin-top: 14px; }
+  .kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .kind { display: grid; gap: 8px; align-content: start; padding: 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; }
+  .kind h3 { font-size: 20px; }
+  .kind p { color: var(--ink-2); font-size: 15.5px; }
+  .kind .mono { margin-top: 4px; }
+  .kind.own { border-style: dashed; }
+  .profile { font-family: var(--mono); font-size: 12.5px; color: var(--ash); white-space: pre-wrap; overflow-wrap: anywhere; background: var(--surface-2); border-radius: 10px; padding: 14px 16px; line-height: 1.6; margin-top: 40px; }
+  .profile b { color: var(--ember-2); font-weight: 500; }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/bookmarks","url":"https://fogar.ai/bookmarks","name":"Find any bookmark as you type, or by asking · Fogar","description":"Type a few letters in the new tab and matching bookmarks appear, typos forgiven. Or ask for a topic and a model running on your device sorts your bookmarks. Nothing leaves the machine.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/bookmarks#faq","mainEntity":[{"@type":"Question","name":"Does it replace Chrome’s bookmark manager?","acceptedAnswer":{"@type":"Answer","text":"No. Chrome keeps the bookmarks and you organize them there as before. Fogar reads the tree, searches it as you type, and can remove the one bookmark you point at. The only thing it ever adds is a folder when you promote a saved session."}},{"@type":"Question","name":"Can it delete a bookmark by accident?","acceptedAnswer":{"@type":"Answer","text":"Only the one you click × on, and only after you confirm. The finder never removes anything; it lists."}},{"@type":"Question","name":"How does it handle typos?","acceptedAnswer":{"@type":"Answer","text":"Titles forgive small ones: the letters of a word four characters or longer only have to appear in order, not next to each other, so “fgar” still finds Fogar. Sites, folders, and addresses need an exact fragment."}},{"@type":"Question","name":"How many bookmarks can it search?","acceptedAnswer":{"@type":"Answer","text":"The index is built once from Chrome’s bookmark tree and rebuilt when bookmarks change, so thousands are fine and typing stays instant. The finder has the model read everything up to five hundred bookmarks; above that it reads only the keyword candidates, so it stays quick on big collections."}},{"@type":"Question","name":"Does the finder work in Cloud mode?","acceptedAnswer":{"@type":"Answer","text":"Yes, with your own key. Be aware of what that means: the titles and sites of your bookmarks are sent to the endpoint you typed, in batches, because that is where the model reading them lives. On this device, nothing is sent."}},{"@type":"Question","name":"Why does the list vanish when I type a long question?","acceptedAnswer":{"@type":"Answer","text":"Six words and up is a question rather than a lookup, so the bookmark list steps aside and the question goes to the model. If you want the model to look through your bookmarks, say so: “find bookmarks about …” or “which bookmarks are job postings” routes to the finder."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/voice","url":"https://fogar.ai/voice","name":"Write in your own voice, on your own device · Fogar","description":"Fogar's Writing widget learns your voice from a few samples of your real writing, then rewrites, tightens, or drafts in it, with registers for email, chat, essays, and any you add. The model runs inside Chrome; your samples never leave.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/voice#faq","mainEntity":[{"@type":"Question","name":"How many samples does it need?","acceptedAnswer":{"@type":"Answer","text":"Three to five pieces of your real writing, across a couple of registers, produce a profile worth using. More helps, up to about a dozen. Paste what you actually sent, not what you wish you had sent; the profile is a portrait of you on an ordinary day."}},{"@type":"Question","name":"Where do my samples go?","acceptedAnswer":{"@type":"Answer","text":"Into Chrome’s extension storage on this machine, and into the backup file if you download one. On this device they are read by the model running in your browser and never leave it. If you pick a cloud model in the widget’s header, the samples go to that endpoint once, when you press Distill, and the profile and your text go there on each run. Nothing passes through Fogar."}},{"@type":"Question","name":"Can I read or change the profile?","acceptedAnswer":{"@type":"Answer","text":"Yes. It is plain text under six headings. Open the Voice tab, press Edit, fix what the model got wrong or add a rule of your own, and save. Every run uses the profile as you left it. Distilling again writes a new version."}},{"@type":"Question","name":"What is a register?","acceptedAnswer":{"@type":"Answer","text":"The same voice at a different formality and length, with rules of its own. Email, Chat, and Essay come built in, and you can add any number more. Rules are followed exactly, and “no em dashes” is enforced after the model answers as well, so the rule holds even when the model forgets."}},{"@type":"Question","name":"Can I keep more than one voice?","acceptedAnswer":{"@type":"Answer","text":"Yes. One Writing widget is one voice. Add a second widget from the Add widget menu, name it after the client or the brand, and feed it their samples. The two never mix."}},{"@type":"Question","name":"Is this a humanizer?","acceptedAnswer":{"@type":"Answer","text":"No. It does not try to defeat AI detectors, and it is not for passing off someone else’s text as your own. It rewrites and drafts in your voice, from your samples, and the result reads as you because it is built from you."}},{"@type":"Question","name":"Does it work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, in local mode, once the model is cached. Samples, profile, and registers are on your disk; turn off Wi-Fi and it keeps writing."}}]}]}</script>
 </head>
 <body>
 <div class="wrap">
@@ -290,9 +300,9 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
         <summary>Use cases</summary>
         <div class="menu-panel">
           <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
-          <a href="/bookmarks" aria-current="page"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
+          <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
           <a href="/write"><b>Writing</b><span>Rewrite, reply, summarize, on your device</span></a>
-          <a href="/voice"><b>Your voice</b><span>Rewrite and draft as yourself, in any register</span></a>
+          <a href="/voice" aria-current="page"><b>Your voice</b><span>Rewrite and draft as yourself, in any register</span></a>
           <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
         </div>
       </details>
@@ -311,111 +321,102 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 
   <header class="hero" id="top">
     <div class="hero-copy">
-      <span class="eyebrow">Bookmarks · a new tab for Chrome</span>
-      <h1>Find the bookmark <em>you half remember.</em></h1>
-      <p class="lead measure">Start typing in the new tab and matching bookmarks appear underneath: by title, by site, by folder, with room for a typo. For the ones you cannot name, ask. “Find bookmarks about cooking” has a model on your device read the list and sort it. Your bookmarks never leave the machine.</p>
+      <span class="eyebrow">Writing in your voice · a new tab for Chrome</span>
+      <h1>Sounds like you. <em>Not like the model.</em></h1>
+      <p class="lead measure">Paste a few things you actually wrote. Fogar’s Writing widget distills them, once, into a voice profile you can read and edit: your words, your rhythm, your tics at their real frequency, the things you would never say. Then every rewrite, tighten-up, or draft comes back in that voice, in the register you pick. The model runs inside your browser, so the samples never leave it.</p>
       <div class="cta-row">
         <a class="btn btn-ember" href="#install">Add to Chrome</a>
-        <a class="btn btn-quiet" href="#two">How it finds</a>
+        <a class="btn btn-quiet" href="#voice">How it learns your voice</a>
       </div>
-      <p class="cta-note">Free. Open source. Chrome keeps your bookmarks; Fogar reads them.</p>
+      <p class="cta-note">Free. Open source. Works offline once the model is cached.</p>
     </div>
 
-    <div class="stage" aria-label="Bookmark search in the new tab, demonstration">
-      <div class="tab mock">
-        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
-        <div class="tab-body">
-          <div class="tab-top">
-            <div class="tab-brand">Fogar</div>
-            <div class="tab-mode" aria-label="Where answers come from">
-              <span class="on"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5"/><path d="M1 13h14"/></svg>Device</span>
-              <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z"/></svg>Cloud</span>
-            </div>
-          </div>
-          <div class="tab-ask" id="ask" aria-live="polite">fig<span class="caret"></span></div>
-          <div class="hits" id="hits" aria-live="polite">
-            <a class="hit" href="#top"><span class="fav"></span><span class="t">Landing page v3 – Figma</span><span class="h">Work › Design · figma.com</span></a>
-            <a class="hit" href="#top"><span class="fav"></span><span class="t">Growing figs in a cold climate</span><span class="h">Garden · gardenersworld.com</span></a>
-            <a class="hit" href="#top"><span class="fav"></span><span class="t">Q3 figures, final deck</span><span class="h">Work · docs.google.com</span></a>
-            <div class="divider">Open tabs</div>
-            <a class="hit" href="#top"><span class="fav"></span><span class="t">Pricing – Figma</span><span class="h">figma.com <span class="tag">open</span></span></a>
-            <div class="divider">Saved tabs</div>
-            <a class="hit" href="#top"><span class="fav"></span><span class="t">Figma to code, a survey</span><span class="h">Sep 19 4:12 PM · github.com</span></a>
-          </div>
-          <div class="tab-row"><span><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span id="status"></span></div>
-          <div class="finder" id="finder" hidden></div>
-          <button class="replay" id="replay" type="button">Try the other way</button>
-        </div>
+    <div class="stage" aria-label="The Writing widget rewriting a message in the author's voice, demonstration">
+      <div class="card mock wr" id="wr" aria-live="polite">
+        <div class="card-h"><span>Writing</span><span class="pill ctl">This device · Qwen3.5 4B ▾</span></div>
+        <div class="segs" aria-hidden="true"><span class="on">Write</span><span>Voice · v3</span><span>Registers · 4</span></div>
+        <div class="top"><span class="pill" id="wr-reg">Email ▾</span><span class="segs" id="wr-ops"><span class="on">Rewrite</span><span>Tighten</span><span>Warmer</span><span>Draft</span></span></div>
+        <div class="box tall" id="wr-in">can't make the 3pm today, thursday instead? sorry for the hassle</div>
+        <div class="box ph" id="wr-instr">Anything else? e.g. “keep the second paragraph as it is”</div>
+        <div class="row"><span class="pill primary">Write in my voice</span><span class="note" id="wr-status"></span></div>
+        <div class="out"><span class="eyebrow" id="wr-meta">In your voice · Email · rewrite · voice v3 · on this device</span><span class="body" id="wr-body">I need to move our 3 pm today. Would Thursday, same time, work for you? Sorry for the shuffle.</span></div>
       </div>
+      <div class="ledger"><span><span class="dot"></span>network <b>0 requests</b></span><span>samples <b>never leave this browser</b></span><span>key <b>none</b></span></div>
+      <button class="replay" id="replay" type="button">Try another register</button>
     </div>
   </header>
 
-  <section id="two">
+  <section id="voice">
     <div class="section-head">
-      <span class="eyebrow">Two ways in</span>
-      <h2 class="measure">Type when you know a word. Ask when you know a topic.</h2>
+      <span class="eyebrow">How it learns your voice</span>
+      <h2 class="measure">Three to five samples. One distillation. Then it is yours to edit.</h2>
+      <p class="lead measure">A voice is not a tone setting. It is the words you reach for, how long your sentences run and how much that varies, how you open and close, the small moves that give you away and how often you actually make them. That is what the profile records, with quotes from your samples as evidence.</p>
     </div>
-    <div class="two">
-      <div>
-        <span class="eyebrow">Typing</span>
-        <h3>Ranked, not just matched</h3>
-        <p>Chrome’s own bookmark search matches whole words at the start of a title or address. Fogar builds its own index once and ranks every bookmark against every word you type: title first, then site, then folder, then the rest of the address. Short typos in titles are forgiven.</p>
-        <p>Recent bookmarks get a nudge. So do short titles, which are usually the site itself rather than an article. Six words and up is a question, not a lookup, so the list steps aside and the model takes over.</p>
-      </div>
-      <div>
-        <span class="eyebrow">Asking</span>
-        <h3>Three passes, and the model cannot make it worse</h3>
-        <p>Ask for a topic and Fogar first has the model expand it into related words, so “cooking” also looks for risotto, kitchen, and seriouseats. A keyword pass over titles, addresses, and folders then sets a floor no model can take away. Finally the model reads your list twenty-five bookmarks at a time and adds what words alone miss.</p>
-        <p>Results come back matched by both first, then by words, then the model’s own picks. Past five hundred bookmarks it re-reads only the keyword candidates, so a big collection stays quick.</p>
-      </div>
+    <div class="steps">
+      <div class="step"><h3>Paste what you actually sent</h3><p>A couple of emails, a few chat messages, something longer if you have it. Type or paste each one into the Voice tab, or drop a file. Tag where it came from. Three to five is plenty to start.</p><span class="mono">samples stay in extension storage</span></div>
+      <div class="step"><h3>Distill it once</h3><p>The model reads the samples and writes the profile under six headings: diction, sentence rhythm, structural habits, tics and fingerprints with their frequency, baseline intensity, and what you would never do. It is plain text. Read it, fix it, add a rule.</p><span class="mono">one call · versioned · editable</span></div>
+      <div class="step"><h3>Write, in any register</h3><p>Paste a draft and pick Rewrite, Tighten, or Warmer; or pick Draft and say what the message should do. The profile and the register’s rules ride along on every run. Copy the result, or send it back in and go again.</p><span class="mono">rewrite · tighten · warmer · draft</span></div>
+    </div>
+    <div class="profile" aria-label="An excerpt from a voice profile, example"><b>### Diction &amp; vocabulary</b>
+Short words, plain verbs. “Honestly” opens a sentence about once per message, never twice. Contractions throughout; “folks” for a group; never “utilize”, never “leverage”.
+
+<b>### Sentence rhythm</b>
+A long sentence, then a short one. Fragments when the point is already made (“Both mine. Both easy.”). Semicolons, rarely; parentheses, never.
+
+<b>### Tics &amp; fingerprints</b>
+One exclamation point per email at most, usually none. Signs off with a first name and no “Best”. Hedges with “I think” about once per paragraph, then commits.
+
+<b>### What this author would never do</b>
+Open with “Hey everyone!”. A bullet list in a chat message. A closing paragraph that restates the email.</div>
+    <p class="mono" style="margin-top: 18px">The method, samples distilled once into a profile that rides along on every run, comes from <a href="https://dickens.ai/?ref=fogar">Dickens</a>, the voice engine by the same author. Fogar carries a light version of it.</p>
+  </section>
+
+  <section id="registers">
+    <div class="section-head">
+      <span class="eyebrow">Registers</span>
+      <h2 class="measure">One voice. Several registers. Rules that are followed to the letter.</h2>
+      <p class="lead measure">You do not write emails the way you write chat messages, and neither is a different person. A register is the same voice at a different formality and length, with rules of its own. Three come built in. Add the rest: a LinkedIn post, release notes, texts to your mother.</p>
+    </div>
+    <div class="kinds">
+      <div class="kind"><h3>Email</h3><p>Professional but warm. Concise; a few short paragraphs, no padding. Opens with the point, not throat-clearing; signs off naturally.</p><span class="mono">built in</span></div>
+      <div class="kind"><h3>Chat</h3><p>Casual, conversational. Terse; one to a few lines, often a single thought. Lowercase is fine, fragments are fine, no sign-off, no bullet lists.</p><span class="mono">built in</span></div>
+      <div class="kind"><h3>Essay</h3><p>Considered, literary. Flowing long-form; paragraphs breathe and arguments develop. Vary the rhythm hard; specific detail over generality.</p><span class="mono">built in</span></div>
+      <div class="kind own"><h3>Yours</h3><p>A name, a formality, a length, and rules. “No em dashes” is more than a hint: after the model answers, any em dash it slipped in is turned into a comma, so the rule holds even when the model forgets.</p><span class="mono">add as many as you like</span></div>
     </div>
   </section>
 
-  <section id="what">
+  <section id="leaves">
     <div class="section-head">
       <span class="eyebrow">What leaves</span>
-      <h2 class="measure">Your bookmarks are read here. Here is the whole list of where they go.</h2>
+      <h2 class="measure">Your writing is the most personal data you have. Here is where it goes.</h2>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>You do</th><th>What is read</th><th>What leaves your browser</th></tr></thead>
+        <thead><tr><th>Step</th><th>On this device</th><th>Cloud, your key</th></tr></thead>
         <tbody>
-          <tr><td class="k">Type in the box</td><td>Your bookmark tree, flattened once into an index with folder paths, rebuilt when a bookmark changes.</td><td><span class="zero">Nothing</span></td></tr>
-          <tr><td class="k">Ask, on this device</td><td>Titles, sites, and folder names, read by the model inside the browser, twenty-five at a time.</td><td><span class="zero">Nothing</span></td></tr>
-          <tr><td class="k">Ask, in Cloud mode</td><td>The same list, in the same batches.<small>The model is at the endpoint you typed, so that is where the list goes.</small></td><td>Bookmark titles and sites, to your provider</td></tr>
-          <tr><td class="k">Click ×</td><td>The one bookmark you pointed at, removed after you confirm.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Adding samples</td><td><span class="zero">0 requests</span><small>Stored in Chrome’s extension storage on this machine. They ride along in your backup file and nowhere else.</small></td><td><span class="zero">0 requests</span><small>Same. Adding a sample sends nothing.</small></td></tr>
+          <tr><td class="k">Distilling</td><td><span class="zero">0 requests</span><small>The samples go to the model running in your browser. Once.</small></td><td>The samples, once<small>To the endpoint you picked in the widget’s header, with your key. Nothing passes through Fogar.</small></td></tr>
+          <tr><td class="k">Each run</td><td><span class="zero">0 requests</span><small>Profile, register rules, and your text meet inside the browser.</small></td><td>The profile, the rules, and your text<small>To that same endpoint. The network ledger in Settings counts it.</small></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="mono" style="margin-top: 18px">Fogar asks for the bookmarks permission to read the tree and, on request, remove one item. It never adds, moves, or renames a bookmark, except when you promote a <a href="/tabs">saved session</a> into a folder.</p>
-  </section>
-
-  <section id="also">
-    <div class="section-head">
-      <span class="eyebrow">Also under the box</span>
-      <h2 class="measure">One box. The right thing happens.</h2>
-    </div>
-    <div class="features">
-      <div class="feature"><span class="eyebrow">Open tabs</span><div><h3>Switch instead of searching</h3><p>With the Sessions widget on the page, the same keystrokes find tabs open in your other windows. One click brings the window forward and selects the tab.</p></div></div>
-      <div class="feature"><span class="eyebrow">Saved tabs</span><div><h3>Closed last week, found today</h3><p>Windows you saved and closed appear too, one click from reopening. <a href="/tabs">That is the Sessions widget.</a></p></div></div>
-      <div class="feature"><span class="eyebrow">Everything else</span><div><h3>Routing, not guessing</h3><p>A URL opens. A question mark searches the web. “remind me” sets a reminder, “todo:” adds a todo, arithmetic is computed. Anything else goes to the model.</p></div></div>
-      <div class="feature"><span class="eyebrow">Keyboard</span><div><h3>No mouse needed</h3><p>Type, arrow down, Enter. Cmd or Ctrl and Enter always searches the web instead, whatever the box would otherwise do.</p></div></div>
-    </div>
+    <p class="mono" style="margin-top: 18px">One widget is one voice. Add a second for a client or a brand; they never mix.</p>
   </section>
 
   <section id="honest">
     <div class="honest">
       <div>
         <span class="eyebrow">Straight talk</span>
-        <h2 style="margin-top: 14px">Chrome keeps the bookmarks. Fogar finds them.</h2>
+        <h2 style="margin-top: 14px">A portrait, not a costume.</h2>
         <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
       </div>
       <div>
         <ul>
-          <li>Fogar is not a bookmark manager. Add, move, and organize in Chrome as you always have; Fogar reads the result.</li>
-          <li>The finder is only as good as your titles. A bookmark called “Untitled” with a cryptic address gives the model nothing to go on.</li>
-          <li>Asking takes seconds, not milliseconds: a small model reads twenty-five titles at a time. Progress is shown and you can stop it.</li>
-          <li>In Cloud mode the finder sends bookmark titles and sites to your endpoint, because that is where the model is. On this device, nothing leaves.</li>
+          <li>The profile is only as good as the samples. Five things you actually sent beat twenty you polished for the occasion.</li>
+          <li>On this device, the 4B tier distills a usable profile and rewrites in it well; the smaller tiers produce vaguer profiles. The model is a menu in the widget’s header, not a commitment: distill with a cloud model you trust and run locally after, or the other way round.</li>
+          <li>It aims for you on an ordinary day, at your natural intensity, with your tics at their real rate. It will not turn one exclamation point into five.</li>
+          <li>It is not a humanizer and it does not try to beat AI detectors. It writes in your voice because it has your voice; that is the whole method.</li>
+          <li>The small models read about a thousand words at a time. Distilling uses the first samples that fit; a run takes about two pages of text. Cloud models take far more.</li>
         </ul>
       </div>
     </div>
@@ -427,12 +428,13 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
       <h2>Fair questions, short answers.</h2>
     </div>
     <div class="faq">
-      <details><summary>Does it replace Chrome’s bookmark manager?</summary><p>No. Chrome keeps the bookmarks and you organize them there as before. Fogar reads the tree, searches it as you type, and can remove the one bookmark you point at. The only thing it ever adds is a folder when you promote a saved session.</p></details>
-      <details><summary>Can it delete a bookmark by accident?</summary><p>Only the one you click × on, and only after you confirm. The finder never removes anything; it lists.</p></details>
-      <details><summary>How does it handle typos?</summary><p>Titles forgive small ones: the letters of a word four characters or longer only have to appear in order, not next to each other, so “fgar” still finds Fogar. Sites, folders, and addresses need an exact fragment.</p></details>
-      <details><summary>How many bookmarks can it search?</summary><p>The index is built once from Chrome’s bookmark tree and rebuilt when bookmarks change, so thousands are fine and typing stays instant. The finder has the model read everything up to five hundred bookmarks; above that it reads only the keyword candidates, so it stays quick on big collections.</p></details>
-      <details><summary>Does the finder work in Cloud mode?</summary><p>Yes, with your own key. Be aware of what that means: the titles and sites of your bookmarks are sent to the endpoint you typed, in batches, because that is where the model reading them lives. On this device, nothing is sent.</p></details>
-      <details><summary>Why does the list vanish when I type a long question?</summary><p>Six words and up is a question rather than a lookup, so the bookmark list steps aside and the question goes to the model. If you want the model to look through your bookmarks, say so: “find bookmarks about …” or “which bookmarks are job postings” routes to the finder.</p></details>
+      <details><summary>How many samples does it need?</summary><p>Three to five pieces of your real writing, across a couple of registers, produce a profile worth using. More helps, up to about a dozen. Paste what you actually sent, not what you wish you had sent; the profile is a portrait of you on an ordinary day.</p></details>
+      <details><summary>Where do my samples go?</summary><p>Into Chrome’s extension storage on this machine, and into the backup file if you download one. On this device they are read by the model running in your browser and never leave it. If you pick a cloud model in the widget’s header, the samples go to that endpoint once, when you press Distill, and the profile and your text go there on each run. Nothing passes through Fogar.</p></details>
+      <details><summary>Can I read or change the profile?</summary><p>Yes. It is plain text under six headings. Open the Voice tab, press Edit, fix what the model got wrong or add a rule of your own, and save. Every run uses the profile as you left it. Distilling again writes a new version.</p></details>
+      <details><summary>What is a register?</summary><p>The same voice at a different formality and length, with rules of its own. Email, Chat, and Essay come built in, and you can add any number more. Rules are followed exactly, and “no em dashes” is enforced after the model answers as well, so the rule holds even when the model forgets.</p></details>
+      <details><summary>Can I keep more than one voice?</summary><p>Yes. One Writing widget is one voice. Add a second widget from the Add widget menu, name it after the client or the brand, and feed it their samples. The two never mix.</p></details>
+      <details><summary>Is this a humanizer?</summary><p>No. It does not try to defeat AI detectors, and it is not for passing off someone else’s text as your own. It rewrites and drafts in your voice, from your samples, and the result reads as you because it is built from you.</p></details>
+      <details><summary>Does it work offline?</summary><p>Yes, in local mode, once the model is cached. Samples, profile, and registers are on your disk; turn off Wi-Fi and it keeps writing.</p></details>
     </div>
   </section>
 
@@ -459,7 +461,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
     </div>
   </section>
   <footer>
-    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks" aria-current="page">Bookmarks</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/today">Your day</a></span>
+    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/write">Writing</a> · <a href="/voice" aria-current="page">Your voice</a> · <a href="/today">Your day</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>
@@ -468,61 +470,40 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 <script>
   (function () {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    var ask = document.getElementById('ask'), hits = document.getElementById('hits'), status = document.getElementById('status');
-    var finder = document.getElementById('finder'), replay = document.getElementById('replay');
-    var typingHits = hits.innerHTML;
-    var cooking = [
-      ['The Food Lab’s guide to pan-seared steak', 'seriouseats.com'],
-      ['Weeknight risotto, no stirring', 'cooking.nytimes.com'],
-      ['Ottolenghi Test Kitchen', 'ottolenghi.co.uk'],
-      ['How to season a carbon steel pan', 'youtube.com'],
-      ['Salt Fat Acid Heat', 'saltfatacidheat.com'],
+    var reg = document.getElementById('wr-reg'), ops = document.getElementById('wr-ops'), input = document.getElementById('wr-in'), instr = document.getElementById('wr-instr');
+    var meta = document.getElementById('wr-meta'), body = document.getElementById('wr-body'), status = document.getElementById('wr-status'), replay = document.getElementById('replay');
+    var OPS = ['Rewrite', 'Tighten', 'Warmer', 'Draft'];
+    // Four registers, four operations, the way the widget really lays them out. The fourth register is one the author added.
+    var demos = [
+      { reg: 'Email', op: 'Rewrite', input: 'can\'t make the 3pm today, thursday instead? sorry for the hassle', instr: '', out: 'I need to move our 3 pm today. Would Thursday, same time, work for you? Sorry for the shuffle.' },
+      { reg: 'Chat', op: 'Tighten', input: 'hey so i was thinking maybe we could possibly push the launch to monday if that works for everyone, let me know what you think', instr: '', out: 'thinking we push launch to monday. objections?' },
+      { reg: 'LinkedIn', op: 'Warmer', input: 'We shipped v2. Thanks to the team.', instr: 'no em dashes', out: 'v2 is out. It took the whole team a long spring to get here, and I am grateful for every late review and every “are you sure?” that made it better.' },
+      { reg: 'Essay', op: 'Draft', input: '', instr: 'a short paragraph on why I keep my own writing samples', out: 'I keep the emails I actually sent, not the ones I meant to. The real ones have the hesitations, the one joke that landed, the sentence I should have cut. That is the part no model can invent for me, and the part that makes the next draft sound like it came from the same person.' },
     ];
-    var act = 0, timer = 0, token = 0;
-    function clear() { clearTimeout(timer); token++; }
+    var i = 0, timer = 0, token = 0;
     function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
-    function typeInto(q, my, onChar, done) {
-      var i = 0;
-      (function tick() {
+    function paint(d) {
+      reg.textContent = d.reg + ' ▾';
+      ops.innerHTML = OPS.map(function (o) { return '<span' + (o === d.op ? ' class="on"' : '') + '>' + o + '</span>'; }).join('');
+      if (d.input) { input.textContent = d.input; input.classList.remove('ph'); } else { input.textContent = 'Paste what you are replying to, or leave this empty and describe the message below.'; input.classList.add('ph'); }
+      if (d.instr) { instr.textContent = d.instr; instr.classList.remove('ph'); } else { instr.textContent = d.op === 'Draft' ? 'What should it say?' : 'Anything else? e.g. “keep the second paragraph as it is”'; instr.classList.add('ph'); }
+      meta.textContent = 'In your voice · ' + d.reg + ' · ' + d.op.toLowerCase() + ' · voice v3 · on this device';
+      status.textContent = '';
+    }
+    function run(idx) {
+      clearTimeout(timer); token++; var my = token;
+      var d = demos[idx % demos.length]; paint(d);
+      if (reduce) { body.textContent = d.out; return; }
+      var words = d.out.split(' '), w = 0;
+      body.innerHTML = '<span class="caret"></span>'; status.textContent = 'Writing…';
+      timer = setTimeout(function stream() {
         if (my !== token) return;
-        i++; ask.innerHTML = esc(q.slice(0, i)) + '<span class="caret"></span>'; onChar(i);
-        if (i < q.length) timer = setTimeout(tick, 28 + Math.random() * 40); else { ask.textContent = q; timer = setTimeout(done, 350); }
-      })();
+        w++; body.innerHTML = esc(words.slice(0, w).join(' ')) + (w < words.length ? '<span class="caret"></span>' : '');
+        if (w < words.length) timer = setTimeout(stream, 55 + Math.random() * 60);
+        else status.textContent = ((words.length * 1.3) | 0) + ' tokens · 41.8 tok/s';
+      }, 700);
     }
-    // Act one: a few letters, and the list is there before the word is finished.
-    function typing() {
-      clear(); var my = token;
-      hits.hidden = true; finder.hidden = true; status.textContent = '';
-      var q = 'fig';
-      if (reduce) { ask.textContent = q; hits.innerHTML = typingHits; hits.hidden = false; return; }
-      typeInto(q, my, function (i) { if (i >= 2) { hits.innerHTML = typingHits; hits.hidden = false; } }, function () {});
-    }
-    // Act two: a question about the bookmarks, read by the model on the device.
-    function asking() {
-      clear(); var my = token;
-      hits.hidden = true; finder.hidden = true; status.textContent = '';
-      var q = 'find bookmarks about cooking';
-      var list = '<ul>' + cooking.map(function (c) { return '<li><a class="hit" href="#top"><span class="fav"></span><span class="t">' + c[0] + '</span><span class="h">' + c[1] + ' <span class="x">×</span></span></a></li>'; }).join('') + '</ul>';
-      var result = '<div class="lead-line">5 bookmarks about “cooking”.</div><div class="looked">Looked for: cooking, cook, recipe, kitchen, chef, bake, seriouseats, allrecipes, ottolenghi, epicurious</div>' + list;
-      var finish = function () { finder.innerHTML = result; status.textContent = '212 bookmarks · 3 matched by words, 2 picked by the model · 6240 ms'; };
-      if (reduce) { ask.textContent = q; finder.hidden = false; finish(); return; }
-      typeInto(q, my, function () {}, function () {
-        if (my !== token) return;
-        finder.hidden = false; status.textContent = 'Reading your bookmarks…';
-        finder.innerHTML = '<div class="lead-line">Working out what “cooking” bookmarks look like…</div>';
-        var read = 0;
-        timer = setTimeout(function step() {
-          if (my !== token) return;
-          read = Math.min(212, read + 25);
-          status.textContent = 'Reading bookmarks… ' + read + ' of 212';
-          finder.innerHTML = '<div class="lead-line">Reading 212 bookmarks for “cooking”…</div>';
-          if (read < 212) timer = setTimeout(step, 320); else timer = setTimeout(finish, 300);
-        }, 900);
-      });
-    }
-    var acts = [typing, asking];
-    replay.addEventListener('click', function () { act++; acts[act % 2](); replay.textContent = act % 2 ? 'Back to typing' : 'Try the other way'; });
-    if (!reduce) typing();
+    replay.addEventListener('click', function () { i++; run(i); });
   })();
 </script>
 </body>

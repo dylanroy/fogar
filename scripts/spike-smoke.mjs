@@ -7,6 +7,11 @@
 //   6. todos persist across reload
 //   7. reminders parse, confirm, save, and create a chrome.alarms entry
 //   8. bookmark search as you type
+//   9. widgets: inbox (Gmail feed and API), feed (RSS, Atom, a site that advertises its feed, a search), Jira,
+//      LLM chat (OpenAI-compatible and Anthropic profiles, history, persistence), post-its (drag, pull off into a
+//      widget), canvas (draw, text, undo, the model draws, PNG), notebook (pages, a photo read by a model), full screen
+//  10. writing: samples typed and dropped, a voice distilled by the model, a register with rules, a run whose prompt
+//      carries profile and rules and whose output has the banned em dash removed, everything persisting
 // Usage: npm run test:spike   (HEADED=1 to watch, GPU=1 for WebGPU, VERBOSE=1 for all console lines)
 // The suite builds its own test variant (WXT_E2E=1 → .output-e2e) with a host permission for the mock server, so
 // the right-click page-context path can run for real. The store build in .output is untouched.
@@ -16,6 +21,38 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { startMockServer } from './mock-openai.mjs';
+import { strToU8, zipSync } from 'fflate';
+
+// A small PDF with real text objects, one page per entry, so pdf.js has something to extract.
+function makePdf(pages) {
+  const esc = (s) => s.replace(/[()\\]/g, '\\$&');
+  const objs = [];
+  const add = (s) => { objs.push(s); return objs.length; }; // returns the object number
+  const catalog = add(''); const pagesObj = add(''); const font = add('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>');
+  const kids = [];
+  for (const lines of pages) {
+    const content = `BT /F1 12 Tf 50 740 Td 16 TL ${lines.map((l) => `(${esc(l)}) Tj T*`).join(' ')} ET`;
+    const stream = add(`<< /Length ${Buffer.byteLength(content)} >>\nstream\n${content}\nendstream`);
+    kids.push(add(`<< /Type /Page /Parent ${pagesObj} 0 R /MediaBox [0 0 612 792] /Contents ${stream} 0 R /Resources << /Font << /F1 ${font} 0 R >> >> >>`));
+  }
+  objs[catalog - 1] = `<< /Type /Catalog /Pages ${pagesObj} 0 R >>`;
+  objs[pagesObj - 1] = `<< /Type /Pages /Kids [${kids.map((k) => `${k} 0 R`).join(' ')}] /Count ${kids.length} >>`;
+  let pdf = '%PDF-1.4\n'; const offsets = [];
+  objs.forEach((o, i) => { offsets.push(Buffer.byteLength(pdf)); pdf += `${i + 1} 0 obj\n${o}\nendobj\n`; });
+  const xref = Buffer.byteLength(pdf);
+  pdf += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}trailer\n<< /Size ${objs.length + 1} /Root ${catalog} 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
+  return Buffer.from(pdf, 'latin1');
+}
+// The smallest .docx Word would recognise: a zip with the content types, the package relationship, and the document part.
+function makeDocx(paragraphs) {
+  const xml = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
+  const body = paragraphs.map((p) => `<w:p><w:r><w:t xml:space="preserve">${xml(p)}</w:t></w:r></w:p>`).join('');
+  return Buffer.from(zipSync({
+    '[Content_Types].xml': strToU8('<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>'),
+    '_rels/.rels': strToU8('<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'),
+    'word/document.xml': strToU8(`<?xml version="1.0" encoding="UTF-8"?><w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>${body}</w:body></w:document>`),
+  }));
+}
 
 if (process.env.SKIP_BUILD !== '1') {
   const build = spawnSync('npx', ['wxt', 'build'], { stdio: 'inherit', env: { ...process.env, WXT_E2E: '1' } });
@@ -141,10 +178,23 @@ await page.goto(`${base}?smoke=1&cloud=${mock.port}&freeground=${mock.port}`);
 try { await waitDone(30000); } catch { /* fall through */ }
 const freeUser = mock.server.lastRequest?.messages?.find((m) => m.role === 'user')?.content ?? '';
 const freeSources = await page.evaluate(() => [...document.querySelectorAll('#sources li')].map((li) => li.textContent ?? ''));
-check('keyless grounding: DuckDuckGo + Wikipedia, no key, deduped, attributed',
+check('keyless grounding: DuckDuckGo + Wikipedia, no key, deduped, attributed, body-text noise and stubs dropped',
   (await status()) === 'done' && freeUser.includes('MOCK DDG ABSTRACT') && freeUser.includes('MOCK WIKI EXTRACT') && !freeUser.includes('MOCK WIKI SECOND') && !freeUser.includes('Category')
+    && !freeUser.includes('MOCK WIKI NOISE') && !freeUser.includes('may refer to')
     && freeSources.length === 4 && /DuckDuckGo · Wikipedia/.test(freeSources[0]) && /Wikipedia$/.test(freeSources[1]) && mock.server.lastFree?.ddgQ === 'the US president' && mock.server.lastFree?.wikiQ === 'the US president',
   `${freeSources.length} sources; q="${mock.server.lastFree?.wikiQ}"; first="${freeSources[0]?.slice(0, 50)}"`);
+
+// 3f2. results the answer never cites stay off the card; the stats line and the Dig deeper menu say they were fetched
+await page.goto(`${base}?e2e=1&cloud=${mock.port}&ground=${mock.port}`);
+await page.fill('#prompt', 'markdown test'); // the mock answers this one without a citation
+await page.press('#prompt', 'Enter');
+await waitDone(30000);
+const uncited = await page.evaluate(() => ({ hidden: document.getElementById('sources').hidden, items: document.querySelectorAll('#sources li').length, stats: document.getElementById('stats').textContent ?? '' }));
+await page.click('#answer-card .dig-btn');
+const uncitedNote = await page.evaluate(() => document.querySelector('#answer-card .dig-menu .menu-item:disabled .muted')?.textContent ?? '');
+check('grounding: results the answer never cites stay off the card, and the stats line says so',
+  uncited.hidden && uncited.items === 0 && /2 web results, none cited/.test(uncited.stats) && mock.server.lastSearch?.q === 'markdown test' && /already fetched/.test(uncitedNote),
+  `stats="${uncited.stats}"; note="${uncitedNote}"`);
 
 // 3g. defaults on a fresh install: free provider, toggle visible and unticked, no key field.
 // Earlier smoke runs persisted their own grounding overrides into this profile, so start from no settings at all.
@@ -304,7 +354,7 @@ check('bookmark question routes to the finder and returns links', finderLabel ==
 // 10. widgets: add Links from the menu, add a site, persists
 await page.goto(`${base}?e2e=1`);
 await page.click('#widget-add');
-await page.click('#widget-menu .menu-item:has-text("Links")');
+await page.click('#widget-menu .menu-item[data-widget="links"]');
 await page.waitForSelector('.widget[data-type="links"] .add-link input');
 await page.fill('.widget[data-type="links"] .add-link input:first-of-type', 'example.com');
 await page.press('.widget[data-type="links"] .add-link input:first-of-type', 'Enter');
@@ -316,7 +366,7 @@ check('links widget: add from menu, add a site, persists', tileText === 'example
 
 // 10b. notes widget saves as you type
 await page.click('#widget-add');
-await page.click('#widget-menu .menu-item:has-text("Notes")');
+await page.click('#widget-menu .menu-item[data-widget="notes"]');
 await page.waitForSelector('.widget[data-type="notes"] textarea');
 await page.fill('.widget[data-type="notes"] textarea', 'ship it');
 await page.waitForTimeout(700);
@@ -397,7 +447,8 @@ const clickRes = await page.evaluate(async () => {
   return chrome.runtime.sendMessage({ type: 'test.contextClick', tabId: target?.id, selectionText: '"The Micro Startups Guy"' });
 });
 const newTab = await newTabPromise;
-await newTab.waitForFunction(() => document.body.dataset.status === 'done', null, { timeout: 30000 });
+// The new tab can be caught before it has a body; a throwing predicate would end the whole run.
+await newTab.waitForFunction(() => document.body?.dataset.status === 'done', null, { timeout: 30000 });
 const ctxQ = await newTab.evaluate(() => document.querySelector('#answer-card .answer-q')?.childNodes[0]?.textContent ?? '');
 const ctxChip = await newTab.evaluate(() => document.querySelector('#answer-card .ctx-chip')?.textContent ?? '');
 const ctxSys = (mock.server.lastRequest?.messages ?? []).find((m) => m.role === 'system')?.content ?? '';
@@ -414,7 +465,7 @@ const winBefore = await page.evaluate(() => chrome.windows.getAll().then((w) => 
 const newWinId = await page.evaluate(async (port) => { const w = await chrome.windows.create({ url: [`http://127.0.0.1:${port}/page.html`, `http://127.0.0.1:${port}/invoice.html`, `http://127.0.0.1:${port}/invoice.html`], focused: false }); return w.id; }, mock.port);
 await page.waitForFunction(async () => { const titles = (await chrome.tabs.query({ url: 'http://127.0.0.1/*' })).map((t) => t.title ?? ''); return titles.some((t) => t.startsWith('Acme Careers')) && titles.filter((t) => t.startsWith('Quarterly Invoice')).length === 2; }, null, { timeout: 20000 });
 await page.click('#widget-add');
-await page.click('#widget-menu .menu-item:has-text("Sessions")');
+await page.click('#widget-menu .menu-item[data-widget="sessions"]');
 await page.waitForSelector('.widget[data-type="sessions"] .sess-win:has-text("Window")', { timeout: 10000 });
 const openText = await page.evaluate(() => document.querySelector('.widget[data-type="sessions"] .sess-head span')?.textContent ?? '');
 // 12pre. the widget spans the row, nothing overflows the card, and clicking a window row brings that window to the front
@@ -588,6 +639,421 @@ const offer = await text('recipe-panel');
 await page.click('#recipe-panel .primary');
 await page.waitForFunction(() => [...document.querySelectorAll('#recipe-chips .chip')].some((c) => c.textContent?.includes('Shared Test')));
 check('shared recipe link offers and adds the recipe', offer.includes('Add “') && offer.includes('Shared Test'));
+
+// 17. the first screen: a quoted example as the placeholder, four rotating chips plus help, controls inside the box
+await page.goto(`${base}?e2e=1&cloud=${mock.port}`);
+await page.waitForSelector('#examples .help-chip');
+const firstScreen = await page.evaluate(() => ({ placeholder: document.getElementById('prompt').placeholder, chips: [...document.querySelectorAll('#examples .example')].map((b) => b.textContent), sendInside: !!document.querySelector('#askframe #ask-btn'), attachInside: !!document.querySelector('#askframe #attach-btn'), askBelow: !!document.querySelector('.ask-row #ask-btn') }));
+check('first screen: quoted example placeholder, four chips plus help, send and attach inside the box', /^e\.g\. "/.test(firstScreen.placeholder) && firstScreen.chips.length === 5 && /What can I type here/.test(firstScreen.chips[4]) && firstScreen.sendInside && firstScreen.attachInside && !firstScreen.askBelow, JSON.stringify(firstScreen).slice(0, 200));
+await page.click('#examples .help-chip');
+await page.waitForSelector('#help-card:not([hidden])');
+const helpText = await text('help-card');
+await page.click('#help-card .help-head button');
+const helpHidden = await page.evaluate(() => document.getElementById('help-card').hidden);
+check('help card lists every route as a static card and closes', /remind me/.test(helpText) && /todo:/.test(helpText) && /dropped file/.test(helpText) && /Enter searches/.test(helpText) && helpHidden, helpText.slice(0, 90));
+
+// 18. attachments: a text file goes in front of the model, stays for follow-ups, and leaves with the conversation
+await page.setInputFiles('#attach-input', { name: 'notes.txt', mimeType: 'text/plain', buffer: Buffer.from('Meeting notes. The irrigation invoice from Hollis & Vane is 4,850 dollars, due November 14.') });
+await page.waitForSelector('#attachments .attachment:not(.busy)');
+const chip1 = await page.evaluate(() => document.querySelector('#attachments .attachment')?.textContent ?? '');
+const filePlaceholder = await page.evaluate(() => document.getElementById('prompt').placeholder);
+await page.fill('#prompt', 'How much is the invoice?');
+await page.press('#prompt', 'Enter');
+await waitDone(30000);
+const attSys = (mock.server.lastRequest?.messages ?? []).find((m) => m.role === 'system')?.content ?? '';
+const attChip = await page.evaluate(() => document.querySelector('#answer-card .ctx-chip')?.textContent ?? '');
+const stillAttached = await page.evaluate(() => document.querySelectorAll('#attachments .attachment').length);
+check('a text file goes in front of the model, with a chip on the box and on the card', chip1.includes('notes.txt') && /\d+ words/.test(chip1) && /Ask about the file/.test(filePlaceholder) && attSys.includes('File "notes.txt"') && attSys.includes('4,850 dollars') && attChip === 'from notes.txt' && stillAttached === 1, `chip="${chip1}" card="${attChip}"`);
+await page.fill('#prompt', 'And when is it due?');
+await page.press('#prompt', 'Enter');
+await page.waitForFunction(() => document.querySelectorAll('#thread .answer-card').length === 2 && document.body.dataset.status === 'done', null, { timeout: 30000 });
+const followSys = (mock.server.lastRequest?.messages ?? []).find((m) => m.role === 'system')?.content ?? '';
+await page.click('#thread-clear');
+const cleared = await page.evaluate(() => ({ chips: document.querySelectorAll('#attachments .attachment').length, examples: !document.getElementById('examples').hidden }));
+check('the file stays for follow-ups and leaves with "New conversation"', followSys.includes('4,850 dollars') && cleared.chips === 0 && cleared.examples, `follow-up carried file=${followSys.includes('4,850')}; after clear ${JSON.stringify(cleared)}`);
+
+// 18b. PDF pages and a Word file are read in the browser; the prompt says how many pages there were
+await page.setInputFiles('#attach-input', [
+  { name: 'lease.pdf', mimeType: 'application/pdf', buffer: makePdf([['Lease agreement for 12 Elm Street.', 'Monthly rent: 1,950 dollars, due on the first.'], ['Deposit: 3,900 dollars, returned within 21 days.']]) },
+  { name: 'memo.docx', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', buffer: makeDocx(['Memo to all staff.', 'The offsite moves to Friday the 17th; lunch is provided.']) },
+]);
+await page.waitForFunction(() => document.querySelectorAll('#attachments .attachment:not(.busy)').length === 2 && !document.querySelector('#attachments .busy'), null, { timeout: 30000 });
+const chips2 = await page.evaluate(() => [...document.querySelectorAll('#attachments .attachment')].map((c) => c.textContent));
+await page.fill('#prompt', 'What is the rent, and when is the offsite?');
+await page.press('#prompt', 'Enter');
+await waitDone(30000);
+const sys2 = (mock.server.lastRequest?.messages ?? []).find((m) => m.role === 'system')?.content ?? '';
+check('a PDF and a Word file are read in the browser, pages counted', chips2.some((c) => /lease\.pdf.*2 pages/.test(c)) && chips2.some((c) => /memo\.docx.*\d+ words/.test(c)) && sys2.includes('1,950 dollars') && sys2.includes('3,900 dollars') && sys2.includes('Friday the 17th') && /2 pages/.test(sys2), chips2.join(' | '));
+await page.click('#attachments .attachment .x');
+const afterRemove = await page.evaluate(() => document.querySelectorAll('#attachments .attachment').length);
+check('a chip\'s × removes that file', afterRemove === 1, `${afterRemove} left`);
+
+// 18c. a long file is cut to the budget and the chip says so; an image is declined with a reason
+await page.setInputFiles('#attach-input', { name: 'long.txt', mimeType: 'text/plain', buffer: Buffer.from(Array.from({ length: 9000 }, (_, i) => `w${i}`).join(' ')) });
+await page.waitForFunction(() => [...document.querySelectorAll('#attachments .attachment:not(.busy)')].some((c) => /long\.txt/.test(c.textContent)), null, { timeout: 10000 });
+const longChip = await page.evaluate(() => [...document.querySelectorAll('#attachments .attachment:not(.busy)')].map((c) => c.textContent).find((t) => /long\.txt/.test(t)) ?? '');
+await page.setInputFiles('#attach-input', { name: 'photo.png', mimeType: 'image/png', buffer: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]) });
+await page.waitForFunction(() => /reads text, not images/.test(document.getElementById('toast')?.textContent ?? ''), null, { timeout: 5000 }).catch(() => {});
+const imgToast = await text('toast');
+check('a long file is cut to what fits and says so; an image is declined with a reason', /read the first [\d,]+ of 9,000 words/.test(longChip) && /reads text, not images/.test(imgToast), `${longChip} | ${imgToast.slice(0, 50)}`);
+
+// 18d. a recipe field fills itself from a dropped file
+await page.goto(`${base}?e2e=1&cloud=${mock.port}`);
+await page.click('#recipe-chips .chip:has-text("Summarize")');
+await page.waitForSelector('#recipe-panel textarea');
+const dt = await page.evaluateHandle(() => { const d = new DataTransfer(); d.items.add(new File(['Dear team, the offsite moves to Friday. Lunch is provided.'], 'memo.txt', { type: 'text/plain' })); return d; });
+await page.dispatchEvent('#recipe-panel textarea', 'drop', { dataTransfer: dt });
+await page.waitForFunction(() => /offsite moves to Friday/.test(document.querySelector('#recipe-panel textarea')?.value ?? ''), null, { timeout: 10000 }).catch(() => {});
+const recipeField = await page.evaluate(() => ({ value: document.querySelector('#recipe-panel textarea')?.value ?? '', placeholder: document.querySelector('#recipe-panel textarea')?.placeholder ?? '' }));
+check('a recipe field fills itself from a dropped file', /offsite moves to Friday/.test(recipeField.value) && /drop a file/i.test(recipeField.placeholder), recipeField.placeholder.slice(0, 80));
+
+// 18e. a question about a file skips the web search even with the toggle ticked; Dig deeper adds results on request,
+// and then the prompt says to answer from the file first, with the conversation as it was built (here: empty)
+await page.goto(`${base}?e2e=1&cloud=${mock.port}&ground=${mock.port}`);
+await page.waitForSelector('#ground-toggle:not([hidden])');
+const toggleFree = await page.evaluate(() => ({ checked: document.getElementById('ground').checked, disabled: document.getElementById('ground').disabled }));
+await page.setInputFiles('#attach-input', { name: 'brief.txt', mimeType: 'text/plain', buffer: Buffer.from('Quarterly brief. Revenue was 24.18 billion dollars; three hundred products were cut.') });
+await page.waitForSelector('#attachments .attachment:not(.busy)');
+const toggleWithFile = await page.evaluate(() => ({ disabled: document.getElementById('ground').disabled, title: document.getElementById('ground-toggle').title }));
+mock.server.lastSearch = null;
+await page.fill('#prompt', 'Give me some bullets from the document');
+await page.press('#prompt', 'Enter');
+await waitDone(30000);
+const fileAsk = { searched: mock.server.lastSearch !== null, sources: await page.evaluate(() => document.querySelectorAll('#sources li').length), sys: (mock.server.lastRequest?.messages ?? []).find((m) => m.role === 'system')?.content ?? '', stats: await text('stats') };
+await page.click('#answer-card .dig-btn');
+const fileDigNote = await page.evaluate(() => [...document.querySelectorAll('#answer-card .dig-menu .menu-item')].find((b) => b.querySelector('strong')?.textContent === 'Search the web and answer again')?.querySelector('.muted')?.textContent ?? '');
+await page.click('#answer-card .dig-menu .menu-item:has-text("Search the web and answer again")');
+await page.waitForFunction(() => document.querySelectorAll('#thread .answer-card').length === 2 && document.body.dataset.status === 'done', null, { timeout: 30000 });
+const withWeb = { q: mock.server.lastSearch?.q, msgs: mock.server.lastRequest?.messages ?? [], sources: await page.evaluate(() => document.querySelectorAll('#sources li').length) };
+const withWebSys = withWeb.msgs.find((m) => m.role === 'system')?.content ?? '';
+const withWebUser = withWeb.msgs[withWeb.msgs.length - 1]?.content ?? '';
+await page.click('#attachments .attachment .x');
+const toggleFreed = await page.evaluate(() => !document.getElementById('ground').disabled);
+check('a file question skips the web even with the toggle ticked; Dig deeper adds results to the file, cited',
+  toggleFree.checked && !toggleFree.disabled && toggleWithFile.disabled && /file is attached/.test(toggleWithFile.title)
+    && !fileAsk.searched && fileAsk.sources === 0 && fileAsk.sys.includes('File "brief.txt"') && !/web/.test(fileAsk.stats) && /file says/.test(fileDigNote)
+    && withWeb.q === 'Give me some bullets from the document' && withWebSys.includes('File "brief.txt"') && /Answer from the file or page given above first/.test(withWebSys)
+    && withWebUser.includes('MOCK SNIPPET ALPHA') && withWeb.sources === 2 && withWeb.msgs.length === 2 && toggleFreed,
+  `searched while attached=${fileAsk.searched}; dig note="${fileDigNote}"; re-ask q="${withWeb.q}" msgs=${withWeb.msgs.length} sources=${withWeb.sources}; toggle freed=${toggleFreed}`);
+
+
+// 19. inbox, feed, and Jira widgets, seeded through storage the way the agenda test does. The same mock server
+// stands in for Gmail, the feeds, and Jira; the e2e build holds a host permission for it.
+await page.goto(`${base}?e2e=1&cloud=${mock.port}`);
+await page.waitForSelector('#recipe-chips .chip');
+await page.evaluate(async (port) => {
+  const m = `http://127.0.0.1:${port}`;
+  const layout = { version: 1, focus: false, ask: 'top', arrangement: 'stack', columns: 'auto', showRecipes: true, widgets: [
+    { id: 'email-feed-test', type: 'email', config: { name: 'Inbox', provider: 'gmail-feed', count: 8, filter: 'Receipts', match: '', account: 0, endpoint: m } },
+    { id: 'email-api-test', type: 'email', config: { name: 'API mail', provider: 'gmail-api', count: 8, filter: 'from:stripe.com', match: '', account: 0, clientId: 'test-client', endpoint: m } },
+    { id: 'feed-test', type: 'feed', config: { name: 'Reading', count: 20, testQueryUrl: `${m}/query`, sources: [{ id: 's1', kind: 'rss', url: `${m}/rss` }, { id: 's2', kind: 'rss', url: `${m}/site` }, { id: 's3', kind: 'query', provider: 'hn', q: 'local-first' }] } },
+    { id: 'jira-test', type: 'jira', config: { name: 'Jira', site: m, email: 'dylan@example.com', token: 'jira-token', auth: 'basic', jql: 'assignee = currentUser()', count: 10 } },
+  ] };
+  await chrome.storage.local.set({ 'fogar.layout': layout, 'fogar.email.auth.test-client': { accessToken: 'gmail-token', expiresAt: Date.now() + 3600e3, clientId: 'test-client' } });
+}, mock.port);
+await page.reload();
+await page.waitForSelector('.widget[data-id="email-feed-test"] .mail-row', { timeout: 15000 });
+const mailFeed = await page.evaluate(() => ({
+  rows: [...document.querySelectorAll('.widget[data-id="email-feed-test"] .mail-row')].map((r) => ({ from: r.querySelector('.from')?.textContent, subj: r.querySelector('.subj')?.textContent, unread: r.classList.contains('unread'), href: r.href })),
+  status: document.querySelector('.widget[data-id="email-feed-test"] .small-note')?.textContent ?? '',
+}));
+check('inbox: the Gmail unread feed renders sender, subject, and thread links; the label is the feed path',
+  mailFeed.rows.length === 3 && mailFeed.rows[0].from === 'Globex Billing' && mailFeed.rows[0].subj === 'Quarterly invoice' && mailFeed.rows.every((r) => r.unread) && /#all\/18f0a1b2c3d4e5f6$/.test(mailFeed.rows[0].href) && mock.server.lastGmail?.label === 'Receipts' && /3 unread in “Receipts”/.test(mailFeed.status),
+  `${mailFeed.rows.length} rows; label=${mock.server.lastGmail?.label}; status="${mailFeed.status.slice(0, 40)}"`);
+await page.waitForSelector('.widget[data-id="email-api-test"] .mail-row', { timeout: 15000 });
+const mailApi = await page.evaluate(() => [...document.querySelectorAll('.widget[data-id="email-api-test"] .mail-row')].map((r) => ({ from: r.querySelector('.from')?.textContent, subj: r.querySelector('.subj')?.textContent, snip: r.querySelector('.snip')?.textContent, unread: r.classList.contains('unread'), href: r.href })));
+check('inbox: the Gmail API path sends the bearer token and the search, shows read and unread mail',
+  mailApi.length === 2 && mock.server.lastGmailApi?.auth === 'Bearer gmail-token' && mock.server.lastGmailApi?.q === 'from:stripe.com' && mailApi[0].from === 'Stripe' && mailApi[0].subj === 'Payout sent' && mailApi[0].unread && !mailApi[1].unread && /\$1,250\.00 & a receipt/.test(mailApi[0].snip) && /#all\/t1$/.test(mailApi[0].href),
+  `${JSON.stringify(mailApi[0]).slice(0, 120)}; auth=${mock.server.lastGmailApi?.auth}`);
+await page.waitForSelector('.widget[data-id="feed-test"] .feed-item', { timeout: 15000 });
+const feedState = await page.evaluate(async () => {
+  const rows = [...document.querySelectorAll('.widget[data-id="feed-test"] .feed-item')];
+  const layout = (await chrome.storage.local.get('fogar.layout'))['fogar.layout'];
+  return { titles: rows.map((r) => r.querySelector('.t')?.textContent), metas: rows.map((r) => r.querySelector('.meta')?.textContent), fresh: rows.filter((r) => r.classList.contains('new')).length, discovered: layout.widgets.find((w) => w.id === 'feed-test').config.sources[1].url, status: document.querySelector('.widget[data-id="feed-test"] .small-note')?.textContent ?? '' };
+});
+check('feed: RSS, Atom via a site page, and a search merge newest first, one copy of a shared link, sources named',
+  feedState.titles.join('|') === 'Gamma entry|Alpha post|Result for local-first|Beta post|Shared post' && /Mock Atom/.test(feedState.metas[0]) && /Mock RSS · Ada/.test(feedState.metas[1]) && /Search: local-first/.test(feedState.metas[2]) && /\/atom$/.test(feedState.discovered) && mock.server.lastQuery?.q === 'local-first' && mock.server.lastQuery?.provider === 'hn' && /5 items from 3 sources/.test(feedState.status),
+  `${feedState.titles.join(' | ')}; discovered=${feedState.discovered}`);
+await page.hover('.widget[data-id="feed-test"]');
+await page.click('.widget[data-id="feed-test"] .feed-mark');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-id="feed-test"] .feed-item.new').length === 0, null, { timeout: 5000 }).catch(() => {});
+const freshAfter = await page.evaluate(() => document.querySelectorAll('.widget[data-id="feed-test"] .feed-item.new').length);
+check('feed: everything is new at first, "Mark read" clears the dots', feedState.fresh === 5 && freshAfter === 0, `${feedState.fresh} → ${freshAfter}`);
+await page.waitForSelector('.widget[data-id="jira-test"] .jira-row', { timeout: 15000 });
+const jiraState = await page.evaluate(() => ({
+  rows: [...document.querySelectorAll('.widget[data-id="jira-test"] .jira-row')].map((r) => ({ key: r.querySelector('.jira-key')?.textContent, sum: r.querySelector('.jira-sum')?.textContent, status: r.querySelector('.jira-status')?.textContent, cat: r.querySelector('.jira-status')?.dataset.cat, meta: r.querySelector('.jira-meta')?.textContent, href: r.href })),
+  status: document.querySelector('.widget[data-id="jira-test"] .small-note')?.textContent ?? '',
+}));
+check('jira: issues from a JQL query render with status and meta; basic auth from email and token; site links',
+  jiraState.rows.length === 2 && jiraState.rows[0].key === 'FOG-12' && jiraState.rows[0].status === 'In Progress' && jiraState.rows[0].cat === 'indeterminate' && /Task · High priority · Dylan Roy/.test(jiraState.rows[0].meta) && /\/browse\/FOG-12$/.test(jiraState.rows[0].href)
+    && mock.server.lastJira?.jql === 'assignee = currentUser()' && mock.server.lastJira?.auth === `Basic ${Buffer.from('dylan@example.com:jira-token').toString('base64')}` && mock.server.lastJira?.path === '/rest/api/3/search/jql',
+  `${jiraState.rows.map((r) => r.key).join(', ')}; auth ok=${mock.server.lastJira?.auth?.startsWith('Basic ')}`);
+
+// 20. LLM Chat: add from the menu, add an OpenAI-compatible model through the settings form, chat with history, persist
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item[data-widget="chat"]');
+await page.waitForSelector('.widget[data-type="chat"] .chat-input');
+await page.hover('.widget[data-type="chat"]');
+await page.click('.widget[data-type="chat"] .ctl[title="Settings"]');
+await page.waitForSelector('.widget[data-type="chat"] .widget-body .row-head select');
+await page.selectOption('.widget[data-type="chat"] .widget-body .row-head select', 'custom');
+await page.click('.widget[data-type="chat"] .widget-body .row-head button:has-text("Add")');
+await page.waitForSelector('.widget[data-type="chat"] .profile-editor input[type="url"]');
+await page.fill('.widget[data-type="chat"] .profile-editor input[type="url"]', `http://127.0.0.1:${mock.port}/v1`);
+await page.fill('.widget[data-type="chat"] .profile-editor input[type="password"]', 'chat-key');
+await page.click('.widget[data-type="chat"] .profile-editor button:has-text("Fetch models")');
+await page.waitForFunction(() => /2 models/.test([...document.querySelectorAll('.widget[data-type="chat"] .profile-editor .muted')].map((n) => n.textContent).join(' ')), null, { timeout: 10000 });
+const fetchedModel = await page.evaluate(() => document.querySelector('.widget[data-type="chat"] .profile-editor .model-row input')?.value);
+await page.click('.widget[data-type="chat"] .profile-editor button:has-text("Save model")');
+await page.waitForSelector('.widget[data-type="chat"] .profile-row');
+await page.click('.widget[data-type="chat"] .widget-body .setup button:has-text("Done")');
+await page.waitForSelector('.widget[data-type="chat"] .chat-input');
+const customChoice = await page.evaluate(() => [...document.querySelector('.widget[data-type="chat"] .chat-model').options].find((o) => /Custom OpenAI/.test(o.text))?.value);
+await page.selectOption('.widget[data-type="chat"] .chat-model', customChoice);
+await page.fill('.widget[data-type="chat"] .chat-input', 'Hello widget');
+await page.press('.widget[data-type="chat"] .chat-input', 'Enter');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="chat"] .msg.assistant').length === 1 && !document.querySelector('.widget[data-type="chat"] .msg.streaming') && /mock cloud says hello/.test(document.querySelector('.widget[data-type="chat"] .msg.assistant .bubble')?.textContent ?? ''), null, { timeout: 20000 });
+const chatReq1 = mock.server.lastRequest;
+await page.fill('.widget[data-type="chat"] .chat-input', 'Again please');
+await page.press('.widget[data-type="chat"] .chat-input', 'Enter');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="chat"] .msg.assistant').length === 2 && !document.querySelector('.widget[data-type="chat"] .msg.streaming'), null, { timeout: 20000 });
+const chatReq2 = mock.server.lastRequest;
+await page.reload();
+await page.waitForSelector('.widget[data-type="chat"] .msg');
+const chatPersisted = await page.evaluate(() => ({ msgs: document.querySelectorAll('.widget[data-type="chat"] .msg').length, first: document.querySelector('.widget[data-type="chat"] .msg.user .bubble')?.textContent, model: document.querySelector('.widget[data-type="chat"] .chat-model')?.selectedOptions[0]?.text }));
+check('llm chat: a model added through the form (models fetched from the endpoint) answers with the bearer key; history and the conversation persist',
+  fetchedModel === 'mock-model' && chatReq1?.auth === 'Bearer chat-key' && chatReq1?.model === 'mock-model' && chatReq1?.messages?.[0]?.role === 'system' && chatReq1?.messages?.at(-1)?.content === 'Hello widget'
+    && chatReq2?.messages?.length === 4 && /mock cloud says hello/.test(chatReq2?.messages?.[2]?.content ?? '') && chatPersisted.msgs === 4 && chatPersisted.first === 'Hello widget' && /Custom OpenAI/.test(chatPersisted.model),
+  `model=${fetchedModel}; req1 ${chatReq1?.messages?.length} msgs; req2 ${chatReq2?.messages?.length} msgs; after reload ${chatPersisted.msgs} msgs, picker "${chatPersisted.model}"`);
+
+// 20b. an Anthropic profile speaks the Messages API: key header, version, browser-access header, system, streamed reply
+await page.hover('.widget[data-type="chat"]');
+await page.click('.widget[data-type="chat"] .ctl[title="Settings"]');
+await page.waitForSelector('.widget[data-type="chat"] .widget-body .row-head select');
+await page.selectOption('.widget[data-type="chat"] .widget-body .row-head select', 'anthropic');
+await page.click('.widget[data-type="chat"] .widget-body .row-head button:has-text("Add")');
+await page.waitForSelector('.widget[data-type="chat"] .profile-editor input[type="url"]');
+const anthropicDefaults = await page.evaluate(() => ({ endpoint: document.querySelector('.widget[data-type="chat"] .profile-editor input[type="url"]')?.value, model: document.querySelector('.widget[data-type="chat"] .profile-editor .model-row input')?.value, vision: document.querySelector('.widget[data-type="chat"] .profile-editor input[type="checkbox"]')?.checked }));
+await page.fill('.widget[data-type="chat"] .profile-editor input[type="url"]', `http://127.0.0.1:${mock.port}/anthropic`);
+await page.fill('.widget[data-type="chat"] .profile-editor input[type="password"]', 'sk-ant-test');
+await page.click('.widget[data-type="chat"] .profile-editor button:has-text("Save model")');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="chat"] .profile-row').length === 2);
+await page.click('.widget[data-type="chat"] .widget-body .setup button:has-text("Done")');
+await page.waitForSelector('.widget[data-type="chat"] .chat-input');
+const claudeChoice = await page.evaluate(() => [...document.querySelector('.widget[data-type="chat"] .chat-model').options].find((o) => /Anthropic/.test(o.text))?.value);
+await page.selectOption('.widget[data-type="chat"] .chat-model', claudeChoice);
+await page.click('.widget[data-type="chat"] .chat-new');
+await page.fill('.widget[data-type="chat"] .chat-input', 'Hi Claude');
+await page.press('.widget[data-type="chat"] .chat-input', 'Enter');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="chat"] .msg.assistant').length === 1 && !document.querySelector('.widget[data-type="chat"] .msg.streaming') && /Claude mock reply/.test(document.querySelector('.widget[data-type="chat"] .msg.assistant .bubble')?.textContent ?? ''), null, { timeout: 20000 });
+const a = mock.server.lastAnthropic;
+check('llm chat: the Anthropic profile defaults to claude-opus-5 and streams through the Messages API with the right headers',
+  anthropicDefaults.endpoint === 'https://api.anthropic.com' && anthropicDefaults.model === 'claude-opus-5' && anthropicDefaults.vision === true
+    && a?.key === 'sk-ant-test' && a?.version === '2023-06-01' && a?.browser === 'true' && a?.body?.model === 'claude-opus-5' && a?.body?.stream === true && typeof a?.body?.system === 'string' && a?.body?.messages?.[0]?.role === 'user' && a?.body?.messages?.[0]?.content === 'Hi Claude',
+  `defaults ${JSON.stringify(anthropicDefaults)}; headers key=${a?.key} v=${a?.version} browser=${a?.browser}; model=${a?.body?.model}`);
+
+// 21. Post-its: add, write, drag within the board, pull one off onto another card so it becomes its own widget; persists
+// Raw mouse events do not scroll, so the whole page has to fit the viewport for the drags below.
+await page.setViewportSize({ width: 1280, height: 2600 });
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item[data-widget="postit"]');
+await page.waitForSelector('.widget[data-type="postit"] .pnote');
+await page.fill('.widget[data-type="postit"] .pnote textarea', 'buy milk');
+await page.hover('.widget[data-type="postit"]');
+await page.click('.widget[data-type="postit"] .pnote-add');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="postit"] .pnote').length === 2);
+const noteBefore = await page.evaluate(() => { const n = document.querySelectorAll('.widget[data-type="postit"] .pnote')[1]; return { left: parseFloat(n.style.left), top: parseFloat(n.style.top) }; });
+const bar2 = await page.locator('.widget[data-type="postit"] .pnote').nth(1).locator('.pnote-bar').boundingBox();
+await page.mouse.move(bar2.x + 40, bar2.y + 8);
+await page.mouse.down();
+for (let i = 1; i <= 8; i++) await page.mouse.move(bar2.x + 40 + i * 15, bar2.y + 8 + i * 8);
+await page.mouse.up();
+const noteAfter = await page.evaluate(() => { const n = document.querySelectorAll('.widget[data-type="postit"] .pnote')[1]; return { left: parseFloat(n.style.left), top: parseFloat(n.style.top) }; });
+await page.waitForTimeout(500); // the note text saves on a 300 ms debounce
+await page.reload();
+await page.waitForSelector('.widget[data-type="postit"] .pnote');
+const notesReload = await page.evaluate(() => [...document.querySelectorAll('.widget[data-type="postit"] .pnote')].map((n) => ({ text: n.querySelector('textarea').value, left: parseFloat(n.style.left) })));
+check('post-its: notes stack, a drag moves one across the board, text and positions persist',
+  noteAfter.left - noteBefore.left > 100 && noteAfter.top - noteBefore.top > 50 && notesReload.length === 2 && notesReload[0].text === 'buy milk' && Math.abs(notesReload[1].left - noteAfter.left) < 2,
+  `moved ${Math.round(noteAfter.left - noteBefore.left)}px right, ${Math.round(noteAfter.top - noteBefore.top)}px down; reload ${JSON.stringify(notesReload)}`);
+const bar1 = await page.locator('.widget[data-type="postit"] .pnote').first().locator('.pnote-bar').boundingBox();
+const chatCard = await page.locator('.widget[data-type="chat"]').boundingBox();
+await page.mouse.move(bar1.x + 40, bar1.y + 8);
+await page.mouse.down();
+for (let i = 1; i <= 10; i++) await page.mouse.move(bar1.x + 40 + ((chatCard.x + chatCard.width / 2) - (bar1.x + 40)) * i / 10, bar1.y + 8 + ((chatCard.y + 60) - (bar1.y + 8)) * i / 10);
+const dropMark = await page.evaluate(() => !!document.querySelector('.widget[data-type="chat"].drop-before, .widget[data-type="chat"].drop-after'));
+await page.mouse.up();
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="postit"]').length === 2, null, { timeout: 5000 }).catch(() => {});
+const pulled = await page.evaluate(() => [...document.querySelectorAll('.widget[data-type="postit"]')].map((w) => ({ notes: [...w.querySelectorAll('.pnote textarea')].map((t) => t.value), title: w.querySelector('h2')?.textContent })));
+check('post-its: pulling a note off the board onto another card makes it its own widget next to that card',
+  dropMark && pulled.length === 2 && pulled.some((w) => w.notes.length === 1 && w.notes[0] === 'buy milk' && w.title === 'Post-it') && pulled.some((w) => w.notes.length === 1 && w.notes[0] === ''),
+  `mark=${dropMark}; ${JSON.stringify(pulled)}`);
+
+// 22. Canvas: a stroke, a box, text; undo and redo; the model redraws from the shape list and keeps the stroke; PNG
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item[data-widget="canvas"]');
+await page.waitForSelector('.widget[data-type="canvas"] .cv-surface');
+const cvCard = page.locator('.widget[data-type="canvas"]');
+await cvCard.locator('.cv-surface').scrollIntoViewIfNeeded(); // mouse coordinates are viewport-relative and never scroll
+const svgBox = await cvCard.locator('.cv-surface').boundingBox();
+await page.mouse.move(svgBox.x + 60, svgBox.y + 60);
+await page.mouse.down();
+for (let i = 1; i <= 6; i++) await page.mouse.move(svgBox.x + 60 + i * 20, svgBox.y + 60 + i * 6);
+await page.mouse.up();
+await cvCard.locator('.cv-tool[data-tool="rect"]').click();
+await page.mouse.move(svgBox.x + 250, svgBox.y + 80);
+await page.mouse.down();
+await page.mouse.move(svgBox.x + 330, svgBox.y + 140, { steps: 4 });
+await page.mouse.up();
+await cvCard.locator('.cv-tool[data-tool="text"]').click();
+await page.mouse.click(svgBox.x + 100, svgBox.y + 200);
+await page.waitForSelector('.widget[data-type="canvas"] .cv-textbox:not([hidden])');
+await page.keyboard.type('Note');
+await page.keyboard.press('Enter');
+const drawn = await page.evaluate(() => { const g = document.querySelector('.widget[data-type="canvas"] .cv-surface g'); return { paths: g.querySelectorAll('path').length, rects: g.querySelectorAll('rect').length, texts: [...g.querySelectorAll('text')].map((t) => t.textContent) }; });
+await cvCard.locator('.ctl[title="Undo"]').click();
+const afterUndo = await page.evaluate(() => document.querySelectorAll('.widget[data-type="canvas"] .cv-surface g text').length);
+await cvCard.locator('.ctl[title="Redo"]').click();
+const afterRedo = await page.evaluate(() => document.querySelectorAll('.widget[data-type="canvas"] .cv-surface g text').length);
+check('canvas: pen, box, and text tools draw shapes; undo and redo', drawn.paths === 1 && drawn.rects === 1 && drawn.texts.join() === 'Note' && afterUndo === 0 && afterRedo === 1, JSON.stringify({ ...drawn, afterUndo, afterRedo }));
+await cvCard.locator('.cv-ask').fill('draw a house');
+await cvCard.locator('.cv-go').click();
+await page.waitForFunction(() => /shape/.test(document.querySelector('.widget[data-type="canvas"] .cv-status')?.textContent ?? ''), null, { timeout: 20000 });
+const redrawn = await page.evaluate(() => { const g = document.querySelector('.widget[data-type="canvas"] .cv-surface g'); return { paths: g.querySelectorAll('path').length, rect: g.querySelector('rect')?.getAttribute('x'), texts: [...g.querySelectorAll('text')].map((t) => t.textContent), status: document.querySelector('.widget[data-type="canvas"] .cv-status')?.textContent }; });
+const drawReq = mock.server.lastRequest;
+await page.reload();
+await page.waitForSelector('.widget[data-type="canvas"] .cv-surface g *');
+const cvPersisted = await page.evaluate(() => document.querySelectorAll('.widget[data-type="canvas"] .cv-surface g [data-id]').length);
+check('canvas: the model gets the shapes as data and its reply is drawn; the stroke survives by id; the drawing persists',
+  /You edit a drawing/.test(drawReq?.messages?.[0]?.content ?? '') && /"type":"path","id":"/.test(drawReq?.messages?.at(-1)?.content ?? '') && /Instruction: draw a house/.test(drawReq?.messages?.at(-1)?.content ?? '')
+    && redrawn.paths === 1 && redrawn.rect === '100' && redrawn.texts.join() === 'House' && /3 shapes/.test(redrawn.status) && cvPersisted === 3,
+  `${JSON.stringify(redrawn)}; persisted ${cvPersisted}`);
+await page.hover('.widget[data-type="canvas"]');
+const [pngDl] = await Promise.all([page.waitForEvent('download', { timeout: 10000 }), page.click('.widget[data-type="canvas"] .cv-png')]);
+check('canvas: Save PNG downloads a PNG', pngDl.suggestedFilename().endsWith('.png') && readFileSync(await pngDl.path()).subarray(1, 4).toString() === 'PNG', pngDl.suggestedFilename());
+
+// 23. Notebook: pages, a photo read by a vision model (the Settings cloud endpoint here), persistence
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item[data-widget="notebook"]');
+await page.waitForSelector('.widget[data-type="notebook"] .nb-text');
+await page.fill('.widget[data-type="notebook"] .nb-title', 'Groceries');
+await page.fill('.widget[data-type="notebook"] .nb-text', 'eggs');
+await page.click('.widget[data-type="notebook"] .nb-add');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="notebook"] .nb-tab:not(.nb-add)').length === 2);
+await page.selectOption('.widget[data-type="notebook"] .nb-reader', 'fogar-cloud');
+const pngData = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 400; c.height = 120; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 400, 120); x.fillStyle = '#000'; x.font = '48px sans-serif'; x.fillText('HELLO', 20, 80); return c.toDataURL('image/png').split(',')[1]; });
+await page.setInputFiles('.widget[data-type="notebook"] .nb-file', { name: 'page.png', mimeType: 'image/png', buffer: Buffer.from(pngData, 'base64') });
+await page.waitForFunction(() => /MOCK OCR TEXT/.test(document.querySelector('.widget[data-type="notebook"] .nb-text')?.value ?? ''), null, { timeout: 20000 });
+const ocrReq = mock.server.lastRequest;
+const nbState = await page.evaluate(() => ({ text: document.querySelector('.widget[data-type="notebook"] .nb-text')?.value, status: document.querySelector('.widget[data-type="notebook"] .nb-status')?.textContent, tabs: [...document.querySelectorAll('.widget[data-type="notebook"] .nb-tab:not(.nb-add)')].map((t) => t.textContent) }));
+await page.click('.widget[data-type="notebook"] .nb-tab:not(.nb-add)');
+const firstPage = await page.evaluate(() => document.querySelector('.widget[data-type="notebook"] .nb-text')?.value);
+await page.waitForTimeout(500); // typed text saves on a debounce
+await page.reload();
+await page.waitForSelector('.widget[data-type="notebook"] .nb-tab');
+const nbReload = await page.evaluate(() => [...document.querySelectorAll('.widget[data-type="notebook"] .nb-tab:not(.nb-add)')].map((t) => t.textContent));
+check('notebook: pages switch and persist; a photo goes to the vision model as a downscaled JPEG and its text lands on the page',
+  ocrReq?.hasImage === true && ocrReq?.stream !== true && /Transcribe every word/.test(ocrReq?.messages?.[0]?.content?.[0]?.text ?? '') && /MOCK OCR TEXT\nSecond line/.test(nbState.text) && /Read 8 words/.test(nbState.status) && nbState.tabs[0] === 'Groceries' && firstPage === 'eggs' && nbReload.length === 2 && nbReload[0] === 'Groceries',
+  `image=${ocrReq?.hasImage}; status="${nbState.status}"; tabs ${nbReload.join(', ')}`);
+if (process.env.OCR === '1') {
+  // On this device: Tesseract inside the extension reads a rendered line of printed text. Slow (a few seconds); opt in.
+  await page.selectOption('.widget[data-type="notebook"] .nb-reader', 'local');
+  const bigPng = await page.evaluate(() => { const c = document.createElement('canvas'); c.width = 1000; c.height = 300; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, 1000, 300); x.fillStyle = '#000'; x.font = 'bold 72px Arial, sans-serif'; x.fillText('HELLO FOGAR 2026', 40, 170); return c.toDataURL('image/png').split(',')[1]; });
+  await page.setInputFiles('.widget[data-type="notebook"] .nb-file', { name: 'printed.png', mimeType: 'image/png', buffer: Buffer.from(bigPng, 'base64') });
+  await page.waitForFunction(() => /Read \d+ words on this device|No text found|cannot run/.test(document.querySelector('.widget[data-type="notebook"] .nb-status')?.textContent ?? ''), null, { timeout: 120000 }).catch(() => {});
+  const local = await page.evaluate(() => ({ text: document.querySelector('.widget[data-type="notebook"] .nb-text')?.value ?? '', status: document.querySelector('.widget[data-type="notebook"] .nb-status')?.textContent ?? '' }));
+  check('notebook: Tesseract inside the extension reads printed text on this device', /HELLO FOGAR 2026/.test(local.text) && /on this device/.test(local.status), `status="${local.status}" text="${local.text.slice(0, 40).replace(/\n/g, ' ')}"`);
+}
+
+// 24. Full screen: the canvas card fills the window; Escape brings it back; the page behind it does not scroll
+await page.hover('.widget[data-type="canvas"]');
+await page.click('.widget[data-type="canvas"] .ctl[title="Full screen"]');
+await page.waitForSelector('.widget[data-type="canvas"].fullscreen');
+await page.waitForFunction(() => getComputedStyle(document.querySelector('.widget.fullscreen .widget-controls')).opacity === '1', null, { timeout: 5000 }).catch(() => {});
+const fs = await page.evaluate(() => { const c = document.querySelector('.widget.fullscreen'); const r = c.getBoundingClientRect(); return { type: c.dataset.type, covers: r.left === 0 && r.top === 0 && Math.abs(r.width - innerWidth) < 2 && Math.abs(r.height - innerHeight) < 2, rootClass: document.documentElement.classList.contains('widget-fullscreen'), bodyOverflow: getComputedStyle(document.body).overflow, controlsVisible: getComputedStyle(c.querySelector('.widget-controls')).opacity === '1', exitTitle: c.querySelector('.ctl[title^="Exit full screen"]') !== null }; });
+await page.keyboard.press('Escape');
+await page.waitForFunction(() => !document.querySelector('.widget.fullscreen'), null, { timeout: 5000 }).catch(() => {});
+const fsAfter = await page.evaluate(() => ({ any: !!document.querySelector('.widget.fullscreen'), rootClass: document.documentElement.classList.contains('widget-fullscreen'), cards: document.querySelectorAll('#widgets .widget').length }));
+check('full screen: a widget fills the window with its controls shown; Escape restores the page',
+  fs.type === 'canvas' && fs.covers && fs.rootClass && fs.bodyOverflow === 'hidden' && fs.controlsVisible && fs.exitTitle && !fsAfter.any && !fsAfter.rootClass && fsAfter.cards > 3,
+  JSON.stringify({ fs, fsAfter }));
+await page.setViewportSize({ width: 1280, height: 800 });
+
+// 25. Writing: add the widget, feed it two samples (one typed, one dropped as a file), distill a voice with the mock
+//     model, add a register whose rules ban em dashes, tighten a message in it; the prompt carries the profile, the
+//     register's rules, and the operation; the em dash the model wrote is removed; everything persists across tabs
+await page.evaluate(() => chrome.storage.local.set({ 'fogar.layout': { version: 1, widgets: [{ id: 'todos', type: 'todos', config: {} }], focus: false, ask: 'top', arrangement: 'stack', columns: 'auto', showRecipes: true } }));
+await page.goto(`${base}?e2e=1&cloud=${mock.port}`);
+await page.waitForSelector('#recipe-chips .chip');
+await page.click('#widget-add');
+await page.click('#widget-menu .menu-item[data-widget="writing"]');
+await page.waitForSelector('.widget[data-type="writing"] .wr-text');
+const wrPick = await page.evaluate(() => { const s = document.querySelector('.widget[data-type="writing"] .wr-model'); return { value: s?.value, text: s?.selectedOptions[0]?.text }; });
+const wrHint = await page.evaluate(() => document.querySelector('.widget[data-type="writing"] .wr-hint')?.textContent ?? '');
+await page.click('.widget[data-type="writing"] .wr-nav button:has-text("Voice")');
+await page.waitForSelector('.widget[data-type="writing"] .wr-sample-text');
+await page.fill('.widget[data-type="writing"] .wr-sample-text', 'Honestly, the export flow is done. Two small bugs left in restore; both are mine and both are easy.');
+await page.fill('.widget[data-type="writing"] .wr-sample-source', 'Slack');
+await page.click('.widget[data-type="writing"] .wr-add-sample');
+const wrDt = await page.evaluateHandle(() => { const d = new DataTransfer(); d.items.add(new File(['Dear Priya, thanks for the invoice. I will pay it Friday, from the maintenance reserve, as we discussed.'], 'email.txt', { type: 'text/plain' })); return d; });
+await page.dispatchEvent('.widget[data-type="writing"] .wr-sample-text', 'drop', { dataTransfer: wrDt });
+await page.waitForFunction(() => /Dear Priya/.test(document.querySelector('.widget[data-type="writing"] .wr-sample-text')?.value ?? ''), null, { timeout: 10000 });
+await page.fill('.widget[data-type="writing"] .wr-sample-source', 'email');
+await page.click('.widget[data-type="writing"] .wr-add-sample');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="writing"] .wr-sample').length === 2);
+const wrSamples = await page.evaluate(() => [...document.querySelectorAll('.widget[data-type="writing"] .wr-sample')].map((r) => ({ tag: r.querySelector('.wr-tag')?.textContent, meta: r.querySelector('.meta')?.textContent })));
+await page.click('.widget[data-type="writing"] .wr-distill');
+await page.waitForFunction(() => /^Voice profile v1/.test(document.querySelector('.widget[data-type="writing"] .wr-profile summary')?.textContent ?? ''), null, { timeout: 20000 });
+const distillReq = mock.server.lastRequest;
+const distillUser = distillReq?.messages?.at(-1)?.content ?? '';
+const wrProfile = await page.evaluate(() => ({ text: document.querySelector('.widget[data-type="writing"] .wr-profile-text')?.textContent ?? '', summary: document.querySelector('.widget[data-type="writing"] .wr-profile summary')?.textContent ?? '', nav: document.querySelector('.widget[data-type="writing"] .wr-nav button:nth-child(2)')?.textContent, note: document.querySelector('.widget[data-type="writing"] .wr-run .wr-status')?.textContent ?? '' }));
+check('writing: a typed sample and a dropped file go to the model as one distill prompt; the profile comes back versioned and shown',
+  wrPick.value === 'fogar-cloud' && /Fogar cloud/.test(wrPick.text ?? '') && /No voice yet/.test(wrHint)
+    && wrSamples.length === 2 && wrSamples[0].tag === 'slack' && /\d+ words/.test(wrSamples[0].meta ?? '') && wrSamples[1].tag === 'email'
+    && /voice analyst/.test(distillReq?.messages?.[0]?.content ?? '') && /\[Sample 1 · slack\]\nHonestly, the export flow/.test(distillUser) && /\[Sample 2 · email\]\nDear Priya/.test(distillUser) && /## Author\nYou\n/.test(distillUser) && /under 700 words/.test(distillUser)
+    && /^### Diction & vocabulary/.test(wrProfile.text) && /from 2 samples/.test(wrProfile.summary) && wrProfile.nav === 'Voice · v1' && /Voice v1 is ready/.test(wrProfile.note),
+  `pick="${wrPick.text}"; samples ${JSON.stringify(wrSamples)}; summary="${wrProfile.summary.slice(0, 60)}"`);
+
+await page.click('.widget[data-type="writing"] .wr-nav button:has-text("Registers")');
+await page.waitForSelector('.widget[data-type="writing"] .wr-register-row');
+const wrRegsBefore = await page.evaluate(() => [...document.querySelectorAll('.widget[data-type="writing"] .wr-register-row strong')].map((n) => n.textContent));
+await page.click('.widget[data-type="writing"] .wr-add-register');
+await page.fill('.widget[data-type="writing"] .wr-reg-name', 'LinkedIn');
+await page.fill('.widget[data-type="writing"] .wr-reg-formality', 'plainspoken, first person');
+await page.fill('.widget[data-type="writing"] .wr-reg-length', 'under 120 words');
+await page.fill('.widget[data-type="writing"] .wr-reg-notes', 'no em dashes; no hashtags');
+await page.click('.widget[data-type="writing"] .wr-editor button:has-text("Save register")');
+await page.waitForFunction(() => document.querySelectorAll('.widget[data-type="writing"] .wr-register-row').length === 4);
+const wrRegs = await page.evaluate(() => ({ names: [...document.querySelectorAll('.widget[data-type="writing"] .wr-register-row strong')].map((n) => n.textContent), inUse: document.querySelector('.widget[data-type="writing"] .wr-register-row:has(.wr-inuse) strong')?.textContent, nav: document.querySelector('.widget[data-type="writing"] .wr-nav button:nth-child(3)')?.textContent }));
+await page.click('.widget[data-type="writing"] .wr-nav button:has-text("Write")');
+await page.waitForSelector('.widget[data-type="writing"] .wr-text');
+const wrSelected = await page.evaluate(() => document.querySelector('.widget[data-type="writing"] .wr-register')?.selectedOptions[0]?.text);
+await page.click('.widget[data-type="writing"] .wr-ops button:has-text("Tighten")');
+await page.fill('.widget[data-type="writing"] .wr-text', 'so we shipped the thing, finally, after a lot of back and forth');
+await page.fill('.widget[data-type="writing"] .wr-instruction', 'keep it under two lines');
+await page.click('.widget[data-type="writing"] .wr-go');
+await page.waitForFunction(() => { const w = document.querySelector('.widget[data-type="writing"]'); return !!w && !w.querySelector('.wr-out.streaming') && /Sounds like you/.test(w.querySelector('.wr-out-text')?.textContent ?? ''); }, null, { timeout: 20000 });
+const wrReq = mock.server.lastRequest; const wrSys = wrReq?.messages?.[0]?.content ?? ''; const wrUser = wrReq?.messages?.at(-1)?.content ?? '';
+const wrOut = await page.evaluate(() => ({ text: document.querySelector('.widget[data-type="writing"] .wr-out-text')?.textContent, meta: document.querySelector('.widget[data-type="writing"] .wr-out-meta')?.textContent, status: document.querySelector('.widget[data-type="writing"] .wr-run .wr-status')?.textContent }));
+check('writing: a new register with rules is saved and selected; the run carries profile, register, rules, and operation; the em dash the model wrote is removed because the register bans it',
+  wrRegsBefore.join() === 'Email,Chat,Essay' && wrRegs.names.join() === 'Email,Chat,Essay,LinkedIn' && wrRegs.inUse === 'LinkedIn' && wrRegs.nav === 'Registers · 4' && wrSelected === 'LinkedIn'
+    && /sounds like a specific author/.test(wrSys) && wrReq?.messages?.length === 2 && /### Diction & vocabulary/.test(wrUser)
+    && /## Register: LinkedIn\nFormality: plainspoken, first person\. Length: under 120 words\. Rules, follow these EXACTLY[^\n]*no em dashes; no hashtags/.test(wrUser)
+    && /## Operation: tighten/.test(wrUser) && /## Instruction from the user[^\n]*\nkeep it under two lines/.test(wrUser) && /## Source material\nso we shipped the thing, finally/.test(wrUser)
+    && wrOut.text === 'Sounds like you, and nobody else.' && /^In your voice · LinkedIn · tighten · voice v1 · Fogar cloud/.test(wrOut.meta ?? '') && /em dashes removed/.test(wrOut.status ?? ''),
+  `regs=${wrRegs.names.join(',')} sel="${wrSelected}" out="${wrOut.text}" meta="${wrOut.meta}"`);
+
+await page.reload();
+await page.waitForSelector('.widget[data-type="writing"] .wr-out-text');
+const wrAfter = await page.evaluate(async () => {
+  const w = document.querySelector('.widget[data-type="writing"]');
+  const key = `fogar.widget.${w.dataset.id}`;
+  const stored = (await chrome.storage.local.get(key))[key];
+  return { input: w.querySelector('.wr-text')?.value, out: w.querySelector('.wr-out-text')?.textContent, register: w.querySelector('.wr-register')?.selectedOptions[0]?.text, op: w.querySelector('.wr-ops [aria-pressed="true"]')?.textContent, samples: stored?.samples?.length, version: stored?.profile?.version, registers: stored?.registers?.length, hint: !!w.querySelector('.wr-hint'), brand: w.querySelector('.wr-brand a')?.href };
+});
+check('writing: samples, profile, registers, the register and operation in use, the text, and the last result persist across tabs; the card credits Dickens',
+  wrAfter.input === 'so we shipped the thing, finally, after a lot of back and forth' && wrAfter.out === 'Sounds like you, and nobody else.' && wrAfter.register === 'LinkedIn' && wrAfter.op === 'Tighten' && wrAfter.samples === 2 && wrAfter.version === 1 && wrAfter.registers === 4 && !wrAfter.hint && /^https:\/\/dickens\.ai\//.test(wrAfter.brand ?? ''),
+  JSON.stringify(wrAfter));
 
 mock.server.close();
 await context.close();

@@ -2,7 +2,7 @@ import { LocalProvider } from '@/lib/llm/local';
 import { CloudProvider } from '@/lib/llm/cloud';
 import { modelById } from '@/lib/llm/models';
 import { SYSTEM_PROMPT, type Message, type Mode, type Provider, type Settings } from '@/lib/llm/types';
-import { groundedMessages, groundingConfigured, searchWeb, type Source } from '@/lib/grounding';
+import { citedSources, groundedMessages, groundingConfigured, searchWeb, type Source } from '@/lib/grounding';
 import { loadSettings, saveSettings } from '@/lib/settings';
 import { $, clear, el } from '@/lib/dom';
 import { browser } from 'wxt/browser';
@@ -11,6 +11,7 @@ import { BOOKMARK_INTENT, bookmarkCriterion, findBookmarks } from '@/lib/bookmar
 import { renderMarkdown } from '@/lib/markdown';
 import { tryCalculate } from '@/lib/calc';
 import { contextBlock, type PageContext } from '@/lib/page-context';
+import { ATTACHMENT_BUDGET, attachmentBlock, describeAttachment, type Attachment } from '@/lib/attachments';
 import type { DeviceProfile } from '@/lib/device';
 import type { ModelSpec } from '@/lib/llm/models';
 
@@ -29,6 +30,8 @@ export interface AskOptions {
   provider?: Provider;
   /** The page a right-click question came from. */
   context?: PageContext | null;
+  /** Files the user attached; their text goes in the system prompt. */
+  attachments?: Attachment[] | null;
 }
 
 /** One question and its answer, as shown on a card. "Dig deeper" re-asks and replaces it. */
@@ -36,6 +39,7 @@ export interface Exchange {
   question: string;
   answer: string;
   context: PageContext | null;
+  attachments: Attachment[] | null;
   grounded: boolean;
   thought: boolean;
   via: Mode;
@@ -46,6 +50,7 @@ export interface QuestionOptions {
   think?: boolean;
   provider?: Provider;
   context?: PageContext | null;
+  attachments?: Attachment[] | null;
   /** Remove this earlier exchange from the conversation before asking, so the new answer replaces it. */
   supersede?: Exchange | null;
 }
@@ -164,10 +169,12 @@ export class App {
     $('ground-toggle').hidden = !groundingConfigured(this.settings.grounding);
     if (this.settings.mode === 'local') {
       const gpu = this.settings.gpu && LocalProvider.hasWebGPU() && !this.local.fellBackToCpu;
+      // Plain words on the first screen: the tier prefix and "WebGPU" belong in Settings, not next to the box.
+      const name = (m: ModelSpec) => m.label.replace(/^\w+: /, '');
       this.setStatus(this.local.loaded
-        ? `Ready · ${this.local.loaded.label} · ${gpu ? 'WebGPU' : 'CPU'}`
+        ? `Ready · ${name(this.local.loaded)} · on your ${gpu ? 'GPU' : 'CPU'}`
         : this.loading ? $('status').textContent ?? ''
-          : this.autoLoadPending() ? `${modelById(this.settings.modelId).label} · loads when you start typing`
+          : this.autoLoadPending() ? `${name(modelById(this.settings.modelId))} · loads when you start typing`
             : 'No model loaded. Open Settings to download one, or just search.');
     } else {
       let host = '';
@@ -228,6 +235,8 @@ export class App {
     $('thread-head').hidden = true;
     $('examples').hidden = false;
     document.body.dataset.status = 'idle';
+    // Attached files belong to the conversation; the ask bar drops them on this signal.
+    document.dispatchEvent(new CustomEvent('fogar:conversation-cleared'));
   }
 
   /**
@@ -263,6 +272,7 @@ export class App {
     thread.prepend(card);
     $('thread-head').hidden = false;
     $('examples').hidden = true;
+    $('help-card').hidden = true;
     return { card, answer, links, sources, stats };
   }
 
@@ -289,9 +299,22 @@ export class App {
     if (calc) { this.showCalculation(question, calc.display, calc.expression); return; }
     if (!opts.context && BOOKMARK_INTENT.test(question) && bookmarksAvailable()) { await this.findBookmarks(question); return; }
     if (opts.supersede) this.forgetExchange(opts.supersede);
-    const system = opts.context ? `${SYSTEM_PROMPT}\n\n${contextBlock(opts.context)}` : SYSTEM_PROMPT;
-    const messages: Message[] = [{ role: 'system', content: system }, ...this.history, { role: 'user', content: question }];
-    await this.ask(messages, { question, ground: opts.ground, think: opts.think, provider: opts.provider, context: opts.context ?? null });
+    // Attached files are cut for whichever model answers. In the 4,096-token local window they take their room
+    // out of the conversation's share; a cloud window has room for both.
+    const via: Mode = opts.provider ? (opts.provider instanceof CloudProvider ? 'cloud' : 'local') : this.settings.mode;
+    const files = opts.attachments?.length ? attachmentBlock(opts.attachments, ATTACHMENT_BUDGET[via]) : '';
+    const system = [SYSTEM_PROMPT, opts.context ? contextBlock(opts.context) : '', files].filter(Boolean).join('\n\n');
+    const history = files && via === 'local' ? this.historyWithin(Math.max(0, HISTORY_CHAR_BUDGET - files.length)) : this.history;
+    const messages: Message[] = [{ role: 'system', content: system }, ...history, { role: 'user', content: question }];
+    await this.ask(messages, { question, ground: opts.ground, think: opts.think, provider: opts.provider, context: opts.context ?? null, attachments: opts.attachments ?? null });
+  }
+
+  /** The conversation cut to `limit` characters, oldest exchanges first to go. */
+  private historyWithin(limit: number): Message[] {
+    const out = [...this.history];
+    let size = out.reduce((n, m) => n + m.content.length, 0);
+    while (size > limit && out.length) { size -= out[0]!.content.length + (out[1]?.content.length ?? 0); out.splice(0, 2); }
+    return out;
   }
 
   showCalculation(question: string, display: string, expression: string): void {
@@ -319,6 +342,7 @@ export class App {
       let host = opts.context.url; try { host = new URL(opts.context.url).host.replace(/^www\./, ''); } catch { /* keep */ }
       card.querySelector('.answer-q')?.append(' ', el('a', { class: 'ctx-chip', href: opts.context.url, target: '_blank', rel: 'noopener', title: opts.context.title || opts.context.url }, `from ${host}`));
     }
+    for (const a of opts.attachments ?? []) card.querySelector('.answer-q')?.append(' ', el('span', { class: 'ctx-chip', title: `${a.name} · ${describeAttachment(a)}` }, `from ${a.name}`));
     document.body.dataset.status = 'answering';
     $('stop-btn').hidden = false;
     this.refreshReadiness();
@@ -336,22 +360,34 @@ export class App {
     };
     const markThought = () => { if (thinking.summary && thinking.summary.textContent === 'Thinking…') thinking.summary.textContent = `Thought for ${((performance.now() - thinking.startedAt) / 1000).toFixed(1)} s`; };
 
-    let sources: Source[] = [];
+    let sources: Source[] = []; let searched = false;
     let raw = ''; let frame = 0;
     const paint = () => { frame = 0; renderMarkdown(raw, answer); answer.dataset.raw = raw; };
+    // The list appears once the answer has cited something in it. Results the model set aside are noise to the
+    // reader too; the stats line still says they were fetched, since the question did go out.
+    const showSources = (): boolean => {
+      if (!citedSources(raw, sources.length).size) return false;
+      sourcesEl.hidden = false;
+      for (const s of sources) {
+        let host = s.url; try { host = new URL(s.url).host.replace(/^www\./, ''); } catch { /* keep */ }
+        sourcesEl.append(el('li', {}, el('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.title), ' ', el('span', { class: 'muted' }, s.via ?? host)));
+      }
+      return true;
+    };
+    const webNote = (cited: boolean) => !searched ? '' : cited ? ` · ${sources.length} sources` : sources.length ? ` · ${sources.length} web results, none cited` : ' · no relevant web results';
     const t0 = performance.now(); let tokens = 0; let firstAt = 0;
     try {
       if (opts.ground && groundingConfigured(this.settings.grounding)) {
         this.setStatus('Searching the web…');
         sources = await searchWeb(question, this.settings.grounding, signal);
+        searched = true;
         if (sources.length) {
-          const system = messages[0]?.role === 'system' ? messages[0].content : SYSTEM_PROMPT;
-          messages = groundedMessages(system, question, sources, this.history);
-          sourcesEl.hidden = false;
-          for (const s of sources) {
-            let host = s.url; try { host = new URL(s.url).host.replace(/^www\./, ''); } catch { /* keep */ }
-            sourcesEl.append(el('li', {}, el('a', { href: s.url, target: '_blank', rel: 'noopener' }, s.title), ' ', el('span', { class: 'muted' }, s.via ?? host)));
-          }
+          const hasSystem = messages[0]?.role === 'system';
+          // The conversation as this question was built, already cut to make room for an attached file; the whole
+          // history would put that room back.
+          const last = messages[messages.length - 1];
+          const history = messages.slice(hasSystem ? 1 : 0, last?.role === 'user' ? -1 : undefined);
+          messages = groundedMessages(hasSystem ? messages[0].content : SYSTEM_PROMPT, question, sources, history, !!(opts.attachments?.length || opts.context));
         }
         this.setStatus('Answering…');
       }
@@ -371,14 +407,16 @@ export class App {
       }
       const total = performance.now() - t0;
       const gen = Math.max(1, total - (firstAt - t0));
-      stats.textContent = `${tokens} tokens · first token ${Math.round(firstAt - t0)} ms · ${(tokens / (gen / 1000)).toFixed(1)} tok/s${sources.length ? ` · ${sources.length} sources` : ''}${thinking.text ? ` · ${thinking.text.length} chars of thinking` : ''}`;
+      const cited = showSources();
+      stats.textContent = `${tokens} tokens · first token ${Math.round(firstAt - t0)} ms · ${(tokens / (gen / 1000)).toFixed(1)} tok/s${webNote(cited)}${thinking.text ? ` · ${thinking.text.length} chars of thinking` : ''}`;
       this.pushHistory(question, raw);
-      if (!opts.label) this.attachDigMenu(card, { question, answer: raw, context: opts.context ?? null, grounded: sources.length > 0, thought: think, via });
+      if (!opts.label) this.attachDigMenu(card, { question, answer: raw, context: opts.context ?? null, attachments: opts.attachments ?? null, grounded: sources.length > 0, thought: think, via });
       document.body.dataset.status = 'done';
     } catch (err) {
       if (frame) cancelAnimationFrame(frame);
       if (signal.aborted) {
         paint();
+        showSources();
         document.body.dataset.status = 'done';
         stats.textContent = 'Stopped.';
         this.pushHistory(question, raw);
@@ -411,14 +449,18 @@ export class App {
     const item = (title: string, note: string, onclick: (() => void) | null, disabled = false) =>
       el('button', { class: 'menu-item', type: 'button', role: 'menuitem', disabled, onclick: () => { menu.hidden = true; btn.setAttribute('aria-expanded', 'false'); onclick?.(); } } as any,
         el('strong', {}, title), el('span', { class: 'muted' }, note));
-    const reask = (extra: QuestionOptions) => void this.askQuestion(ex.question, { context: ex.context, supersede: ex, ...extra });
+    const reask = (extra: QuestionOptions) => void this.askQuestion(ex.question, { context: ex.context, attachments: ex.attachments, supersede: ex, ...extra });
     const fill = () => {
       clear(menu);
       const groundOk = groundingConfigured(this.settings.grounding);
+      // With a file or page in play the results add to it rather than replace it; the note says so.
+      const searchNote = ex.attachments?.length || ex.context
+        ? `Adds web results to what the ${ex.attachments?.length ? 'file' : 'page'} says, cited where they help.`
+        : this.settings.grounding.provider === 'free' ? 'DuckDuckGo instant answers and Wikipedia, cited. No key. Best for well-known people, places, and terms.' : 'Five live results, cited. Best for facts, names, and anything recent.';
       menu.append(ex.grounded
-        ? item('Search the web and answer again', 'This answer already used web results.', null, true)
+        ? item('Search the web and answer again', 'Web results were already fetched for this answer.', null, true)
         : groundOk
-          ? item('Search the web and answer again', this.settings.grounding.provider === 'free' ? 'DuckDuckGo instant answers and Wikipedia, cited. No key. Best for well-known people, places, and terms.' : 'Five live results, cited. Best for facts, names, and anything recent.', () => reask({ ground: true }))
+          ? item('Search the web and answer again', searchNote, () => reask({ ground: true }))
           : item('Search the web and answer again', 'Web grounding is off. Opens Settings; the free option needs no key.', () => { $<HTMLDetailsElement>('settings').open = true; $('grounding-settings').scrollIntoView({ block: 'center', behavior: 'smooth' }); }));
       if (this.settings.mode === 'local' && this.local.loaded?.canThink) {
         menu.append(ex.thought

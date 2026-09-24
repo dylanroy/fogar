@@ -1,6 +1,7 @@
 import type { App } from '../app';
 import { $, clear, el } from '@/lib/dom';
 import { SYSTEM_PROMPT } from '@/lib/llm/types';
+import { acceptFilesInto } from './attach';
 import {
   BUILTIN_RECIPES, allRecipes, decodeRecipeShare, encodeRecipeShare, loadUserRecipes, newRecipe, recipeMessages,
   parseRecipeText, saveUserRecipes, validateRecipe, type Recipe, type RecipeInput,
@@ -38,7 +39,9 @@ export function initRecipes(app: App): RecipesUI {
       control = el('select', {});
       for (const o of i.options ?? []) control.append(new Option(o, o, false, o === (value ?? i.default)));
     } else if (i.type === 'textarea') {
-      control = el('textarea', { placeholder: i.placeholder ?? '', value: value ?? i.default ?? '' });
+      // A long field takes a dropped or pasted file as well as typing; the text lands as a paste would.
+      control = el('textarea', { placeholder: i.placeholder ? `${i.placeholder} Or drop a file here.` : 'Type here, or drop a file.', value: value ?? i.default ?? '' });
+      acceptFilesInto(control as HTMLTextAreaElement, app);
     } else {
       control = el('input', { type: 'text', placeholder: i.placeholder ?? '', value: value ?? i.default ?? '' });
     }

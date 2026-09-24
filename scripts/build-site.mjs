@@ -1,5 +1,5 @@
 // Builds fogar.ai into site/ from its sources: the homepage body (site/page.html), one body per use-case page
-// (site/src/*.html), and site/src/shared.css for the widget mock-ups those pages draw.
+// (site/src/*.html: tabs, bookmarks, write, today, voice), and site/src/shared.css for the widget mock-ups those pages draw.
 //
 // The homepage is the template. Its <style>, font links, nav, install section and footer are lifted out by
 // <!-- @nav --> … <!-- @/nav --> markers and put into every page, so one edit reaches all of them. Each page gets its
@@ -17,6 +17,7 @@ const PAGES = [
   { path: '/bookmarks', src: 'site/src/bookmarks.html', out: 'site/bookmarks.html' },
   { path: '/write', src: 'site/src/write.html', out: 'site/write.html' },
   { path: '/today', src: 'site/src/today.html', out: 'site/today.html' },
+  { path: '/voice', src: 'site/src/voice.html', out: 'site/voice.html' },
 ];
 /** Hand-written pages that belong in the sitemap too. */
 const ALSO = [{ path: '/privacy', src: 'site/privacy.html' }];
