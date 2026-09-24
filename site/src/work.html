@@ -1,0 +1,150 @@
+<title>Gmail and Jira on your new tab · Fogar</title>
+<meta name="description" content="Your unread Gmail and your Jira issues on every Chrome new tab. Gmail’s own unread feed or your own OAuth client; any JQL with your API token. Read-only, nothing through a Fogar server." />
+<meta property="og:description" content="Unread Gmail and your Jira issues on every new tab. Read-only, from your browser, with your own credentials." />
+<style>
+  .desk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+  .desk .card { padding: 14px 16px; gap: 8px; font-size: 13px; }
+  .desk .card-h { font-size: 17px; }
+  .ml { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; padding: 6px 8px; border-radius: 8px; transition: background 0.6s; }
+  .ml .from, .ml .when { font-size: 12px; color: var(--ash); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ml .subj { grid-column: 1 / -1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ml .subj::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); margin-right: 7px; vertical-align: 1px; }
+  .ml .snip { grid-column: 1 / -1; font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ml.fresh { background: var(--glow-2); }
+  .jr { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; padding: 6px 8px; border-radius: 8px; align-items: baseline; }
+  .jr .key { font-family: var(--mono); font-size: 11.5px; color: var(--ash); }
+  .jr .st { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 999px; padding: 2px 8px; background: var(--line); white-space: nowrap; justify-self: end; }
+  .jr .st.prog { background: var(--glow); }
+  .jr .sum { grid-column: 1 / -1; line-height: 1.35; overflow-wrap: anywhere; }
+  .jr .meta { grid-column: 1 / -1; font-size: 11.5px; color: var(--ash); }
+  @media (max-width: 560px) { .desk { grid-template-columns: 1fr; } }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Work inbox · a new tab for Chrome</span>
+      <h1>Unread mail, open issues.<br /><em>Before you open either.</em></h1>
+      <p class="lead measure">The Inbox widget shows your unread Gmail on every new tab. The Jira widget shows the issues any JQL query returns. Both are read-only, both run from your browser with your own sign-in or token, and nothing goes through a Fogar server.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#what">What each one reads</a>
+      </div>
+      <p class="cta-note">Free. Open source. Both widgets are optional; each asks for its one site when you save it.</p>
+    </div>
+
+    <div class="stage" aria-label="The Inbox and Jira widgets, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="desk">
+            <div class="card">
+              <div class="card-h">Inbox <span class="pill">Open Gmail</span></div>
+              <div id="mail" style="display: grid; gap: 2px">
+                <div class="ml"><span class="from">Priya Nair</span><span class="when">18 min ago</span><span class="subj">Contract redlines, round two</span><span class="snip">Two small changes on page 4, otherwise good to sign.</span></div>
+                <div class="ml"><span class="from">Billing</span><span class="when">2 h ago</span><span class="subj">Your September invoice</span><span class="snip">Invoice #2291 is attached. Nothing is due today.</span></div>
+              </div>
+              <span class="note" id="mail-status">2 unread · updated just now · Refresh · Change</span>
+            </div>
+            <div class="card">
+              <div class="card-h">Jira <span class="pill">Open in Jira</span></div>
+              <div style="display: grid; gap: 2px">
+                <div class="jr"><span class="key">WEB-412</span><span class="st prog">In progress</span><span class="sum">Checkout button hidden on narrow screens</span><span class="meta">Bug · High priority · updated 1 h ago</span></div>
+                <div class="jr"><span class="key">WEB-398</span><span class="st">To do</span><span class="sum">Move pricing copy into the CMS</span><span class="meta">Task · updated 2 d ago</span></div>
+              </div>
+              <span class="note">2 issues · updated just now · Refresh · Change</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Open another new tab</button>
+    </div>
+  </header>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What leaves</span>
+      <h2 class="measure">Three ways to connect. Each talks to one service, from your browser.</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>You choose</th><th>What Fogar reads</th><th>Where the request goes</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Gmail, unread feed</td><td>The unread feed Gmail already publishes for the account signed in to this browser, or one label of it.<small>Sender, subject, snippet, and date. Nothing to set up; your Gmail session is the sign-in.</small></td><td>mail.google.com</td></tr>
+          <tr><td class="k">Gmail API, your client</td><td>Any Gmail search, read and unread, through an OAuth client you create in your own Google project.<small>Only the From, Subject, and Date headers and Google’s snippet. Never the message body.</small></td><td>accounts.google.com, gmail.googleapis.com</td></tr>
+          <tr><td class="k">Jira</td><td>The issues one JQL query returns: key, summary, status, type, priority, assignee, last update.<small>Jira Cloud: your account email and an API token. Server and Data Center: a personal access token.</small></td><td>Your Jira site</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Each site is requested as an optional permission when you save the widget. The Gmail API path also needs Chrome’s identity permission, asked only when you click Connect Gmail.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Pick a connection. Set a filter. Glance.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Inbox, the easy way</h3><p>Add widget, then Inbox, then “Gmail, unread feed”. That is it. To show a slice, make a Gmail filter that applies a label and name the label here. Several Google accounts? Set the account number, as in mail.google.com/mail/u/1.</p><span class="mono">no setup · unread only · one label as the filter</span></div>
+      <div class="step"><h3>Inbox, any search</h3><p>Choose “Gmail API, your own client”. In Google Cloud, create a project, enable the Gmail API, add a Web application client with the redirect address Fogar shows, add yourself as a test user, and paste the client id. Then any search works: from:stripe.com newer_than:7d.</p><span class="mono">about five minutes · your project, your key</span></div>
+      <div class="step"><h3>Jira</h3><p>Add widget, then Jira. Paste your site, your email, and an API token from id.atlassian.com. Leave JQL blank for your unresolved issues, most recently updated first, or paste any query: a sprint, a saved filter, a team.</p><span class="mono">read-only · up to 50 issues · fetched again after five minutes</span></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">A glance, not a client.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>Both widgets are read-only. You cannot reply, archive, comment, or move an issue. Click a row and it opens in Gmail or Jira.</li>
+          <li>The Gmail feed lists only unread mail, and only for the Google account signed in to this browser. Sign out of Gmail and the widget asks you to sign back in.</li>
+          <li>Fogar ships no Google client of its own. Gmail’s read scope needs a yearly security audit for a published app, so the search option runs on a client you create. Google shows an “unverified app” screen once; that is your own project.</li>
+          <li>The Gmail API permission Google grants is read access to your whole mailbox, even though Fogar asks only for headers and snippets.</li>
+          <li>Your Jira token lives in Chrome’s extension storage on this device, is sent only to your Jira site, and is included in the backup file you export from Settings. Treat that file like the token.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Does my mail go through a Fogar server?</summary><p>No. There is no Fogar server. Your browser asks Gmail or Jira directly, and the list it gets back is kept in Chrome’s extension storage on this device.</p></details>
+      <details><summary>Why does the unread feed need no sign-in?</summary><p>Gmail publishes your unread mail as a feed for whichever account is signed in to this browser. Fogar fetches it with that session, the same way a Gmail tab would. If you are signed out, the widget tells you to open Gmail and sign in.</p></details>
+      <details><summary>Why would I set up my own OAuth client?</summary><p>For any Gmail search and for read as well as unread mail. Google treats Gmail read access as restricted, so Fogar does not ship a client. You create one in your own Google Cloud project, free, in about five minutes, and paste its id.</p></details>
+      <details><summary>Can it show read mail or a specific sender?</summary><p>The unread feed shows unread mail only. Either connection can also narrow to messages whose sender or subject contains a word you choose. For read mail or full Gmail search syntax, use the Gmail API option.</p></details>
+      <details><summary>Does the Jira widget work with Jira Server or Data Center?</summary><p>Yes. For a site that is not on atlassian.net, paste a personal access token from your Jira profile instead of an email and API token. Fogar tries Jira Cloud’s current search endpoint first and falls back to the classic one.</p></details>
+      <details><summary>Can the Jira widget change anything?</summary><p>No. It only runs your search and lists the results. To edit an issue, click it and it opens in Jira.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var mail = document.getElementById('mail'), status = document.getElementById('mail-status'), replay = document.getElementById('replay');
+    var initial = mail.innerHTML, timer = 0;
+    function reset() { clearTimeout(timer); mail.innerHTML = initial; status.textContent = '2 unread · updated just now · Refresh · Change'; }
+    // A new tab after a while: the cache is stale, Gmail is asked again, and a new unread message is on top.
+    function arrive() {
+      var row = document.createElement('div'); row.className = 'ml fresh';
+      row.innerHTML = '<span class="from">Sam Okafor</span><span class="when">just now</span><span class="subj">Standup moved to 10:15</span><span class="snip">Room is booked until ten, so we are pushing fifteen minutes.</span>';
+      mail.prepend(row); status.textContent = '3 unread · updated just now · Refresh · Change';
+      timer = setTimeout(function () { row.classList.remove('fresh'); }, 1800);
+    }
+    replay.addEventListener('click', function () { reset(); timer = setTimeout(arrive, reduce ? 0 : 500); });
+    if (!reduce) timer = setTimeout(arrive, 2200);
+  })();
+</script>

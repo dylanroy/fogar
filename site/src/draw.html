@@ -1,0 +1,181 @@
+<title>A whiteboard in your new tab, and a model that draws · Fogar</title>
+<meta name="description" content="Sketch in Chrome’s new tab with a pen, highlighter, arrows, boxes, ellipses, and text. Or tell a model what to draw: it answers with shapes as data, checked before anything is drawn. Save a PNG." />
+<meta property="og:description" content="A whiteboard on every new tab. Draw it yourself, or say “add a red arrow from the box to the circle” and a model edits the sheet." />
+<style>
+  .cv { display: grid; gap: 10px; }
+  .cv-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .cv-tool { width: 28px; height: 28px; display: inline-grid; place-items: center; border: 1px solid var(--line-2); border-radius: 7px; font-size: 13px; color: var(--ink-2); }
+  .cv-tool.on { background: var(--ember); color: var(--ember-ink); border-color: transparent; }
+  .cv-sw { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .cv-sw i { width: 14px; height: 14px; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
+  .cv-sw i.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ember); }
+  .cv svg { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); }
+  .cv svg .ai { opacity: 0; transition: opacity 0.35s; }
+  .cv svg .ai.in { opacity: 1; }
+  .cv-chat { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; align-items: center; }
+  .cv-chat .box { font-size: 13px; min-height: 38px; }
+  @media (max-width: 520px) { .cv-chat { grid-template-columns: minmax(0, 1fr) auto; } .cv-chat .box { grid-column: 1 / -1; } }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Canvas · a new tab for Chrome</span>
+      <h1>A whiteboard on every tab.<br /><em>Say what to draw.</em></h1>
+      <p class="lead measure">Open a tab and sketch: pen, highlighter, arrows, boxes, ellipses, text. Or type what you want, “turn this into a flow: idea, draft, review, ship”, and a model answers with shapes as data. Fogar checks every shape before it draws one, and an answer that is not shapes changes nothing.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#how">How it works</a>
+      </div>
+      <p class="cta-note">Free. Open source. Drawings are kept in this browser.</p>
+    </div>
+
+    <div class="stage" aria-label="The Canvas widget, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="card-h">Canvas <span class="pill">Save PNG</span></div>
+          <div class="cv">
+            <div class="cv-bar" aria-hidden="true">
+              <span class="cv-tool on">✎</span><span class="cv-tool">▮</span><span class="cv-tool">➚</span><span class="cv-tool">╲</span><span class="cv-tool">▭</span><span class="cv-tool">◯</span><span class="cv-tool">T</span><span class="cv-tool">⌫</span>
+              <span class="cv-sw"><i class="on" style="--sw:#1f1a17"></i><i style="--sw:#d7263d"></i><i style="--sw:#f07b1a"></i><i style="--sw:#f2c230"></i><i style="--sw:#2f9e5b"></i><i style="--sw:#2b6fd6"></i><i style="--sw:#7d4fd1"></i><i style="--sw:#ffffff"></i></span>
+              <span class="pill ctl">Normal</span><span class="pill ctl">↶</span><span class="pill ctl">↷</span>
+            </div>
+            <svg viewBox="0 0 800 500" role="img" aria-label="A sketch: a handwritten title, then four boxes joined by arrows">
+              <rect x="0" y="0" width="800" height="500" rx="6" fill="#fbf7ef" />
+              <text x="44" y="96" fill="#1f1a17" font-size="38" font-family="ui-sans-serif, system-ui, sans-serif">Launch plan</text>
+              <path d="M40 116 C120 110 200 122 262 112 S300 118 312 114" stroke="#d7263d" stroke-width="4" fill="none" stroke-linecap="round" />
+              <path d="M600 60 C640 40 720 50 730 90 C738 130 660 150 620 128 C592 112 596 80 612 70" stroke="#f2c230" stroke-width="18" opacity="0.4" fill="none" stroke-linecap="round" />
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="40" y="220" width="150" height="80" rx="2" stroke="#2b6fd6" fill="#2b6fd6" fill-opacity="0.25" /><text x="86" y="268" fill="#1f1a17" stroke="none">Idea</text>
+              </g>
+              <g class="ai"><line x1="190" y1="260" x2="220" y2="260" stroke="#1f1a17" stroke-width="3" /><polygon points="232,260 217,252 217,268" fill="#1f1a17" /></g>
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="232" y="220" width="150" height="80" rx="2" stroke="#2b6fd6" fill="#2b6fd6" fill-opacity="0.25" /><text x="276" y="268" fill="#1f1a17" stroke="none">Draft</text>
+              </g>
+              <g class="ai"><line x1="382" y1="260" x2="412" y2="260" stroke="#1f1a17" stroke-width="3" /><polygon points="424,260 409,252 409,268" fill="#1f1a17" /></g>
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="424" y="220" width="150" height="80" rx="2" stroke="#f07b1a" fill="#f07b1a" fill-opacity="0.25" /><text x="462" y="268" fill="#1f1a17" stroke="none">Review</text>
+              </g>
+              <g class="ai"><line x1="574" y1="260" x2="604" y2="260" stroke="#1f1a17" stroke-width="3" /><polygon points="616,260 601,252 601,268" fill="#1f1a17" /></g>
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="616" y="220" width="150" height="80" rx="2" stroke="#2f9e5b" fill="#2f9e5b" fill-opacity="0.25" /><text x="668" y="268" fill="#1f1a17" stroke="none">Ship</text>
+              </g>
+            </svg>
+            <div class="cv-chat">
+              <div class="box" id="ask" aria-live="polite"><span class="caret"></span></div>
+              <span class="pill">Fogar’s current model (this device)</span>
+              <button class="pill primary" type="button" id="go">Draw</button>
+            </div>
+            <div class="note" id="status" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Play it again</button>
+    </div>
+  </header>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What a drawing is</span>
+      <h2 class="measure">A list of shapes. Never code, never a picture the model painted.</h2>
+      <p class="lead measure">Everything on the sheet is a box, an ellipse, a line, an arrow, a piece of text, or one of your strokes. That list is what Fogar saves, what the model reads, and what it has to send back.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>You do</th><th>Fogar does</th><th>It lives</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Draw</td><td>Saves each stroke, box, arrow, or word as numbers when you lift the pointer.<small>Eight colors, four widths. The highlighter is a wide, see-through pen.</small></td><td>This browser</td></tr>
+          <tr><td class="k">Ask</td><td>Sends the shape list as text with your instruction. Your strokes go as an id and a bounding box, not point by point.<small>The reply has to be a list of shapes. Each shape is checked: a known type, real numbers pulled back near the sheet, a real color or plain ink. Anything else is dropped.</small></td><td>The model you picked</td></tr>
+          <tr><td class="k">Undo, redo</td><td>Steps back through the last sixty changes. A model’s reply is one step.</td><td>This browser</td></tr>
+          <tr><td class="k">Save PNG</td><td>Renders the sheet at twice its size, 1600 by 1000, on the paper color.</td><td>A file you own</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Drawings ride along in the backup under Settings. On the device model, no request leaves the browser for any of this.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Add the widget. Draw. Ask when drawing is slower than saying.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Add a Canvas</h3><p>Add widget, then Canvas. It takes a full row. Add a second one for a second sheet; each has its own title. The ⛶ control fills the window, and Escape brings the page back.</p><span class="mono">no permission · no account</span></div>
+      <div class="step"><h3>Draw like you annotate a screen</h3><p>Pen, highlighter, line, arrow, box, ellipse, text. The eraser removes whole shapes. Clear empties the sheet, and undo brings it back.</p><span class="mono">800 by 500 · scales to the card</span></div>
+      <div class="step"><h3>Tell the model</h3><p>“Add a red arrow from the box to the circle.” “Label the boxes.” “Make it a flowchart.” Pick which model draws: Fogar’s current one, or any profile from an <a href="/models">LLM Chat</a> widget.</p><span class="mono">the model edits the list · your strokes come back untouched</span></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Diagrams, not art.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>The model draws boxes, ellipses, lines, arrows, and text. It cannot make freehand strokes, so “draw a cat” gets you a cat made of ellipses.</li>
+          <li>Small models often miss the format. On the 0.8B and 2B device models, expect “The model did not answer with shapes” more often than a drawing. The 4B, or a cloud model, follows it.</li>
+          <li>With a cloud model, the shape list and your instruction go to that provider, because that is where the model is. On the device, nothing leaves.</li>
+          <li>One sheet per widget, a fixed size. No infinite canvas, no layers, no sharing, no sync.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Which models can draw?</summary><p>Any model that answers with the shape list Fogar asks for. In practice that is the Qwen3.5 4B on this device or a cloud model such as Claude, GPT, or Gemini through your own key. The smaller device models often answer with prose instead; when that happens the canvas stays as it was and the widget says so.</p></details>
+      <details><summary>Does my drawing leave my computer?</summary><p>Not with the device model. With a cloud model, the list of shapes goes as text to the endpoint you chose, along with your instruction. Your freehand strokes are described only by an id and a bounding box, never their points.</p></details>
+      <details><summary>What if the model wrecks my drawing?</summary><p>Press undo. A model’s reply is a single undo step, and the last sixty changes are kept. The model also cannot move or redraw your own strokes: it can keep them, recolor them, or leave them out.</p></details>
+      <details><summary>How do I get the drawing out?</summary><p>Save PNG, in the card’s corner, downloads the sheet at 1600 by 1000 pixels on a paper background. The drawing itself also rides along in Fogar’s backup file.</p></details>
+      <details><summary>Can I draw with a pen or tablet?</summary><p>The canvas listens to pointer events, so a mouse, a trackpad, a touch screen, or a stylus all draw. Pressure is not used; stroke width comes from the width menu.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var ask = document.getElementById('ask'), go = document.getElementById('go'), status = document.getElementById('status'), replay = document.getElementById('replay');
+    var parts = [].slice.call(document.querySelectorAll('.cv svg .ai'));
+    var q = 'turn this into a flow: idea, draft, review, ship';
+    var timer = 0, token = 0;
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function reset() { clearTimeout(timer); token++; parts.forEach(function (p) { p.classList.remove('in'); }); ask.innerHTML = '<span class="caret"></span>'; status.textContent = ''; go.disabled = false; }
+    // The model answers with the whole list: the title and strokes kept by id, four boxes, four labels, three arrows.
+    function draw(my) {
+      go.disabled = true; status.textContent = 'Drawing…';
+      var i = 0;
+      timer = setTimeout(function step() {
+        if (my !== token) return;
+        if (i < parts.length) { parts[i++].classList.add('in'); timer = setTimeout(step, reduce ? 0 : 160); return; }
+        ask.innerHTML = '<span class="caret"></span>'; status.textContent = '14 shapes on the canvas.'; go.disabled = false;
+      }, reduce ? 0 : 1400);
+    }
+    function run() {
+      reset(); var my = token;
+      if (reduce) { ask.textContent = q; draw(my); return; }
+      var n = 0;
+      (function tick() {
+        if (my !== token) return;
+        n++; ask.innerHTML = esc(q.slice(0, n)) + '<span class="caret"></span>';
+        if (n < q.length) timer = setTimeout(tick, 30 + Math.random() * 40); else { ask.textContent = q; timer = setTimeout(function () { draw(my); }, 350); }
+      })();
+    }
+    go.addEventListener('click', run);
+    replay.addEventListener('click', run);
+    if (!reduce) setTimeout(run, 1400); else run();
+  })();
+</script>

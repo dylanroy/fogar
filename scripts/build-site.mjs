@@ -1,5 +1,5 @@
 // Builds fogar.ai into site/ from its sources: the homepage body (site/page.html), one body per use-case page
-// (site/src/*.html: tabs, bookmarks, write, today, voice), and site/src/shared.css for the widget mock-ups those pages draw.
+// (site/src/*.html, one per use case), and site/src/shared.css for the widget mock-ups those pages draw.
 //
 // The homepage is the template. Its <style>, font links, nav, install section and footer are lifted out by
 // <!-- @nav --> … <!-- @/nav --> markers and put into every page, so one edit reaches all of them. Each page gets its
@@ -7,7 +7,7 @@
 // Also writes sitemap.xml, robots.txt and icon.svg, and copies the current extension zip (from `npm run zip`) to
 // site/fogar-chrome.zip, the Download button. Cloudflare serves site/tabs.html at /tabs (html_handling in
 // wrangler.jsonc), so links and canonicals are extensionless.
-import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import { copyFileSync, existsSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 
 const SITE = 'https://fogar.ai';
@@ -19,7 +19,40 @@ const PAGES = [
   { path: '/write', src: 'site/src/write.html', out: 'site/write.html' },
   { path: '/today', src: 'site/src/today.html', out: 'site/today.html' },
   { path: '/voice', src: 'site/src/voice.html', out: 'site/voice.html' },
+  { path: '/ask', src: 'site/src/ask.html', out: 'site/ask.html' },
+  { path: '/search', src: 'site/src/search.html', out: 'site/search.html' },
+  { path: '/files', src: 'site/src/files.html', out: 'site/files.html' },
+  { path: '/notebook', src: 'site/src/notebook.html', out: 'site/notebook.html' },
+  { path: '/draw', src: 'site/src/draw.html', out: 'site/draw.html' },
+  { path: '/news', src: 'site/src/news.html', out: 'site/news.html' },
+  { path: '/work', src: 'site/src/work.html', out: 'site/work.html' },
+  { path: '/models', src: 'site/src/models.html', out: 'site/models.html' },
 ];
+/**
+ * Pages written ahead of the store: they describe features in a version still in review, and the Add to Chrome button
+ * installs the one that is live. Held pages are not written, not in the sitemap, and every link to one is taken out
+ * (menu entries and footer or homepage links removed, links in running text unwrapped). Empty this when the version
+ * that carries them is live. FOGAR_SHOW_HELD=1 builds them anyway, for a local preview; never deploy that build.
+ */
+const HOLD = new Set(process.env.FOGAR_SHOW_HELD === '1' ? [] : [
+  // v0.1.1: attachments, LLM Chat and cloud profiles, Canvas, Notebook and Post-its, Feed, Inbox and Jira
+  '/ask', '/search', '/files', '/models', '/draw', '/notebook', '/news', '/work',
+]);
+const held = (path) => HOLD.has(path);
+
+/** Take every link to a held page out of a built page. */
+function hide(html) {
+  if (!HOLD.size) return html;
+  const paths = [...HOLD].map((p) => p.slice(1)).join('|');
+  const link = `<a href="/(?:${paths})"[^>]*>`;
+  return html
+    .replace(new RegExp(`\\s*${link}<b>[\\s\\S]*?</a>`, 'g'), '') // menu entries
+    .replace(/\s*<div class="menu-col">\s*<p class="menu-h">[^<]*<\/p>\s*<\/div>/g, '') // a menu column left empty
+    .replace(new RegExp(` · ${link}[^<]*</a>`, 'g'), '') // footer list
+    .replace(/<p class="cases-more">[\s\S]*?<\/p>/, (p) => { const q = p.replace(new RegExp(` ${link}[^<]*</a>`, 'g'), ''); return q.includes('<a ') ? q : ''; })
+    .replace(new RegExp(`${link}([\\s\\S]*?)</a>`, 'g'), '$1'); // running text keeps its words
+}
+
 /** Hand-written pages that belong in the sitemap too. */
 const ALSO = [{ path: '/privacy', src: 'site/privacy.html' }];
 
@@ -115,10 +148,11 @@ function head(page, meta, links, styles) {
 
 const homeMeta = lift(home, 'site/page.html');
 for (const page of PAGES) {
+  if (held(page.path)) { rmSync(page.out, { force: true }); console.log(`build-site: ${page.out} held (see HOLD)`); continue; }
   const meta = page.home ? homeMeta : lift(readFileSync(page.src, 'utf8'), page.src);
-  const body = meta.body
+  const body = hide(meta.body
     .replace(/<!-- @include (\w+) -->/g, (_, name) => adapt(partial(name), page, name))
-    .replace(/[ \t]*<!-- @\/?\w+ -->\n?/g, ''); // the markers have done their job
+    .replace(/[ \t]*<!-- @\/?\w+ -->\n?/g, '')); // the markers have done their job
   const styles = page.home ? homeMeta.styles : [...homeMeta.styles, `<style>\n${shared}\n</style>`, ...meta.styles];
   const html = `<!doctype html>\n<html lang="en">\n<head>\n${head(page, meta, homeMeta.links, styles)}\n</head>\n<body>\n${body}\n</body>\n</html>\n`;
   writeFileSync(page.out, html);
@@ -136,7 +170,7 @@ function lastmod(...files) {
   return dates.sort().at(-1);
 }
 const urls = [
-  ...PAGES.map((p) => ({ loc: `${SITE}${p.path}`, lastmod: lastmod(p.src, 'site/page.html', 'site/src/shared.css') })),
+  ...PAGES.filter((p) => !held(p.path)).map((p) => ({ loc: `${SITE}${p.path}`, lastmod: lastmod(p.src, 'site/page.html', 'site/src/shared.css') })),
   ...ALSO.map((p) => ({ loc: `${SITE}${p.path}`, lastmod: lastmod(p.src) })),
 ];
 writeFileSync('site/sitemap.xml', `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.map((u) => `  <url><loc>${u.loc}</loc><lastmod>${u.lastmod}</lastmod></url>`).join('\n')}\n</urlset>\n`);

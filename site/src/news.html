@@ -1,0 +1,146 @@
+<title>An RSS reader on your new tab · Fogar</title>
+<meta name="description" content="RSS, Atom and JSON Feed, a site address, or a search on Google News, Hacker News, Reddit or Bing News, merged newest first on your Chrome new tab. No account. Fetched from your browser." />
+<meta property="og:description" content="Feeds and searches, merged newest first on your Chrome new tab, with a dot on what is new. No account, no Fogar server." />
+<style>
+  .fd { display: grid; gap: 2px; }
+  .fd-item { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 10px; align-items: start; padding: 7px 8px; border-radius: 8px; transition: background 0.6s; }
+  .fd-item .fav { margin-top: 3px; }
+  .fd-item .main { display: grid; gap: 2px; }
+  .fd-item .t { font-size: 14px; line-height: 1.35; overflow-wrap: anywhere; }
+  .fd-item.new .t::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ember); margin-right: 7px; vertical-align: 2px; }
+  .fd-item .snip { font-size: 12.5px; color: var(--ink-2); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .fd-item.fresh { background: var(--glow-2); }
+  .fd-status { line-height: 1.5; }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">News and feeds · a new tab for Chrome</span>
+      <h1>Every feed you follow.<br /><em>One list, newest first.</em></h1>
+      <p class="lead measure">Add a feed, a site’s address, or a search on Google News, Hacker News, Reddit, or Bing News. Fogar merges them into one list on your new tab, newest first, with a dot on what arrived since you last looked. No account. Each feed is fetched by your browser, straight from its own site.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#what">What it reads</a>
+      </div>
+      <p class="cta-note">Free. Open source. The Feed widget is optional; Chrome asks for each site when you add it.</p>
+    </div>
+
+    <div class="stage" aria-label="The Feed widget, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="card-h">Morning reading <button class="pill" type="button" id="mark">Mark read</button></div>
+          <div class="fd" id="fd">
+            <div class="fd-item new"><span class="fav"></span><span class="main"><span class="t">Show HN: A feed reader in 300 lines of JavaScript</span><span class="note">Hacker News: rss reader · 12 min ago</span></span></div>
+            <div class="fd-item new"><span class="fav"></span><span class="main"><span class="t">Heat pumps now outsell gas furnaces in the Northeast</span><span class="snip">Installers say demand doubled this year as rebates arrived and winter prices climbed.</span><span class="note">Google News: heat pumps · 40 min ago</span></span></div>
+            <div class="fd-item"><span class="fav"></span><span class="main"><span class="t">Why I still write a weekly letter</span><span class="snip">Nine years, four hundred issues, and what an inbox teaches you about attention.</span><span class="note">Field Notes · Ana Reyes · 3 h ago</span></span></div>
+            <div class="fd-item"><span class="fav"></span><span class="main"><span class="t">My starter finally doubles in four hours</span><span class="note">Reddit: sourdough starter · 5 h ago</span></span></div>
+          </div>
+          <p class="note fd-status" id="fd-status">20 items from 4 sources · updated just now · Refresh · Mark all read · Sources</p>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Open a new tab later</button>
+    </div>
+  </header>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What it reads</span>
+      <h2 class="measure">Paste a feed, a site, or a few words.</h2>
+      <p class="lead measure">Each source is one line in the widget. Every request goes from your browser to the address in the right-hand column, and nowhere else.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>You add</th><th>Fogar reads</th><th>Fetched from</th></tr></thead>
+        <tbody>
+          <tr><td class="k">A feed address</td><td>RSS 2.0, RSS 1.0, Atom, or JSON Feed.<small>Title, link, date, author, and the first couple of lines of the summary as plain text.</small></td><td>That site</td></tr>
+          <tr><td class="k">A site address</td><td>The feed the page advertises in its head.<small>Found once, then remembered, so later refreshes go straight to the feed.</small></td><td>That site</td></tr>
+          <tr><td class="k">Google News search</td><td>Headlines matching your words, newest first.<small>The US English edition.</small></td><td>news.google.com</td></tr>
+          <tr><td class="k">Hacker News search</td><td>New stories and comments that match.</td><td>hnrss.org</td></tr>
+          <tr><td class="k">Reddit search</td><td>New posts across Reddit that match.</td><td>reddit.com</td></tr>
+          <tr><td class="k">Bing News search</td><td>Another news index, with different outlets.</td><td>bing.com</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">The merged list is kept in Chrome’s extension storage on this device. There is no Fogar server to proxy through, so there is nothing to log your reading.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Add sources. Open tabs. Read the top.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Add the Feed widget</h3><p>Add widget, then Feed. Pick “Feed or site address” or one of the four searches, type, and press Add. Chrome asks to let Fogar reach that one site. Feeds that already allow cross-origin reads work even if you say no.</p><span class="mono">optional permission · one site at a time</span></div>
+      <div class="step"><h3>One list</h3><p>Items from every source are merged newest first, and a link that shows up in two feeds is listed once. Show 10, 20, or 40. Each line says which source it came from.</p><span class="mono">click a headline · it opens on its own site</span></div>
+      <div class="step"><h3>A dot on what is new</h3><p>Anything dated after your last “Mark read” gets a dot. The widget refreshes when you open a new tab and the list is more than fifteen minutes old, or when you click Refresh.</p><span class="mono">several Feed widgets if you like · work, news, hobbies</span></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Headlines, not a reading app.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>It shows titles and a line or two of summary. Clicking opens the article on its own site. There is no built-in article view.</li>
+          <li>Read state is one moment in time: “Mark read” clears every dot. There is no per-item read, star, or archive.</li>
+          <li>No OPML import, no folders, no full-text search of past items. The list holds the newest 10, 20, or 40.</li>
+          <li>It refreshes only while you open new tabs. Nothing polls in the background.</li>
+          <li>Hacker News searches come through hnrss.org, a free third-party service. If it is down, that source shows an error and the rest still load.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Do I need an account?</summary><p>No. There is nothing to sign up for and no Fogar server. Your browser fetches each feed directly from its site and keeps the list on this device.</p></details>
+      <details><summary>Which feed formats work?</summary><p>RSS 2.0, RSS 1.0, Atom, and JSON Feed. If you only know the site, paste its address: Fogar looks for the feed the page advertises and remembers it.</p></details>
+      <details><summary>Why does Chrome ask for permission when I add a source?</summary><p>An extension can read another site only with permission for that site. Fogar asks for the one site you just added, at that moment, and never for all sites up front. Some feeds allow cross-origin reads and work even if you decline.</p></details>
+      <details><summary>Can I follow Hacker News or a subreddit?</summary><p>Yes. Pick “Search Hacker News” and type the words you care about, and new matching stories arrive through hnrss.org. For one subreddit, paste its feed address, such as reddit.com/r/sourdough/.rss, or use “Search Reddit” to watch all of Reddit for your words.</p></details>
+      <details><summary>How does it know what is new?</summary><p>It remembers when you last clicked “Mark read”. Every item dated after that gets a dot. The first time, everything is new.</p></details>
+      <details><summary>Can I import my subscriptions from another reader?</summary><p>Not yet. There is no OPML import, so sources are added one at a time. A site address is enough for most of them.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var fd = document.getElementById('fd'), mark = document.getElementById('mark'), replay = document.getElementById('replay'), status = document.getElementById('fd-status');
+    var initial = fd.innerHTML, timer = 0;
+    function paintMark() { mark.hidden = !fd.querySelector('.new'); }
+    // Mark read clears every dot at once, as the real widget does.
+    mark.addEventListener('click', function () { [].forEach.call(fd.querySelectorAll('.new'), function (n) { n.classList.remove('new'); }); paintMark(); });
+    // Later, a new tab: one fresh item lands on top with a dot.
+    function arrive() {
+      var row = document.createElement('div'); row.className = 'fd-item new fresh';
+      row.innerHTML = '<span class="fav"></span><span class="main"><span class="t">The quiet comeback of the personal website</span><span class="snip">More people are publishing on their own domains, with a feed, and nothing else.</span><span class="note">Bing News: personal website · just now</span></span>';
+      fd.prepend(row); if (fd.children.length > 4) fd.lastElementChild.remove();
+      status.textContent = '20 items from 4 sources · updated just now · Refresh · Mark all read · Sources';
+      paintMark(); timer = setTimeout(function () { row.classList.remove('fresh'); }, 1800);
+    }
+    replay.addEventListener('click', function () {
+      clearTimeout(timer);
+      if (!fd.querySelector('.new')) { arrive(); return; }
+      fd.innerHTML = initial; paintMark();
+      timer = setTimeout(function () { mark.click(); timer = setTimeout(arrive, reduce ? 0 : 700); }, reduce ? 0 : 500);
+    });
+    paintMark();
+    if (!reduce) timer = setTimeout(function () { mark.click(); timer = setTimeout(arrive, 1400); }, 2600);
+  })();
+</script>

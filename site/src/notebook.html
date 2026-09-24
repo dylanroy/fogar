@@ -1,0 +1,177 @@
+<title>Photo of a page to text, sticky notes, a notebook · Fogar</title>
+<meta name="description" content="Ruled pages in Chrome’s new tab. Add a photo of a page and it becomes text: printed text on your device with Tesseract, handwriting through a vision model you connect. Plus sticky notes and a scratchpad that saves as you type." />
+<meta property="og:description" content="Photograph the page, get the words. Printed text is read on your device, offline. Handwriting goes to a vision model you choose. Sticky notes and a scratchpad come with it." />
+<style>
+  .nb { display: grid; gap: 10px; }
+  .nb-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nb-tabs span { font-size: 12px; padding: 4px 10px; border-radius: 7px 7px 0 0; border: 1px solid var(--line); border-bottom: 0; color: var(--ash); }
+  .nb-tabs span.on { color: var(--ink); background: var(--surface-2); }
+  .nb-page { border: 1px solid var(--line); border-radius: 0 10px 10px 10px; background: var(--ground); padding: 10px 14px 14px; position: relative; }
+  .nb-page .ttl { font-family: var(--serif); font-weight: 600; font-size: 17px; padding-bottom: 4px; }
+  .nb-text { min-height: 196px; white-space: pre-wrap; font-size: 14px; line-height: 28px; background-image: repeating-linear-gradient(to bottom, transparent 0 27px, var(--line) 27px 28px); }
+  .nb-text:empty::before { content: "Write here, or add a photo of a page below."; color: var(--ash); }
+  .nb-photo { position: absolute; right: 12px; top: 44px; width: 92px; transform: rotate(4deg); border-radius: 4px; background: #f7f3ea; box-shadow: 0 8px 22px -8px rgba(0, 0, 0, 0.5); padding: 8px; opacity: 0; transition: opacity 0.3s, transform 0.3s; }
+  .nb-photo.on { opacity: 1; transform: rotate(-3deg); }
+  .nb-photo svg { display: block; width: 100%; height: auto; }
+  .nb-foot { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .nb-foot .pill { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .kind { display: grid; gap: 8px; align-content: start; padding: 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; }
+  .kind h3 { font-size: 20px; }
+  .kind p { color: var(--ink-2); font-size: 15.5px; }
+  .kind .mono { margin-top: 4px; }
+  .board { position: relative; height: 118px; margin-bottom: 6px; }
+  .pn { position: absolute; width: 96px; height: 92px; padding: 16px 9px 8px; font: 12.5px/1.35 ui-sans-serif, system-ui, sans-serif; color: #2a241d; background: var(--paper); transform: rotate(var(--rot)); box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.55); border-top: 7px solid rgba(0, 0, 0, 0.06); }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Notes · a new tab for Chrome</span>
+      <h1>Photograph the page.<br /><em>Get the words.</em></h1>
+      <p class="lead measure">The Notebook widget gives you ruled pages on every new tab. Add a photo of a printed page, a slide, or a receipt, and its text lands on the page, read on your device with no network at all. For handwriting, pick a vision model you connected. Sticky notes and a plain scratchpad come with it.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#readers">Who reads the photo</a>
+      </div>
+      <p class="cta-note">Free. Open source. The on-device reader ships inside the extension.</p>
+    </div>
+
+    <div class="stage" aria-label="The Notebook widget reading a photo, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="card-h">Notebook <span class="acts"><span class="pill ctl">⎘</span><span class="pill ctl">⇩</span><span class="pill ctl">🗑</span></span></div>
+          <div class="nb">
+            <div class="nb-tabs" aria-hidden="true"><span>Page 1</span><span class="on" id="tab-name">Offsite</span><span>+</span></div>
+            <div class="nb-page">
+              <div class="ttl" id="ttl">Offsite</div>
+              <div class="nb-text" id="text" aria-live="polite"></div>
+              <div class="nb-photo" id="photo" aria-hidden="true">
+                <svg id="print" viewBox="0 0 80 100"><rect x="6" y="8" width="50" height="7" fill="#3a332b"/><g fill="#8a8177"><rect x="6" y="26" width="64" height="4"/><rect x="6" y="38" width="58" height="4"/><rect x="6" y="50" width="66" height="4"/><rect x="6" y="62" width="40" height="4"/></g></svg>
+                <svg id="hand" viewBox="0 0 80 100" hidden><g fill="none" stroke="#2b4a8a" stroke-width="2.2" stroke-linecap="round"><path d="M6 20c6-6 10 4 16-2s9 3 15-1 10 2 16-1 8 3 14 0"/><path d="M6 42c5-5 9 3 14-1s8 4 13 0 9 2 14-1"/><path d="M6 64c6-5 10 4 15 0s9 3 14-1 8 2 13 0 7 3 12 0"/></g></svg>
+              </div>
+            </div>
+            <div class="nb-foot">
+              <span class="pill">📷 Add a photo</span><span class="note">read with</span><span class="pill" id="reader">On this device · printed text, English</span>
+            </div>
+            <div class="note" id="status" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Try handwriting</button>
+    </div>
+  </header>
+
+  <section id="three">
+    <div class="section-head">
+      <span class="eyebrow">Three places to write</span>
+      <h2 class="measure">Pages, sticky notes, a scratchpad. Add the ones you use.</h2>
+      <p class="lead measure">Each is a widget: add it from Add widget, add it twice if you want two, remove it when you are done. Every one has a full-screen control, and Escape brings the page back.</p>
+    </div>
+    <div class="kinds">
+      <div class="kind"><h3>Notebook</h3><p>Ruled pages with tabs and titles. Add a photo with the button, paste a screenshot, or drop an image on the page; the text is added under what you already wrote. Copy a page, or download the whole notebook as Markdown.</p><span class="mono">pages · photo to text · Markdown export</span></div>
+      <div class="kind">
+        <div class="board" aria-hidden="true">
+          <div class="pn" style="--paper:#fff3a3; --rot:-2deg; left:0; top:8px">Call the landlord</div>
+          <div class="pn" style="--paper:#ffc9d6; --rot:1deg; left:14px; top:20px">Book flights</div>
+          <div class="pn" style="--paper:#bfe3ff; --rot:3deg; left:124px; top:4px">Ask Sam for the deck</div>
+        </div>
+        <h3>Post-its</h3><p>Square notes in six colors on a board. Drag one by its top edge. New notes land on a stack; pull one off and it stays where you let go. Drop it on another board and it moves there. Drop it on any other card and it becomes a widget of its own, right beside that card.</p><span class="mono">drag · stack · pull off</span></div>
+      <div class="kind"><h3>Notes</h3><p>One text box that is there every time you open a tab. No save button: it saves as you type. For the phone number you need in five minutes and the thought you do not want to lose.</p><span class="mono">plain text · saves as you go</span></div>
+    </div>
+  </section>
+
+  <section id="readers">
+    <div class="section-head">
+      <span class="eyebrow">Who reads the photo</span>
+      <h2 class="measure">You pick the reader. Here is where the photo goes with each.</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Read with</th><th>Good at</th><th>What leaves your browser</th></tr></thead>
+        <tbody>
+          <tr><td class="k">This device</td><td>Printed and typed English: handouts, slides, screenshots, receipts.<small>Tesseract, compiled to WebAssembly and shipped inside Fogar with its English data. Works offline.</small></td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ollama</td><td>Handwriting, as well as the vision model you pulled can read it.<small>Add an Ollama profile in an LLM Chat widget, pull a vision model such as llava or qwen2.5vl, and tick “This model reads images”.</small></td><td><span class="zero">Nothing</span>, it stays on this computer</td></tr>
+          <tr><td class="k">A cloud model</td><td>Handwriting, usually well.<small>A profile for Anthropic, OpenAI, Gemini, or OpenRouter, with your own key.</small></td><td>The photo, to that provider</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Photos are scaled down to 2000 pixels on the long side and re-encoded before they are read. Fogar keeps the text, never the photo.</p>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Offline reads print. Handwriting needs a model.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>Tesseract reads printed text, not handwriting. When it finds nothing, the widget says so and points you at a vision model.</li>
+          <li>English only on the device, for now. Other languages are on the roadmap, not in the build.</li>
+          <li>A cloud vision model means the photo goes to that provider, with your key, straight from your browser. There is no Fogar server in between.</li>
+          <li>Plain text only: no formatting, no search across pages, no sync. Everything lives in this browser and rides along in the backup under Settings.</li>
+          <li>The first photo takes a moment while the reader starts. It lets go of its memory after two quiet minutes.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Can it turn handwriting into text offline?</summary><p>Not with the built-in reader, which is made for printed text. It can if you run a vision model in Ollama on the same computer and pick it as the reader: the photo goes to localhost and nowhere else. How well it reads depends on the model.</p></details>
+      <details><summary>Does my photo leave my computer?</summary><p>Only if you pick a cloud model as the reader. On this device, and with Ollama on this computer, nothing leaves. With a cloud model, the scaled-down photo goes to that provider’s endpoint with your key.</p></details>
+      <details><summary>Is the photo saved anywhere?</summary><p>No. Fogar scales it down, reads it, and adds the text to the page. The photo itself is not stored, in the notebook or in the backup.</p></details>
+      <details><summary>What happens when I drag a sticky note onto another card?</summary><p>Onto another Post-its board, the note moves there. Onto any other card, such as your todos or the agenda, the note becomes its own Post-its widget next to that card. Drop it back on its own board and it just moves.</p></details>
+      <details><summary>Where are my notes kept?</summary><p>In this browser’s extension storage. Notebook pages, sticky notes, and the scratchpad all ride along in the backup file under Settings, and the Notebook also downloads as Markdown. None of it syncs between computers.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var text = document.getElementById('text'), photo = document.getElementById('photo'), status = document.getElementById('status');
+    var reader = document.getElementById('reader'), ttl = document.getElementById('ttl'), tabName = document.getElementById('tab-name'), replay = document.getElementById('replay');
+    var print = document.getElementById('print'), hand = document.getElementById('hand');
+    var acts = [
+      { name: 'Offsite', reader: 'On this device · printed text, English', local: true, lines: ['Q3 offsite agenda', '9:00 Welcome and coffee', '9:30 Roadmap review', '11:00 Customer panel', '12:30 Lunch'], done: 'Read 15 words on this device.' },
+      { name: 'Errands', reader: 'Ollama (this computer) · qwen2.5vl', local: false, lines: ['Call the landlord about the radiator', 'Book flights before Friday', 'Ask Sam for the deck'], done: 'Read 15 words with Ollama (this computer).' },
+    ];
+    var act = 0, timer = 0, token = 0;
+    function play(a) {
+      clearTimeout(timer); token++; var my = token;
+      ttl.textContent = tabName.textContent = a.name; reader.textContent = a.reader; text.textContent = ''; status.textContent = '';
+      print.hidden = !a.local; hand.hidden = a.local;
+      if (reduce) { text.textContent = a.lines.join('\n'); status.textContent = a.done; return; }
+      photo.classList.remove('on');
+      var steps = a.local ? ['Preparing the photo…', 'recognizing text 18%', 'recognizing text 57%', 'recognizing text 91%'] : ['Preparing the photo…', 'Reading with Ollama (this computer)…'];
+      var i = 0;
+      timer = setTimeout(function step() {
+        if (my !== token) return;
+        photo.classList.add('on');
+        if (i < steps.length) { status.textContent = steps[i++]; timer = setTimeout(step, 650); return; }
+        photo.classList.remove('on');
+        var all = a.lines.join('\n'), n = 0;
+        (function type() {
+          if (my !== token) return;
+          n = Math.min(all.length, n + 3); text.textContent = all.slice(0, n);
+          if (n < all.length) timer = setTimeout(type, 24); else status.textContent = a.done;
+        })();
+      }, 900);
+    }
+    replay.addEventListener('click', function () { act = (act + 1) % 2; play(acts[act]); replay.textContent = act ? 'Back to print' : 'Try handwriting'; });
+    if (!reduce) setTimeout(function () { play(acts[0]); }, 1200); else play(acts[0]);
+  })();
+</script>

@@ -1,0 +1,185 @@
+<title>AI answers with sources, in your new tab · Fogar</title>
+<meta name="description" content="Tick “Search the web first” and Fogar looks your question up, then answers with citations. Free with no key, or full web results with your own Brave or Tavily key." />
+<meta property="og:description" content="Cited answers in Chrome’s new tab. Your question goes only to the search you chose, and only when you tick the box." />
+<style>
+  .toggle-line { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2); }
+  .check { width: 13px; height: 13px; border-radius: 3px; border: 1px solid var(--line-2); display: inline-grid; place-items: center; font-size: 10px; line-height: 1; color: var(--ember-ink); }
+  .check.on { background: var(--ember); border-color: transparent; }
+  .tab-row { flex-wrap: wrap; }
+  .ans { display: grid; gap: 10px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .ans .q { font-size: 13px; color: var(--ash); }
+  .ans .a { font-size: 14.5px; line-height: 1.55; min-height: 1.5em; overflow-wrap: anywhere; }
+  .ans .src { margin: 0; padding-left: 20px; display: grid; gap: 3px; font-size: 13px; }
+  .ans .src a { color: var(--ink); }
+  .ans .foot { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .dig { display: grid; gap: 2px; border: 1px solid var(--line-2); border-radius: 10px; padding: 6px; background: var(--surface); }
+  .dig div { display: grid; gap: 1px; padding: 6px 8px; border-radius: 7px; }
+  .dig div:not(.off):hover { background: var(--surface-2); }
+  .dig b { font-weight: 600; font-size: 13px; }
+  .dig span { font-size: 11.5px; color: var(--ash); }
+  .dig .off { opacity: 0.5; }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Answers with sources · a new tab for Chrome</span>
+      <h1>Ask a question.<br /><em>Get the source too.</em></h1>
+      <p class="lead measure">A small model writes well and misremembers facts. So for the questions where facts matter, tick “Search the web first”. Fogar looks the question up, hands the results to the model, and the answer cites them. The search is free with no key. Nothing is searched until you ask.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#what">What gets sent</a>
+      </div>
+      <p class="cta-note">Free. Open source. Off until you tick the box, every time.</p>
+    </div>
+
+    <div class="stage" aria-label="A question answered from web results with citations, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="tab-ask" id="ask" aria-live="polite"></div>
+          <div class="tab-row"><span id="status"><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span class="toggle-line"><span class="check on" aria-hidden="true">✓</span>Search the web first</span></div>
+          <div class="ans" id="ans" hidden>
+            <span class="q" id="q"></span>
+            <span class="a" id="a" aria-live="polite"></span>
+            <ol class="src" id="src" hidden>
+              <li><a href="https://en.wikipedia.org/wiki/James_Webb_Space_Telescope">James Webb Space Telescope</a> <span class="note">DuckDuckGo · Wikipedia</span></li>
+              <li><a href="https://en.wikipedia.org/wiki/Ariane_5">Ariane 5</a> <span class="note">Wikipedia</span></li>
+              <li><a href="https://en.wikipedia.org/wiki/Guiana_Space_Centre">Guiana Space Centre</a> <span class="note">Wikipedia</span></li>
+            </ol>
+            <div class="foot"><span class="note" id="stats"></span><span class="acts"><button class="pill" type="button" id="dig-btn" aria-expanded="false">Dig deeper</button><span class="pill">Copy</span></span></div>
+            <div class="dig" id="dig" hidden>
+              <div class="off"><b>Search the web and answer again</b><span>Web results were already fetched for this answer.</span></div>
+              <div><b>Think longer</b><span>Lets the model reason before answering. Slower, better on multi-step questions.</span></div>
+              <div><b>Ask the cloud model</b><span>Same question and conversation, answered by your cloud model.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Play it again</button>
+    </div>
+  </header>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What gets sent, and where</span>
+      <h2 class="measure">Your question goes to one place you chose. Nothing else does.</h2>
+      <p class="lead measure">The results come back to the page and the model answers there. The search provider sees a query. It never sees your conversation or your files.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Provider</th><th>What leaves</th><th>Good for</th><th>Cost</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Free, no key</td><td>The subject of your question<small>“Who is the US president?” goes out as “the US president”, to DuckDuckGo’s Instant Answer API and to Wikipedia’s search in your browser’s language. Wikipedia pages that only matched on body text are dropped.</small></td><td>Well-known people, places, terms</td><td>Free</td></tr>
+          <tr><td class="k">Brave Search</td><td>Your question and your key<small>Sent only to Brave’s search API. Up to five web results come back.</small></td><td>Facts, names, anything recent</td><td>Free tier: 2,000 queries a month</td></tr>
+          <tr><td class="k">Tavily</td><td>Your question and your key<small>Sent only to Tavily’s search API. Up to five web results come back.</small></td><td>Facts, names, anything recent</td><td>Free tier: 1,000 queries a month</td></tr>
+          <tr><td class="k">Box not ticked</td><td><span class="zero">nothing</span><small>No search happens. The model answers on its own, from this device or your cloud endpoint.</small></td><td>Writing, explaining</td><td>Free</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Keys are stored in this browser. Each search API’s address is requested as a permission when you save its key.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Look it up, then answer from what came back.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Tick the box</h3><p>“Search the web first” sits under the ask box. Tick it for one question, or set it to start ticked in Settings. The free provider is already chosen.</p><span class="mono">off by default · one click</span></div>
+      <div class="step"><h3>Fogar searches</h3><p>Up to five results. Their titles and snippets go in front of your question, numbered, with an instruction: answer only from these, cite them like [1], and say so if the answer is not there.</p><span class="mono">snippets, not whole pages</span></div>
+      <div class="step"><h3>Read, then check</h3><p>The answer cites its sources inline. The list of links appears only when the answer actually cites something; otherwise the line under the answer says “no relevant web results” or “none cited”.</p><span class="mono">sources are links · open them</span></div>
+    </div>
+  </section>
+
+  <section id="more">
+    <div class="section-head">
+      <span class="eyebrow">More ways in</span>
+      <h2 class="measure">When the first answer is not enough, or the question starts on a page.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Dig deeper</span><div><h3>One menu on every answer</h3><p>Search the web and answer again, with sources. Think longer, which lets the local model reason first with a 600-token budget. Or ask the other model, if you have set one up: your cloud model if the answer came from the device, the device if it came from the cloud. The better answer replaces the first in the conversation.</p></div></div>
+      <div class="feature"><span class="eyebrow">Right-click</span><div><h3>“Ask Fogar about …”</h3><p>Select text on any page and right-click. A new tab opens and asks about it, and the page comes along: its title, address, and about 1,500 characters around your selection. The answer comes from the page, and says when the page does not contain it. Dig deeper adds web results on top.</p></div></div>
+      <div class="feature"><span class="eyebrow">Files</span><div><h3>A question about a document</h3><p>With a file attached, the answer comes from the file and the search rests. Dig deeper can still add the web, as a supplement. <a href="/files">About attachments.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Private AI</span><div><h3>No box ticked</h3><p>Everything else is answered by the model in your browser, with no request at all. <a href="/ask">About the local model.</a></p></div></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Not a search engine.</h2>
+        <p class="mono" style="margin-top: 22px">Every mode, and what it sends. <a href="/#ledger">See the ledger.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>The free search is thin. It knows well-known people, places, and topics. It does not know news, prices, or niche sites. For those, add a Brave Search or Tavily key.</li>
+          <li>The model reads snippets, a few hundred characters per result, not the pages. A question the snippets do not answer gets “I could not find it in the results”, if the model behaves.</li>
+          <li>A small model can still misread a source. The citation is there so you can check it in one click.</li>
+          <li>Five results, one pass. It does not crawl, follow links, or research for minutes. For a plain list of links, start with “?” or press Cmd or Ctrl+Enter and the question goes to DuckDuckGo instead.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Is this a private Perplexity alternative?</summary><p>For quick factual questions, it does the same basic thing: search, then answer with citations. It is much smaller. It reads five snippets, not whole pages, and the answer is written by a model in your browser or by the cloud endpoint you chose. No Fogar server sees the question.</p></details>
+      <details><summary>Do I need an API key?</summary><p>No. The free provider uses DuckDuckGo’s Instant Answer API and Wikipedia, with no key. A Brave Search or Tavily key adds full web results, and both have free tiers.</p></details>
+      <details><summary>Is anything searched without my asking?</summary><p>No. A search happens only for a question you send with “Search the web first” ticked, or when you choose “Search the web and answer again” from Dig deeper. The box starts unticked unless you change that in Settings.</p></details>
+      <details><summary>What does the search provider see?</summary><p>A query and, for Brave or Tavily, your key. The free provider gets the subject of your question with the question words stripped. None of them gets your conversation, an attached file, or the text of a page you right-clicked on.</p></details>
+      <details><summary>Why are some answers missing a source list?</summary><p>The list appears only when the answer cites a result. If the model found nothing useful, the line under the answer says how many results were fetched and that none were cited, so you know the search happened.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var ask = document.getElementById('ask'), status = document.getElementById('status'), ans = document.getElementById('ans');
+    var q = document.getElementById('q'), a = document.getElementById('a'), src = document.getElementById('src'), stats = document.getElementById('stats');
+    var dig = document.getElementById('dig'), digBtn = document.getElementById('dig-btn'), replay = document.getElementById('replay');
+    var question = 'When did the James Webb Space Telescope launch?';
+    var answer = 'The James Webb Space Telescope launched on 25 December 2021 [1], on an Ariane 5 rocket from the Guiana Space Centre in Kourou, French Guiana [2][3].';
+    var ready = '<b>Ready</b> · Qwen3.5 4B · WebGPU', timer = 0, token = 0;
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function finish() { ask.textContent = ''; ans.hidden = false; q.textContent = question; a.textContent = answer; src.hidden = false; stats.textContent = '44 tokens · first token 1210 ms · 43.6 tok/s · 3 sources'; status.innerHTML = ready; }
+    function openDig(on) { dig.hidden = !on; digBtn.setAttribute('aria-expanded', String(on)); }
+    digBtn.addEventListener('click', function () { openDig(dig.hidden); });
+    function run() {
+      clearTimeout(timer); token++; var my = token;
+      ans.hidden = true; src.hidden = true; openDig(false); a.textContent = ''; stats.textContent = ''; status.innerHTML = ready;
+      if (reduce) { finish(); return; }
+      var qi = 0;
+      (function typeQ() {
+        if (my !== token) return;
+        qi++; ask.innerHTML = esc(question.slice(0, qi)) + '<span class="caret"></span>';
+        if (qi < question.length) { timer = setTimeout(typeQ, 26 + Math.random() * 36); return; }
+        ask.textContent = ''; ans.hidden = false; q.textContent = question; status.innerHTML = '<b>Searching the web…</b>';
+        timer = setTimeout(function () {
+          if (my !== token) return;
+          status.innerHTML = '<b>Answering…</b>';
+          var words = answer.split(' '), w = 0;
+          (function stream() {
+            if (my !== token) return;
+            w++; a.textContent = words.slice(0, w).join(' ');
+            if (w < words.length) { timer = setTimeout(stream, 55 + Math.random() * 60); return; }
+            finish(); timer = setTimeout(function () { if (my === token) openDig(true); }, 1600);
+          })();
+        }, 1100);
+      })();
+    }
+    replay.addEventListener('click', run);
+    timer = setTimeout(run, reduce ? 0 : 600);
+  })();
+</script>

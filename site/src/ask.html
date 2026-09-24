@@ -1,0 +1,175 @@
+<title>Private AI in your new tab, no account, works offline · Fogar</title>
+<meta name="description" content="Ask anything in Chrome’s new tab and a model running inside your browser answers. No account, no key, no server. Works offline once the model is cached." />
+<meta property="og:description" content="A private AI in every new tab. The model runs in your browser, so your questions go nowhere." />
+<style>
+  .thread { display: grid; gap: 12px; }
+  .qa { display: grid; gap: 8px; border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; transition: opacity 0.3s; }
+  .qa .q { font-size: 13px; color: var(--ash); }
+  .qa .a { font-size: 14.5px; line-height: 1.55; min-height: 1.5em; overflow-wrap: anywhere; }
+  .qa .a code { font-family: var(--mono); font-size: 0.88em; background: var(--surface-2); border-radius: 4px; padding: 1px 5px; }
+  .qa .st { font-size: 11.5px; color: var(--ash); }
+  .tab-row { flex-wrap: wrap; }
+  .tiers { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px; }
+  .tier { display: grid; gap: 8px; align-content: start; padding: 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; }
+  .tier h3 { font-size: 20px; }
+  .tier p { color: var(--ink-2); font-size: 15.5px; }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Private AI · a new tab for Chrome</span>
+      <h1>A private AI in every tab.<br /><em>No account. No key.</em></h1>
+      <p class="lead measure">Type a question in Chrome’s new tab and a Qwen3.5 model answers from inside your browser, on your GPU through WebGPU or on your CPU. It downloads once and then it is a file on your disk. Your questions go nowhere. Turn off the Wi-Fi and it keeps answering.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#how">How it works</a>
+      </div>
+      <p class="cta-note">Free. Open source. One model download, 533 MB to 2.7 GB, cached for good.</p>
+    </div>
+
+    <div class="stage" aria-label="Asking the new tab a question and a follow-up, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="tab-ask" id="ask" aria-live="polite"></div>
+          <div class="tab-row"><span><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span>Follow-ups stay in this conversation.</span></div>
+          <div class="thread" id="thread" aria-live="polite"></div>
+          <div class="ledger"><span><span class="dot"></span>your question <b>stayed here</b></span><span>model <b>cached on this device</b></span><span>key <b>none</b></span></div>
+        </div>
+      </div>
+      <button class="replay" id="replay" type="button">Play it again</button>
+    </div>
+  </header>
+
+  <section id="what">
+    <div class="section-head">
+      <span class="eyebrow">What happens to a question</span>
+      <h2 class="measure">The model is a file. The answer is made where you are.</h2>
+      <p class="lead measure">Every step, and where it happens. In local mode none of them involves a server, because there is none.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>You do</th><th>Fogar does</th><th>It happens</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Open a tab</td><td>Nothing, yet. A new tab does not load the model on its own.<small>Opening tabs to type an address stays free. A tab nobody has looked at for five minutes gives the memory back.</small></td><td>This tab</td></tr>
+          <tr><td class="k">Ask</td><td>Wakes the cached model from your browser’s private file storage and streams the answer.<small>Arithmetic is computed, not guessed. Addresses open. “remind me…” and “todo:” go where they belong.</small></td><td>This device</td></tr>
+          <tr><td class="k">Follow up</td><td>Sends the conversation so far along with the new question.<small>“Shorter”, “now as an email”, “and if I already pushed it?” all work. The oldest turns drop off to fit the 4,096-token window.</small></td><td>This device</td></tr>
+          <tr><td class="k">Read</td><td>Renders the answer as Markdown: lists, bold, code, links. One click copies it.<small>The system prompt tells the model to say when it does not know, and never to invent names, dates, quotes, or numbers.</small></td><td>This tab</td></tr>
+          <tr><td class="k">Check</td><td>Counts every request the page made, by host, in Settings under Network, this tab.<small>Read from the browser’s own timeline. Nothing inferred.</small></td><td>You can see it</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">No account. No analytics. The conversation lives in the tab and leaves with it.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">One download, sized to your machine.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Pick a size</h3><p>The first screen looks at your GPU and memory and recommends a tier. You can pick another any time in Settings.</p><span class="mono">recommended, never forced</span></div>
+      <div class="step"><h3>Fetch it once</h3><p>Qwen3.5, quantized, from Hugging Face. It lands in your browser’s private file storage (OPFS) and never downloads again.</p><span class="mono">533 MB · 1.3 GB · 2.7 GB</span></div>
+      <div class="step"><h3>Ask</h3><p>The model runs through wllama, llama.cpp compiled to WebAssembly, on your GPU through WebGPU or across your CPU cores. If WebGPU fails, it falls back to the CPU on its own.</p><span class="mono">warm load 1.3 to 3.2 s · 44 to 92 tok/s · Apple silicon, WebGPU</span></div>
+    </div>
+    <div class="tiers" style="margin-top: 56px">
+      <div class="tier"><span class="eyebrow">0.8B · 533 MB</span><h3>Fast</h3><p>Quick rewrites and summaries. Loads in about a second once cached. The pick for machines without WebGPU.</p><span class="mono">92 tok/s</span></div>
+      <div class="tier"><span class="eyebrow">2B · 1.3 GB</span><h3>Balanced</h3><p>Noticeably smarter. Recommended on WebGPU machines with 8 GB of memory or more.</p><span class="mono">71 tok/s</span></div>
+      <div class="tier"><span class="eyebrow">4B · 2.7 GB</span><h3>Best</h3><p>The first tier that behaves like an assistant: it got the fact, the arithmetic, and the sorting right in our tests. Recommended on Apple silicon.</p><span class="mono">44 tok/s</span></div>
+    </div>
+  </section>
+
+  <section id="more">
+    <div class="section-head">
+      <span class="eyebrow">When you want more</span>
+      <h2 class="measure">Four ways to get more out of it.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Sources</span><div><h3>Search the web first</h3><p>Tick one box and Fogar looks the question up before answering, then cites what it found. Free with no key, or full web results with your own key. <a href="/search">Answers with sources.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Cloud</span><div><h3>Your key, your endpoint</h3><p>Point Fogar at any OpenAI-compatible endpoint: OpenAI, OpenRouter, Groq, or Ollama on localhost. The key stays in this browser and goes only to the address you typed.</p></div></div>
+      <div class="feature"><span class="eyebrow">Files</span><div><h3>Ask about a document</h3><p>Drop a PDF, Word, or text file on the page. It is read in the tab, never uploaded, and the answer comes from it. <a href="/files">About attachments.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Writing</span><div><h3>What small models do best</h3><p>Rewrite, reply, summarize, explain. Forms for each, and ones you make yourself. <a href="/write">About recipes.</a></p></div></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">A small model, not a big one.</h2>
+        <p class="mono" style="margin-top: 22px">Every mode, and what it sends. <a href="/#ledger">See the ledger.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>It is not ChatGPT. A 4B model on your laptop writes well and knows less. The 0.8B and 2B get facts wrong more often, which is why Fogar says so and offers web search for facts.</li>
+          <li>It is only as fast as your machine. The speeds above are Apple silicon with WebGPU. On the CPU, reading a 900-word letter took 10 seconds on the 0.8B before the first word.</li>
+          <li>The window is 4,096 tokens. Long conversations forget their start, and a long file is read in part, with a chip that says how much.</li>
+          <li>The ask box does not keep history. Close the tab and the conversation is gone. The LLM Chat widget keeps conversations if you want that.</li>
+          <li>When it loads the model online, Fogar can still make a small check with Hugging Face. Your question is never in it, and the ledger shows it.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Is this a private ChatGPT alternative?</summary><p>For everyday questions, rewriting, and explaining, yes: the model runs in your browser and nothing you type is sent anywhere. It is much smaller than ChatGPT, so it knows less. When you need more, switch to Cloud with your own key, or tick “Search the web first” for facts.</p></details>
+      <details><summary>Does it really work offline?</summary><p>Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web search and cloud mode need a connection, by definition.</p></details>
+      <details><summary>Do I need an account or an API key?</summary><p>No. There is no Fogar account and no server. A key is needed only if you choose to use a cloud model or a paid search provider, and it stays in this browser.</p></details>
+      <details><summary>Which model does it use?</summary><p>Qwen3.5 in three sizes: 0.8B (533 MB), 2B (1.3 GB), and 4B (2.7 GB), quantized to 4 bits. Fogar recommends one from your GPU and memory. A Qwen3 0.6B is there for machines with very little memory.</p></details>
+      <details><summary>Will it slow down my browser?</summary><p>The model loads only when you ask something, and a tab nobody has looked at for five minutes releases it. Loading from disk takes one to three seconds. Without WebGPU it runs on the CPU, slower but working.</p></details>
+      <details><summary>How do I know nothing is sent?</summary><p>Open Settings and look at Network, this tab. It counts every request the page made, by host, from the browser’s own timeline. The code is open source too, so you can read what the page does.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var ask = document.getElementById('ask'), thread = document.getElementById('thread'), replay = document.getElementById('replay');
+    // A question and a follow-up, answered the way the real ask box renders Markdown: inline code included.
+    var turns = [
+      ['How do I undo my last git commit but keep the changes?', 'Run `git reset --soft HEAD~1`. The commit is gone and its changes stay staged, ready to commit again.', '31 tokens · first token 390 ms · 43.8 tok/s'],
+      ['And if I already pushed it?', 'Then use `git revert HEAD` instead. It adds a new commit that undoes the last one, so nobody else’s history breaks.', '29 tokens · first token 420 ms · 44.1 tok/s'],
+    ];
+    var timer = 0, token = 0;
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function md(s) { return esc(s).replace(/`([^`]+)`/g, '<code>$1</code>'); }
+    function card(t) { var c = document.createElement('div'); c.className = 'qa'; c.innerHTML = '<span class="q">' + esc(t[0]) + '</span><span class="a"></span><span class="st"></span>'; thread.prepend(c); return c; }
+    function done(c, t) { c.querySelector('.a').innerHTML = md(t[1]); c.querySelector('.st').textContent = t[2]; }
+    function run() {
+      clearTimeout(timer); token++; var my = token; thread.innerHTML = '';
+      if (reduce) { turns.forEach(function (t) { done(card(t), t); }); ask.textContent = ''; return; }
+      var n = 0;
+      (function next() {
+        if (n >= turns.length) { ask.innerHTML = '<span class="caret"></span>'; return; }
+        var t = turns[n++], qi = 0;
+        (function typeQ() {
+          if (my !== token) return;
+          qi++; ask.innerHTML = esc(t[0].slice(0, qi)) + '<span class="caret"></span>';
+          if (qi < t[0].length) { timer = setTimeout(typeQ, 26 + Math.random() * 36); return; }
+          var c = card(t), a = c.querySelector('.a'), words = t[1].split(' '), w = 0;
+          ask.textContent = ''; c.querySelector('.st').textContent = 'thinking…';
+          timer = setTimeout(function stream() {
+            if (my !== token) return;
+            w++; a.innerHTML = md(words.slice(0, w).join(' ')); c.querySelector('.st').textContent = '';
+            if (w < words.length) timer = setTimeout(stream, 55 + Math.random() * 60);
+            else { done(c, t); timer = setTimeout(next, 1400); }
+          }, 420);
+        })();
+      })();
+    }
+    replay.addEventListener('click', run);
+    timer = setTimeout(run, reduce ? 0 : 600);
+  })();
+</script>

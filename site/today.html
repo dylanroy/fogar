@@ -72,20 +72,22 @@
   .section-head { display: grid; gap: 14px; margin-bottom: 48px; }
 
   /* nav */
-  .nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  .nav { position: relative; display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
   .brand { font-family: var(--display); font-weight: 800; font-size: 22px; letter-spacing: -0.02em; text-decoration: none; display: inline-flex; align-items: center; gap: 10px; }
   .brand i { width: 12px; height: 12px; border-radius: 50%; background: radial-gradient(circle at 35% 35%, var(--ember-2), var(--ember) 55%, var(--coal)); box-shadow: 0 0 18px var(--glow); }
   .nav-links { display: flex; gap: 22px; align-items: center; font-family: var(--mono); font-size: 13px; }
   .nav-links a { text-decoration: none; color: var(--ink-2); }
   .nav-links a:hover { color: var(--ink); }
   /* use-case menu: a disclosure, so it works without script and opens from the keyboard */
-  .menu { position: relative; }
+  .menu { position: static; } /* the panel hangs from the nav, so it can be as wide as the page */
   .menu summary { list-style: none; cursor: pointer; color: var(--ink-2); display: inline-flex; align-items: center; gap: 7px; padding: 4px 0; }
   .menu summary::-webkit-details-marker { display: none; }
   .menu summary::after { content: ""; width: 5px; height: 5px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 0.15s; }
   .menu summary:hover, .menu[open] summary { color: var(--ink); }
   .menu[open] summary::after { transform: translateY(1px) rotate(225deg); }
-  .menu-panel { position: absolute; top: calc(100% + 10px); left: -10px; z-index: 5; min-width: 330px; display: grid; gap: 2px; padding: 8px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6); }
+  .menu-panel { position: absolute; top: calc(100% - 8px); right: 0; z-index: 5; width: min(900px, 100%); display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 6px 10px; padding: 10px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 12px; box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6); max-height: calc(100vh - 90px); overflow-y: auto; overscroll-behavior: contain; }
+  .menu-col { display: grid; gap: 2px; align-content: start; }
+  .menu-h { margin: 6px 12px 4px; font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ember); }
   .menu-panel a { display: grid; gap: 3px; padding: 10px 12px; border-radius: 8px; text-decoration: none; }
   .menu-panel a:hover, .menu-panel a[aria-current] { background: var(--surface-2); }
   .menu-panel b { font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: -0.01em; color: var(--ink); }
@@ -194,6 +196,9 @@
   .faq details p { padding: 0 0 22px; color: var(--ink-2); max-width: 62ch; }
 
   /* use-case pages */
+  .cases-more { margin: 22px 0 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-family: var(--mono); font-size: 12.5px; color: var(--ash); }
+  .cases-more a { color: var(--ink-2); text-decoration: none; border: 1px solid var(--line-2); border-radius: 999px; padding: 5px 12px; }
+  .cases-more a:hover { color: var(--ink); border-color: var(--ember); }
   .cases { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
   .case { display: grid; gap: 10px; align-content: start; padding: 24px 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; text-decoration: none; transition: border-color 0.15s, transform 0.15s; }
   .case:hover { border-color: var(--ash); transform: translateY(-2px); }
@@ -224,8 +229,12 @@
     .hero { padding-top: 24px; gap: 40px; }
     section { padding: 72px 0; }
     .nav-links > a { display: none; }
-    .menu-panel { left: auto; right: 0; min-width: 280px; }
     .feature { grid-template-columns: 1fr; gap: 8px; }
+  }
+  @media (max-width: 560px) {
+    .menu-panel { grid-template-columns: 1fr; }
+    .menu-panel a { padding: 8px 12px; }
+    .menu-panel span { font-size: 13px; }
   }
   @media (prefers-reduced-motion: reduce) {
     html { scroll-behavior: auto; }
@@ -307,11 +316,17 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
       <details class="menu" id="use-cases-menu">
         <summary>Use cases</summary>
         <div class="menu-panel">
-          <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
-          <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
-          <a href="/write"><b>Writing</b><span>Rewrite, reply, summarize, on your device</span></a>
-          <a href="/voice"><b>Your voice</b><span>Rewrite and draft as yourself, in any register</span></a>
-          <a href="/today" aria-current="page"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
+          <div class="menu-col">
+            <p class="menu-h">Ask and write</p>
+            <a href="/write"><b>Writing</b><span>Rewrite, reply, summarize, on your device</span></a>
+            <a href="/voice"><b>Your voice</b><span>Rewrite and draft as yourself, in any register</span></a>
+          </div>
+          <div class="menu-col">
+            <p class="menu-h">Organize</p>
+            <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
+            <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
+            <a href="/today" aria-current="page"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
+          </div>
         </div>
       </details>
       <a href="/#ledger">What leaves</a>
@@ -517,7 +532,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
     </div>
   </section>
   <footer>
-    <span class="foot-cases">Use cases · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/today" aria-current="page">Your day</a></span>
+    <span class="foot-cases">Use cases · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today" aria-current="page">Your day</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>

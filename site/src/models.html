@@ -1,0 +1,165 @@
+<title>Claude, GPT, or Ollama in your new tab, with your own key · Fogar</title>
+<meta name="description" content="Bring your own key to Chrome’s new tab: Claude, OpenAI, OpenRouter, Gemini, Groq, or Ollama and LM Studio on your computer. Keys stay in your browser and go only to their own endpoint." />
+<meta property="og:description" content="Claude, GPT, Gemini, or Ollama in your new tab. Your key, sent only to its own endpoint. No Fogar server in between." />
+<style>
+  .stage .ledger { margin-top: 14px; }
+  .chat-mock { display: grid; gap: 10px; }
+  .chat-mock .card-h .pill { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 400; max-width: 62%; overflow: hidden; text-overflow: ellipsis; }
+  .log { display: grid; gap: 8px; min-height: 150px; align-content: start; }
+  .msg { max-width: 88%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+  .msg.user { justify-self: end; background: var(--surface-2); }
+  .msg.bot { justify-self: start; border: 1px solid var(--line); }
+  .compose { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+  .compose .send { width: 34px; height: 34px; border-radius: 50%; background: var(--ember); color: var(--ember-ink); display: grid; place-items: center; font-weight: 700; }
+  .table-wrap td code { font-family: var(--mono); font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
+</style>
+
+<div class="wrap">
+  <!-- @include nav -->
+
+  <header class="hero" id="top">
+    <div class="hero-copy">
+      <span class="eyebrow">Your own models · a new tab for Chrome</span>
+      <h1>Your key, your model. <em>Nobody in between.</em></h1>
+      <p class="lead measure">The model on your device answers by default. When you want a bigger one, bring your own key: Claude, OpenAI, OpenRouter, Gemini, Groq, or Ollama and LM Studio running on your computer. Your browser talks straight to the provider. Fogar has no server, so there is no copy of your key or your conversations anywhere but here.</p>
+      <div class="cta-row">
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
+        <a class="btn btn-quiet" href="#where">What it talks to</a>
+      </div>
+      <p class="cta-note">Free. Open source. You pay your provider, if anyone. Fogar never sees the bill or the key.</p>
+    </div>
+
+    <div class="stage" aria-label="The LLM Chat widget switching between models, demonstration">
+      <div class="tab mock">
+        <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
+        <div class="tab-body">
+          <div class="chat-mock">
+            <div class="card-h">Chat <span class="pill" id="pick">Anthropic (Claude) · claude-opus-5 ▾</span></div>
+            <div class="log" id="log" aria-live="polite">
+              <div class="msg user">What does a CORS error mean? Two sentences.</div>
+              <div class="msg bot" id="reply">The browser blocked a request because the server did not say your page’s origin may read its response. Fix it on the server by sending the right Access-Control-Allow-Origin header.</div>
+            </div>
+            <div class="compose"><div class="box ph">Message…</div><span class="send" aria-hidden="true">↑</span></div>
+            <div class="note" id="stats">58 tokens · 61.2 tok/s</div>
+          </div>
+        </div>
+      </div>
+      <div class="ledger"><span><span class="dot"></span>network <b id="host">api.anthropic.com</b></span><span>key <b id="key">in this browser</b></span><span>via <b>no Fogar server</b></span></div>
+      <button class="replay" id="replay" type="button">Switch model</button>
+    </div>
+  </header>
+
+  <section id="where">
+    <div class="section-head">
+      <span class="eyebrow">What it talks to</span>
+      <h2 class="measure">Eight starting points. Any OpenAI-compatible server.</h2>
+      <p class="lead measure">Add a model in the LLM Chat widget and pick where it lives. Each preset fills in the endpoint and a sensible model; Fetch models asks the endpoint what it actually serves.</p>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Preset</th><th>Talks to</th><th>Key</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Anthropic</td><td>Claude, through the Messages API.<small><code>api.anthropic.com</code> · reads images</small></td><td>console.anthropic.com</td></tr>
+          <tr><td class="k">OpenAI</td><td>GPT models.<small><code>api.openai.com/v1</code> · reads images</small></td><td>platform.openai.com</td></tr>
+          <tr><td class="k">OpenRouter</td><td>Hundreds of models behind one key.<small><code>openrouter.ai/api/v1</code></small></td><td>openrouter.ai</td></tr>
+          <tr><td class="k">Gemini</td><td>Google’s models, through their OpenAI-compatible endpoint.<small>reads images</small></td><td>aistudio.google.com</td></tr>
+          <tr><td class="k">Groq</td><td>Very fast open models.<small><code>api.groq.com/openai/v1</code></small></td><td>console.groq.com</td></tr>
+          <tr><td class="k">Ollama</td><td>Whatever you pulled, on this computer.<small><code>localhost:11434/v1</code></small></td><td><span class="zero">None</span></td></tr>
+          <tr><td class="k">LM Studio</td><td>Whatever you loaded, on this computer.<small><code>localhost:1234/v1</code></small></td><td><span class="zero">None</span></td></tr>
+          <tr><td class="k">Custom</td><td>Any server that answers <code>/v1/chat/completions</code>.</td><td>If it needs one</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mono" style="margin-top: 18px">Profiles are shared by every widget that picks a model. Add one once, use it everywhere below.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Paste a key. Chrome asks about one address. Done.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Add the LLM Chat widget</h3><p>Open its settings, choose a preset, and paste your key. For Ollama or LM Studio there is no key; the server just has to be running.</p><span class="mono">keys stored in this browser · sent only to their own endpoint</span></div>
+      <div class="step"><h3>Fetch models</h3><p>Fogar asks the endpoint what it serves, so the list is what your account or your machine actually has, not a list we typed. Start typing to pick one.</p><span class="mono">/v1/models · Ollama lists what is installed</span></div>
+      <div class="step"><h3>Save, and allow one origin</h3><p>Chrome asks for access to that one address when you save or fetch, never at install. Pick the model in the widget’s header; the conversation is kept for your next tab.</p><span class="mono">optional permission · one origin at a time</span></div>
+    </div>
+  </section>
+
+  <section id="uses">
+    <div class="section-head">
+      <span class="eyebrow">Where your models show up</span>
+      <h2 class="measure">One key, several places.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Ask box</span><div><h3>Cloud mode</h3><p>Settings has its own cloud endpoint for the ask box, recipes, the bookmark finder, and <a href="/files">attached files</a>. It speaks the OpenAI format: OpenAI, OpenRouter, Groq, or Ollama at localhost all work.</p></div></div>
+      <div class="feature"><span class="eyebrow">Dig deeper</span><div><h3>Ask the other model</h3><p>On any answer, Dig deeper can put the same question and conversation to your cloud model, or back to the one on your device. The better answer replaces the first.</p></div></div>
+      <div class="feature"><span class="eyebrow">Writing</span><div><h3>Your voice, a bigger brain</h3><p>The Writing widget can distill and rewrite with any profile, so Claude can write as you. <a href="/voice">How the voice works.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Photos</span><div><h3>Handwriting, read</h3><p>Mark a profile as reading images and the <a href="/notebook">Notebook</a> can hand it a photo of a handwritten page. The Canvas can use any profile to <a href="/draw">draw what you describe</a>.</p></div></div>
+    </div>
+  </section>
+
+  <section id="honest">
+    <div class="honest">
+      <div>
+        <span class="eyebrow">Straight talk</span>
+        <h2 style="margin-top: 14px">Your key is yours to guard.</h2>
+        <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
+      </div>
+      <div>
+        <ul>
+          <li>Keys are kept in Chrome’s extension storage on this device, like any extension setting. They are not encrypted. Anyone who can use your Chrome profile can find them.</li>
+          <li>The Settings backup file includes your Settings cloud key, because it is your file. Keep it like a password.</li>
+          <li>A cloud provider sees everything you send it, under its own terms. Fogar keeps no copy, but it cannot speak for them. For nothing to leave, use the device model, Ollama, or LM Studio.</li>
+          <li>The ask box’s Settings endpoint speaks only the OpenAI format. Claude through the Messages API lives in the LLM Chat, Writing, and Canvas widgets; for Claude in the ask box, go through OpenRouter.</li>
+          <li>Fogar can be granted any HTTPS address and servers on this computer. A plain-HTTP server elsewhere on your network is outside what it can ask for.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="section-head">
+      <span class="eyebrow">Questions</span>
+      <h2>Fair questions, short answers.</h2>
+    </div>
+    <div class="faq">
+      <details><summary>Does my key or my chat go through a Fogar server?</summary><p>No. There is no Fogar server. The new tab sends each request straight to the endpoint you configured, with your key, and to nowhere else. The network ledger in Settings counts every request the page makes, by host.</p></details>
+      <details><summary>Can I use Claude?</summary><p>Yes. In the LLM Chat widget, add the Anthropic preset and paste a key from console.anthropic.com. Fogar talks to the Messages API directly from your browser. The Writing and Canvas widgets can pick the same profile. The ask box’s cloud endpoint speaks the OpenAI format, so for Claude there, use OpenRouter.</p></details>
+      <details><summary>Can I use Ollama or LM Studio?</summary><p>Yes, with no key. The presets point at localhost:11434 for Ollama and localhost:1234 for LM Studio, and Fetch models lists what is installed or loaded. The Settings cloud endpoint takes Ollama too, so the ask box can use it. The server has to be running.</p></details>
+      <details><summary>Why does Chrome ask for permission when I save?</summary><p>Fogar cannot know your endpoint in advance, so it lists none at install. When you save or fetch models, it asks Chrome for access to that one origin, and only that one. If you decline, the profile is still saved, and Fogar says the permission was not granted.</p></details>
+      <details><summary>Where is my key stored?</summary><p>In Chrome’s extension storage on this device, unencrypted, like any extension setting. It is sent only to the endpoint it belongs to. Remove the profile, or clear the field in Settings, and it is gone.</p></details>
+      <details><summary>Do conversations persist?</summary><p>Yes. Each LLM Chat widget keeps its conversation in extension storage, so it is there on your next tab. It holds the most recent 60 messages or 30,000 characters, whichever comes first. New chat clears it.</p></details>
+    </div>
+  </section>
+
+  <!-- @include install -->
+  <!-- @include footer -->
+</div>
+
+<script>
+  (function () {
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var pick = document.getElementById('pick'), reply = document.getElementById('reply'), stats = document.getElementById('stats');
+    var host = document.getElementById('host'), key = document.getElementById('key'), replay = document.getElementById('replay');
+    // Same question, three places it can go. The ledger shows the one host each request reaches.
+    var demos = [
+      { pick: 'Anthropic (Claude) · claude-opus-5', host: 'api.anthropic.com', key: 'in this browser', a: 'The browser blocked a request because the server did not say your page’s origin may read its response. Fix it on the server by sending the right Access-Control-Allow-Origin header.', s: '58 tokens · 61.2 tok/s' },
+      { pick: 'Ollama (this computer) · llama3.2', host: 'localhost:11434', key: 'none needed', a: 'A CORS error means a page tried to read a response from another origin and that server did not allow it. The browser enforces this, so the fix belongs on the server, not in your page.', s: '71 tokens · 38.4 tok/s' },
+      { pick: 'OpenRouter · anthropic/claude-sonnet-4.5', host: 'openrouter.ai', key: 'in this browser', a: 'Your page asked another origin for data, and its response lacked the headers that permit your origin to read it. The request may have succeeded; the browser just refused to hand you the result.', s: '54 tokens · 72.9 tok/s' },
+    ];
+    var i = 0, timer = 0, token = 0;
+    function run(idx) {
+      clearTimeout(timer); token++; var my = token, d = demos[idx % demos.length];
+      pick.textContent = d.pick + ' ▾'; host.textContent = d.host; key.textContent = d.key;
+      if (reduce) { reply.textContent = d.a; stats.textContent = d.s; return; }
+      reply.textContent = '…'; stats.textContent = 'Thinking…';
+      var words = d.a.split(' '), w = 0;
+      timer = setTimeout(function stream() {
+        if (my !== token) return;
+        w++; reply.textContent = words.slice(0, w).join(' ');
+        if (w < words.length) timer = setTimeout(stream, 45 + Math.random() * 55); else stats.textContent = d.s;
+      }, 700);
+    }
+    replay.addEventListener('click', function () { i++; run(i); });
+  })();
+</script>
