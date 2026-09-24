@@ -1,6 +1,6 @@
 {
   "name": "fogar",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "Fogar: a private new tab that answers from a model running in your browser, or from a cloud endpoint you bring your own key for.",

@@ -11,6 +11,7 @@ import { copyFileSync, existsSync, readFileSync, statSync, writeFileSync } from 
 import { execSync } from 'node:child_process';
 
 const SITE = 'https://fogar.ai';
+const STORE = 'https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia';
 const PAGES = [
   { path: '/', src: 'site/page.html', out: 'site/index.html', home: true },
   { path: '/tabs', src: 'site/src/tabs.html', out: 'site/tabs.html' },
@@ -76,7 +77,7 @@ function jsonld(page, meta) {
       ...app, description: meta.description, applicationCategory: 'BrowserApplication', operatingSystem: 'Chrome', softwareVersion: version,
       isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' },
       author: { '@type': 'Person', name: 'Dylan Roy', url: 'https://dylanroy.com' },
-      image: `${SITE}/og.jpg`, downloadUrl: `${SITE}/fogar-chrome.zip`, license: 'https://github.com/dylanroy/fogar/blob/main/LICENSE',
+      image: `${SITE}/og.jpg`, downloadUrl: STORE, installUrl: STORE, license: 'https://github.com/dylanroy/fogar/blob/main/LICENSE',
     });
   } else {
     graph.push({ '@type': 'WebPage', '@id': url, url, name: meta.title, description: meta.description, isPartOf: { '@id': SITE_ID }, about: app });

@@ -209,6 +209,9 @@
   .how b { font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: -0.01em; color: var(--ink); }
   .how p { grid-column: 2; color: var(--ink-2); font-size: 15.5px; margin-top: 4px; }
   .how code { font-family: var(--mono); font-size: 0.86em; color: var(--ink); white-space: nowrap; }
+  .how-lead { margin: 0 0 14px; color: var(--ink-2); font-size: 15.5px; }
+  .how-lead b { color: var(--ink); }
+  .how-note a { color: var(--ink-2); }
   .how-note { margin-top: 14px; font-family: var(--mono); font-size: 12.5px; line-height: 1.65; color: var(--ash); }
 
   footer { border-top: 1px solid var(--line); padding: 36px 0 60px; display: flex; justify-content: space-between; gap: 24px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: var(--ash); }
@@ -231,7 +234,7 @@
     .case { transition: none; }
   }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/","description":"Fogar is a new tab for Chrome that answers from a model running inside your browser. No account, no key, no server. Save your tabs, find bookmarks, rewrite text, see your day.","applicationCategory":"BrowserApplication","operatingSystem":"Chrome","softwareVersion":"0.1.0","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Dylan Roy","url":"https://dylanroy.com"},"image":"https://fogar.ai/og.jpg","downloadUrl":"https://fogar.ai/fogar-chrome.zip","license":"https://github.com/dylanroy/fogar/blob/main/LICENSE"},{"@type":"FAQPage","@id":"https://fogar.ai/#faq","mainEntity":[{"@type":"Question","name":"Does it work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web grounding and cloud mode need a connection, by definition."}},{"@type":"Question","name":"How good is a small model, honestly?","acceptedAnswer":{"@type":"Answer","text":"Depends on the size. In our tests the 0.8B and 2B models rewrite and summarize well but stumble on facts and arithmetic. The 4B gets the president, the percentage, and the sorting task right and still runs at 44 tokens a second on an Apple laptop. Fogar recommends the largest size your machine can run well, computes arithmetic itself, and offers web grounding for facts."}},{"@type":"Question","name":"Where is my API key stored?","acceptedAnswer":{"@type":"Answer","text":"In Chrome's extension storage on this profile, and it is sent only to the endpoint you typed. Fogar has no server that could see it."}},{"@type":"Question","name":"What permissions does it ask for?","acceptedAnswer":{"@type":"Answer","text":"Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click plus reading that one page when you use it, favicons for site icons, and access to huggingface.co to fetch the model. The Sessions widget asks for the tabs permission when you add it, and only then. Cloud endpoints, search keys, and calendar addresses are requested one at a time, when you add them. The full list with reasons is in the privacy policy."}},{"@type":"Question","name":"Will it slow down my browser?","acceptedAnswer":{"@type":"Answer","text":"The model loads only on the new tab page and is released when you navigate away. Loading takes about a second from disk. On a machine without WebGPU it falls back to the CPU and is slower but works."}},{"@type":"Question","name":"Firefox? Safari?","acceptedAnswer":{"@type":"Answer","text":"Chrome and Chromium browsers first. Firefox builds, but its extension pages lack the shared-memory feature the multi-threaded engine needs, so it would be much slower. Not shipping it half-baked."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/","description":"Fogar is a new tab for Chrome that answers from a model running inside your browser. No account, no key, no server. Save your tabs, find bookmarks, rewrite text, see your day.","applicationCategory":"BrowserApplication","operatingSystem":"Chrome","softwareVersion":"0.1.1","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"author":{"@type":"Person","name":"Dylan Roy","url":"https://dylanroy.com"},"image":"https://fogar.ai/og.jpg","downloadUrl":"https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia","installUrl":"https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia","license":"https://github.com/dylanroy/fogar/blob/main/LICENSE"},{"@type":"FAQPage","@id":"https://fogar.ai/#faq","mainEntity":[{"@type":"Question","name":"Does it work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, in local mode, once the model is cached. Turn off Wi-Fi and it keeps answering. Web grounding and cloud mode need a connection, by definition."}},{"@type":"Question","name":"How good is a small model, honestly?","acceptedAnswer":{"@type":"Answer","text":"Depends on the size. In our tests the 0.8B and 2B models rewrite and summarize well but stumble on facts and arithmetic. The 4B gets the president, the percentage, and the sorting task right and still runs at 44 tokens a second on an Apple laptop. Fogar recommends the largest size your machine can run well, computes arithmetic itself, and offers web grounding for facts."}},{"@type":"Question","name":"Where is my API key stored?","acceptedAnswer":{"@type":"Answer","text":"In Chrome's extension storage on this profile, and it is sent only to the endpoint you typed. Fogar has no server that could see it."}},{"@type":"Question","name":"What permissions does it ask for?","acceptedAnswer":{"@type":"Answer","text":"Storage, alarms and notifications for reminders, bookmarks for search, context menus for right-click plus reading that one page when you use it, favicons for site icons, and access to huggingface.co to fetch the model. The Sessions widget asks for the tabs permission when you add it, and only then. Cloud endpoints, search keys, and calendar addresses are requested one at a time, when you add them. The full list with reasons is in the privacy policy."}},{"@type":"Question","name":"Will it slow down my browser?","acceptedAnswer":{"@type":"Answer","text":"The model loads only on the new tab page and is released when you navigate away. Loading takes about a second from disk. On a machine without WebGPU it falls back to the CPU and is slower but works."}},{"@type":"Question","name":"Firefox? Safari?","acceptedAnswer":{"@type":"Answer","text":"Chrome and Chromium browsers first. Firefox builds, but its extension pages lack the shared-memory feature the multi-threaded engine needs, so it would be much slower. Not shipping it half-baked."}}]}]}</script>
 </head>
 <body>
 <div class="wrap">
@@ -267,7 +270,7 @@
       <h1>Ask your new tab.<br /><em>Nothing leaves the room.</em></h1>
       <p class="lead measure">Fogar answers from a language model that runs inside your browser. No account, no key, no server. When you want a bigger brain, bring your own key and it uses that instead. Either way the choice is yours, and visible.</p>
       <div class="cta-row">
-        <a class="btn btn-ember" href="#install">Add to Chrome</a>
+        <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
         <a class="btn btn-quiet" href="https://dylanroy.com/?ref=fogar">Read how it was built</a>
       </div>
       <p class="cta-note">Free. Open source. One model download, 533 MB to 2.7 GB, sized to your machine and cached for good.</p>
@@ -451,20 +454,21 @@
       <div class="section-head" style="margin-bottom: 0">
         <span class="eyebrow">Install</span>
         <h2>Add to Chrome</h2>
-        <p class="lead">Fogar is waiting on Chrome Web Store review. Until the listing is live, download the extension and load it yourself: three steps, no terminal. This page will carry the store link the moment it exists.</p>
+        <p class="lead">Fogar is on the Chrome Web Store. One click to add it, and it updates itself from there. Then open a new tab.</p>
         <div class="cta-row" style="margin-top: 10px">
-          <a class="btn btn-ember" href="fogar-chrome.zip" download>Download for Chrome</a>
+          <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
           <a class="btn btn-quiet" href="https://github.com/dylanroy/fogar">Get the source</a>
         </div>
-        <p class="cta-note">Version 0.1.0, a 7.3 MB zip. Prefer to wait for the store? <a href="https://dylanroy.com/?ref=fogar">Get notified when it ships.</a></p>
+        <p class="cta-note">Free, from the Chrome Web Store. Brave, Arc, and Edge install from it too.</p>
       </div>
       <div>
+        <p class="how-lead"><b>Loaded the zip before the listing went live?</b> The store copy has a different extension ID, so your data will not follow on its own. Three steps move it over.</p>
         <ol class="how">
-          <li><b>Download and unzip.</b><p>You get a folder named <code>fogar-chrome</code>. Put it somewhere it can stay; Chrome runs the extension from that folder.</p></li>
-          <li><b>Open <code>chrome://extensions</code> and turn on Developer mode.</b><p>The switch is in the top right corner.</p></li>
-          <li><b>Click Load unpacked and pick the folder.</b><p>Then open a new tab.</p></li>
+          <li><b>In your current Fogar, open Settings and click Download a backup.</b><p>Todos, notes, recipes, widgets, sessions, and settings go into one file.</p></li>
+          <li><b>Add Fogar from the store.</b><p>It opens on your next new tab, empty.</p></li>
+          <li><b>Open its Settings and Restore from a backup.</b><p>Once it looks right, remove the old copy in <code>chrome://extensions</code>.</p></li>
         </ol>
-        <p class="how-note">Installed this way, Fogar does not update itself, and Chrome may ask at launch whether to keep developer-mode extensions; Cancel keeps it. When the store listing goes live, install from there and bring your data over with the backup in Settings.</p>
+        <p class="how-note">Can't use the store? The same build is here as a <a href="fogar-chrome.zip" download>zip</a>: unzip it, turn on Developer mode in <code>chrome://extensions</code>, and Load unpacked. It will not update itself.</p>
       </div>
     </div>
   </section>

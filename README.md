@@ -8,7 +8,7 @@ Live at [fogar.ai](https://fogar.ai). Built by [Dylan Roy](https://dylanroy.com)
 
 ## Status
 
-Release candidate v0.1.0. Everything below works end to end and is covered by `npm run test:spike`, which loads the built extension into Chromium and runs 81 checks against local mock servers.
+v0.1.1, on the [Chrome Web Store](https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia). Everything below works end to end and is covered by `npm run test:spike`, which loads the built extension into Chromium and runs 81 checks against local mock servers.
 
 - Ask bar with streaming, Markdown-rendered answers and follow-ups, from a local model (wllama, WebGPU or CPU) or any OpenAI-compatible endpoint with your own key.
 - Model tiers: Qwen3.5 0.8B (533 MB), 2B (1.3 GB), 4B (2.7 GB). First run recommends a tier from the GPU vendor and device memory; the 4B only on Apple silicon, where memory is unified. Thinking mode is off. WebGPU failures fall back to the CPU.
@@ -30,7 +30,7 @@ Release candidate v0.1.0. Everything below works end to end and is covered by `n
 - A network ledger that counts every request this tab made, by host. Backup and restore of everything.
 - Landing page, five use-case pages (tabs, bookmarks, writing, your voice, your day), sitemap, and privacy policy in `site/`. Store listing copy and generated assets in `store/`.
 
-Not yet: store submission, public repo, domains. See [ROADMAP.md](ROADMAP.md).
+Next: see [ROADMAP.md](ROADMAP.md).
 
 ## Measured
 
@@ -80,7 +80,7 @@ Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL
 
 `npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
 
-`npm run site` builds fogar.ai into `site/`: the homepage from `site/page.html`, one page per use case from `site/src/*.html` (`/tabs`, `/bookmarks`, `/write`, `/voice`, `/today`), plus `sitemap.xml` and `robots.txt`. The homepage is the template: its styles, nav, install section, and footer are lifted out by `<!-- @nav -->`-style markers and shared with every page, so an edit there reaches all of them; each page carries its own title, description, canonical, Open Graph tags, and JSON-LD built from its FAQ. It also copies the current `.output/fogar-<version>-chrome.zip` to `site/fogar-chrome.zip`, which the pages offer as a direct download until the store listing is live (unzip, Developer mode, Load unpacked). Cloudflare serves `site/tabs.html` at `/tabs`, so links are extensionless. To publish: `npm run zip && npm run site && npx wrangler deploy`.
+`npm run site` builds fogar.ai into `site/`: the homepage from `site/page.html`, one page per use case from `site/src/*.html` (`/tabs`, `/bookmarks`, `/write`, `/voice`, `/today`), plus `sitemap.xml` and `robots.txt`. The homepage is the template: its styles, nav, install section, and footer are lifted out by `<!-- @nav -->`-style markers and shared with every page, so an edit there reaches all of them; each page carries its own title, description, canonical, Open Graph tags, and JSON-LD built from its FAQ. It also copies the current `.output/fogar-<version>-chrome.zip` to `site/fogar-chrome.zip`, which the install section keeps as a small fallback link for anyone who cannot use the store listing. Cloudflare serves `site/tabs.html` at `/tabs`, so links are extensionless. To publish: `npm run zip && npm run site && npx wrangler deploy`.
 
 ## Manifest V3 constraints, and how each is handled
 
