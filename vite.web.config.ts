@@ -16,6 +16,9 @@ function webHead(): Plugin {
       const out = html
         .replace('<title>New Tab</title>', '<title>Fogar</title>')
         .replace('<meta name="viewport" content="width=device-width, initial-scale=1.0" />', '<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />')
+        // Settings, "Your data": true for the web app, where Cloudflare's page-view beacon is the one request the user did not point anywhere.
+        .replace("live in this browser's extension storage. Nothing is sent anywhere unless you set a cloud endpoint or a search key, and then only to the address you typed.",
+          "live in this browser, on this device. Nothing is sent anywhere unless you set a cloud endpoint or a search key, and then only to the address you typed. The one exception is Cloudflare's cookie-free page-view beacon, which the network ledger below shows as cloudflareinsights.com.")
         .replace('</head>', [
           '<link rel="manifest" href="/manifest.webmanifest" />',
           '<link rel="icon" href="/icon/32.png" sizes="32x32" />',
@@ -29,7 +32,7 @@ function webHead(): Plugin {
           '<script src="/register-sw.js" defer></script>',
           '</head>',
         ].join('\n    '));
-      if (out === html || !out.includes('<title>Fogar</title>')) throw new Error('vite.web.config: entrypoints/newtab/index.html changed; update the head rewrite');
+      if (out === html || !out.includes('<title>Fogar</title>') || !out.includes('cookie-free page-view beacon')) throw new Error('vite.web.config: entrypoints/newtab/index.html changed; update the head rewrite');
       return out;
     },
   };
