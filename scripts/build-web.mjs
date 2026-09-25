@@ -8,6 +8,8 @@ import { join, relative, sep } from 'node:path';
 
 const OUT = '.output/web';
 if (!existsSync('public/wllama/wllama.wasm') || !existsSync('public/tesseract/worker.min.js')) execSync('npm run gen', { stdio: 'inherit' });
+// tsconfig.json extends the one WXT writes at install time; a fresh checkout that skipped postinstall has none yet.
+if (!existsSync('.wxt/tsconfig.json')) execSync('npx wxt prepare', { stdio: 'inherit' });
 execSync('npx vite build --config vite.web.config.ts', { stdio: 'inherit' });
 cpSync('web', OUT, { recursive: true });
 
