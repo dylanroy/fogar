@@ -20,6 +20,7 @@ function webHead(): Plugin {
         .replace("live in this browser's extension storage. Nothing is sent anywhere unless you set a cloud endpoint or a search key, and then only to the address you typed.",
           "live in this browser, on this device. Nothing is sent anywhere unless you set a cloud endpoint or a search key, and then only to the address you typed. The one exception is Cloudflare's cookie-free page-view beacon, which the network ledger below shows as cloudflareinsights.com.")
         .replace('</head>', [
+          '<meta name="robots" content="noindex" />',
           '<link rel="manifest" href="/manifest.webmanifest" />',
           '<link rel="icon" href="/icon/32.png" sizes="32x32" />',
           '<link rel="apple-touch-icon" href="/icon/180.png" />',

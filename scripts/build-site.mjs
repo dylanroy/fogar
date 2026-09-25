@@ -112,6 +112,14 @@ function jsonld(page, meta) {
       author: { '@type': 'Person', name: 'Dylan Roy', url: 'https://dylanroy.com' },
       image: `${SITE}/og.jpg`, downloadUrl: STORE, installUrl: STORE, license: 'https://github.com/dylanroy/fogar/blob/main/LICENSE',
     });
+    // The same page as an installable web app, for phones and browsers the extension does not reach.
+    graph.push({
+      '@type': 'WebApplication', '@id': `${SITE}/#webapp`, name: 'Fogar', url: 'https://app.fogar.ai/', installUrl: 'https://app.fogar.ai/',
+      description: 'Fogar as an installable web app for phones and other browsers: the same private assistant, working offline once opened.',
+      applicationCategory: 'UtilitiesApplication', operatingSystem: 'iOS, Android, any current browser', browserRequirements: 'WebAssembly; WebGPU for the fastest local model',
+      isAccessibleForFree: true, offers: { '@type': 'Offer', price: '0', priceCurrency: 'USD' }, author: { '@type': 'Person', name: 'Dylan Roy', url: 'https://dylanroy.com' },
+      image: `${SITE}/og.jpg`, isPartOf: { '@id': SITE_ID }, sameAs: `${SITE}/`,
+    });
   } else {
     graph.push({ '@type': 'WebPage', '@id': url, url, name: meta.title, description: meta.description, isPartOf: { '@id': SITE_ID }, about: app });
   }

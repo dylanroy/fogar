@@ -37,7 +37,7 @@
   <p>Fogar is a new tab page that answers questions using a language model running inside your browser, or a cloud model you connect with your own key. It has no server, no accounts, and no analytics. This page says exactly what leaves your browser and when.</p>
 
   <h2>What Fogar collects</h2>
-  <p>Nothing. Fogar does not collect, transmit, or store any personal data on any server, because it has no server. There is no telemetry, no crash reporting, no usage analytics, and no identifiers.</p>
+  <p>Nothing. Fogar does not collect, transmit, or store any personal data on any server, because it has no server. There is no telemetry, no crash reporting, no usage analytics, and no identifiers. The web app at app.fogar.ai is the one exception: Cloudflare, which serves it, counts its page views without cookies or identifiers, and the app says so in its Settings.</p>
 
   <h2>What leaves your browser</h2>
   <table>
@@ -63,6 +63,7 @@
 
   <h2>Where your data lives</h2>
   <p>Everything Fogar remembers, including your API keys, is stored in Chrome's extension storage on your device and, for model files, in the browser's private file storage. Removing the extension deletes it. Settings has a button to download a complete backup and one to delete the cached models.</p>
+  <p>The web app at app.fogar.ai keeps the same data in that browser’s storage on that device; a home-screen app on a phone has storage of its own, separate from the browser’s tabs. Its files come from app.fogar.ai, and it carries Cloudflare’s Web Analytics beacon, which counts page views without cookies; the network ledger shows it as cloudflareinsights.com, and it is the one request the web app makes that you did not point somewhere. The extension has no analytics.</p>
 
   <h2>Permissions and why</h2>
   <table>
@@ -83,7 +84,7 @@
   </table>
 
   <h2>Third parties</h2>
-  <p>Hugging Face hosts the model files. DuckDuckGo and Wikipedia answer grounding lookups when you ask for them. Open-Meteo provides weather if you add the widget. Google receives the Inbox widget’s requests if you add it; the feed sites and search providers, your Jira site, and the model providers you connect receive what the table above says. All of them are governed by their own policies. Fogar has no relationship with any of them and receives nothing from them.</p>
+  <p>Hugging Face hosts the model files. DuckDuckGo and Wikipedia answer grounding lookups when you ask for them. Open-Meteo provides weather if you add the widget. Google receives the Inbox widget’s requests if you add it; the feed sites and search providers, your Jira site, and the model providers you connect receive what the table above says. All of them are governed by their own policies. Fogar has no relationship with any of them and receives nothing from them. Cloudflare serves fogar.ai and the web app at app.fogar.ai, and counts the web app’s page views with its cookie-free Web Analytics.</p>
 
   <h2>Children</h2>
   <p>Fogar is not directed at children under 13 and, collecting nothing, holds no data about anyone.</p>

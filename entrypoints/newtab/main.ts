@@ -14,6 +14,7 @@ import { CTX_KEY, type PageContext } from '@/lib/page-context';
 import { applyTheme, decodeThemeShare, loadTheme, saveTheme } from '@/lib/theme';
 import { ATTACHMENT_BUDGET, attachmentBlock, type Attachment } from '@/lib/attachments';
 import { initCustomize } from './ui/customize';
+import { initInstallTip } from './ui/install-tip';
 
 const params = new URLSearchParams(location.search);
 const SMOKE = params.get('smoke') === '1'; // automated flows
@@ -77,6 +78,7 @@ async function main() {
   initCustomize(app, widgets, theme);
   initAskBar(app, { todos, reminders, recipes });
   initFirstRun(app);
+  initInstallTip();
   app.setMode(s.mode);
   if (SHARED_THEME) app.toast(decodeThemeShare(SHARED_THEME) ? 'Theme applied from the link. Open Customize to change it.' : 'That theme link is not valid.');
 
