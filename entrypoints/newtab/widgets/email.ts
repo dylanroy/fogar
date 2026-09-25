@@ -84,7 +84,7 @@ function setup(body: HTMLElement, inst: WidgetInstance, ctx: WidgetCtx, cancella
 }
 
 export const email: WidgetDef = {
-  type: 'email', title: 'Inbox', description: 'Your latest Gmail, with a label or a search as the filter.', single: false,
+  type: 'email', title: 'Inbox', description: 'Your latest Gmail, with a label or a search as the filter.', single: false, web: false,
   defaultConfig: () => ({ ...DEFAULT_EMAIL_CONFIG(), name: 'Inbox' }),
   name: (inst) => inst.config.name || 'Inbox',
   async render(body, actions, inst, ctx) {

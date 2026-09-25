@@ -1,6 +1,6 @@
 # Fogar roadmap
 
-Last updated 2026-09-24. Status of each item is in the checkbox. Dates are when a phase closed, not when it was planned.
+Last updated 2026-09-25. Status of each item is in the checkbox. Dates are when a phase closed, not when it was planned.
 
 ## The filter
 
@@ -68,6 +68,14 @@ Every proposed feature passes these five or it does not ship.
 - [x] Customize: four widget columns (they fold to two below 1,100 px and to one below 760 px) and a page width of normal, wide, or full; the sidebar rail widens with it. Widget cards are one column no wider than the card, and a long header control (the Writing model picker) wraps under the title instead of pushing the body past the edge.
 - [ ] Next, if asked: a "Rewrite in my voice" route in the ask bar and the right-click menu once a voice exists; few-shot grafting (raw samples in the run prompt) as the dial to turn if a profile alone reads generic, per the Dickens notes; one voice shared by several widgets of the same author.
 
+### Phase 4a: the web app (closed 2026-09-25)
+- [x] The new tab page as an installable web app at app.fogar.ai, built by plain Vite from the same source with `wxt/browser` swapped for a shim (IndexedDB storage, web notifications, permission checks that say no). Cross-origin isolation and the extension's script policy through `_headers`; a service worker that precaches the page and the model runtime, so it opens and answers with no connection; a second assets-only Worker. `npm run test:web` proves isolation, storage, the offline open, and the local model from a web origin and then with the network off.
+- [x] The loader goes straight to the model file's URL instead of through the Hugging Face API, which listed the repo before looking in the cache and failed with no network. A cached model now loads offline in both builds.
+- [x] Widgets a web page cannot run (Agenda, Feed, Inbox, Jira, Sessions) carry `web: false` and stay out of the Add menu; reminders fire from the page while it is open; favicons fall back to a letter; the widget controls stay visible where there is no hover.
+- [ ] A fetch relay and push for reminders, as Pro features: they need a server, and they are what brings Agenda, Feed, Jira, and background reminders to the phone.
+- [ ] iOS 26: ship wllama's compatibility build locally (`@wllama/wllama-compat`, with the worker generator extended) so the local model runs on Safari without WebAssembly promise integration. iOS 27 does not need it.
+- [ ] A touch pass: drag to reorder widgets uses HTML5 drag, which phones ignore (the arrows work); tap targets; the ask box on a small keyboard.
+
 ## Now: release candidate, v0.1
 
 The goal is a listing that gets approved on the first pass and a page that is true the day it goes live.
@@ -89,7 +97,7 @@ The goal is a listing that gets approved on the first pass and a page that is tr
 
 ## Next: Pro, and sync across machines
 
-The first paid feature and the account it needs, planned in [docs/pro-sync-admin-plan.md](docs/pro-sync-admin-plan.md): an email and a Stripe subscription; data encrypted on the device with a passphrase Fogar never sees; a Cloudflare Worker with D1 holding blobs it cannot open; per-key merge with tombstones built on the backup merge that already exists; an `/admin` page behind Cloudflare Access that flips widgets between Free and Pro without a store release. Order of work: account and billing, sync, admin and catalog, launch. Open decisions listed in the plan: price, whether keys sync (recommended: yes, encrypted), how a free install learns about a catalog change (recommended: one anonymous daily fetch behind a switch), which widgets go Pro on day one.
+The first paid feature and the account it needs, planned in [docs/pro-sync-admin-plan.md](docs/pro-sync-admin-plan.md): an email and a Stripe subscription; data encrypted on the device with a passphrase Fogar never sees; a Cloudflare Worker with D1 holding blobs it cannot open; per-key merge with tombstones built on the backup merge that already exists; an `/admin` page behind Cloudflare Access that flips widgets between Free and Pro without a store release. Order of work: account and billing, sync, admin and catalog, launch. Open decisions listed in the plan: price, whether keys sync (recommended: yes, encrypted), how a free install learns about a catalog change (recommended: one anonymous daily fetch behind a switch), which widgets go Pro on day one. The web app (Phase 4a) changes two things in the plan: sync must run from the page (on open, on change, on visibility), since a web app has no background worker or alarms, with the extension's worker as an accelerator; and the two-device test gets a simpler second device, the web build in a plain Playwright context.
 
 ## Next: launch, v0.2
 
@@ -135,7 +143,7 @@ Dylan's ask: connect Google Calendar and show a daily agenda on the new tab. Tha
 - **One shared model instance across tabs** through an offscreen document, so several open new tabs do not each hold 0.5 to 2.7 GB. The most likely cause of uninstalls once people keep several new tabs open; the highest-value engineering item left. **Spiked on branch `spike/offscreen-model` (2026-09-21): an offscreen document gets WebGPU (Apple, metal-3), SharedArrayBuffer, and cross-origin isolation, and loads and generates. What remains is the plumbing: a port-based provider in the page, load/ask/abort messages, progress and token events, and an idle unload.**
 - ~~`storage.sync` for todos and reminders across a Chrome profile.~~ Superseded by the Pro sync plan, which is end-to-end encrypted and not tied to a Google account.
 - Ollama auto-detect on localhost as a one-click cloud option.
-- Firefox. It builds today, but extension pages lack SharedArrayBuffer there, so it would be single-threaded. Ship only if the WebGPU path makes that irrelevant.
+- Firefox. It builds today, but extension pages lack SharedArrayBuffer there, so it would be single-threaded. Ship only if the WebGPU path makes that irrelevant. The web app already runs in Firefox and Safari on the desktop, which takes some of the pressure off.
 - ~~Tab search from the ask bar.~~ Superseded by the Sessions widget, which takes the `tabs` permission as an optional grant when the widget is added.
 - More widget types: Countdown, Clock, an RSS reading list, GitHub notifications with a personal token.
 

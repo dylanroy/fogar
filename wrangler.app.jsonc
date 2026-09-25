@@ -1,0 +1,16 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // app.fogar.ai: the web app, the same page as the extension's new tab, served as static assets with the headers in
+  // web/_headers (cross-origin isolation and the script policy). No script here, no data, nothing to log: the app talks
+  // to Hugging Face and to endpoints the user typed, never to this Worker beyond fetching its own files.
+  // Build with `npm run web`; deploy with `npm run web:deploy`.
+  "name": "fogar-app",
+  "compatibility_date": "2026-09-15",
+  "workers_dev": false,
+  "assets": {
+    "directory": "./.output/web",
+    "not_found_handling": "none",
+    "html_handling": "auto-trailing-slash"
+  },
+  "routes": [{ "pattern": "app.fogar.ai", "custom_domain": true }]
+}

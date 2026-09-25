@@ -70,7 +70,7 @@ function sourcesForm(body: HTMLElement, inst: WidgetInstance, ctx: WidgetCtx, ca
 }
 
 export const feed: WidgetDef = {
-  type: 'feed', title: 'Feed', description: 'RSS and Atom feeds and saved searches, merged into one reading list.', single: false,
+  type: 'feed', title: 'Feed', description: 'RSS and Atom feeds and saved searches, merged into one reading list.', single: false, web: false,
   defaultConfig: () => ({ name: 'Feed', sources: [], count: 20 }),
   name: (inst) => inst.config.name || 'Feed',
   async render(body, actions, inst, ctx) {

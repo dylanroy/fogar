@@ -29,6 +29,7 @@ v0.1.1, on the [Chrome Web Store](https://chromewebstore.google.com/detail/fogar
 - Customize: appearance (system, light, or dark; six curated accents or any hue; warm, neutral, or cool paper; serif or sans headings; comfortable or compact density) and layout (ask box at the top or centered, widgets in a sidebar on wide windows, two, three, or four widget columns, a normal, wide, or full page width, hide the recipes row). Drag a widget's title to reorder. A theme is a dozen numbers, never CSS: colors derive in OKLCH at fixed lightness, so every choice stays readable in both light and dark, and a theme shares as a link. A tiny boot script paints the saved theme and layout before the first frame.
 - A network ledger that counts every request this tab made, by host. Backup and restore of everything.
 - Landing page, five use-case pages (tabs, bookmarks, writing, your voice, your day), sitemap, and privacy policy in `site/`. Store listing copy and generated assets in `store/`.
+- The same page as an installable web app at [app.fogar.ai](https://app.fogar.ai), for phones and for browsers the extension does not reach. Local or cloud model, recipes, Writing, chat, todos, notes, links, post-its, notebook, canvas, weather, attachments, grounding; it opens and answers with no connection once it has been opened online. The widgets that need extension APIs or cross-origin fetches (Sessions, bookmarks, Inbox, Feed, Jira, Agenda) are not offered there. See "The web app" below.
 
 Next: see [ROADMAP.md](ROADMAP.md).
 
@@ -68,6 +69,9 @@ npm run zip          # store-ready zip in .output/
 node scripts/eval-models.mjs      # model quality and speed, see Measured
 node scripts/store-assets.mjs     # store screenshots and promo tiles into store/
 npm run site         # site/index.html for fogar.ai, plus the zip as site/fogar-chrome.zip
+npm run web          # the web app into .output/web (vite.web.config.ts plus web/)
+npm run test:web     # end-to-end check of the web app: isolation, storage, offline, the model from a web origin
+npm run web:deploy   # build, then deploy the web app Worker to app.fogar.ai
 ```
 
 Load the unpacked extension from `.output/chrome-mv3` at `chrome://extensions` with Developer mode on. Open a new tab.
@@ -81,6 +85,14 @@ Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL
 `npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
 
 `npm run site` builds fogar.ai into `site/`: the homepage from `site/page.html`, one page per use case from `site/src/*.html` (`/tabs`, `/bookmarks`, `/write`, `/voice`, `/today` live; `/ask`, `/search`, `/files`, `/models`, `/draw`, `/notebook`, `/news`, `/work` written and held until v0.1.1 is on the store, see `HOLD` in `scripts/build-site.mjs`; `FOGAR_SHOW_HELD=1 npm run site` builds them for a local preview), plus `sitemap.xml` and `robots.txt`. The homepage is the template: its styles, nav, install section, and footer are lifted out by `<!-- @nav -->`-style markers and shared with every page, so an edit there reaches all of them; each page carries its own title, description, canonical, Open Graph tags, and JSON-LD built from its FAQ. It also copies the current `.output/fogar-<version>-chrome.zip` to `site/fogar-chrome.zip`, which the install section keeps as a small fallback link for anyone who cannot use the store listing. Cloudflare serves `site/tabs.html` at `/tabs`, so links are extensionless. To publish: `npm run zip && npm run site && npx wrangler deploy`.
+
+## The web app
+
+The same page runs as an installable web app at [app.fogar.ai](https://app.fogar.ai). `npm run web` builds it with plain Vite (`vite.web.config.ts`) from the same `entrypoints/newtab` source: the `wxt/browser` import becomes `lib/web/browser-shim.ts` (storage over IndexedDB with change events, asset URLs, permission checks that say no, notifications through the web API), and nothing else in the page changes; `lib/platform.ts` tells the few places that differ which build they are in. `web/` holds the web-only files: the manifest and home-screen icons, `_headers` (cross-origin isolation for wllama's threads, and the same script policy as the extension), a service worker that precaches the page and the model runtime so the app opens and answers with no connection, and the registration script. `wrangler.app.jsonc` deploys it as a second assets-only Worker. `npm run test:web` builds it, serves it with those headers, and checks isolation, storage across a reload, the service worker with the server stopped, and the local model downloaded from a web origin and then loaded again with the network off.
+
+What is different on the web. A page cannot make the cross-origin requests an extension's host permissions allow, so the Add menu does not offer Agenda, Feed, Inbox, Jira, or Sessions (`web: false` on the widget definition; a layout restored from a backup says so in their place). Bookmark search and the right-click question are extension features. Reminders fire only while the app is open, from the page itself, since there is no background worker or alarms API; the test notification asks for permission. Everything else is there.
+
+On a phone. Open it once with a connection so the service worker can cache the app, then add it to the home screen (Safari: Share, then Add to Home Screen), which also exempts it from Safari's seven-day storage cleanup. The device check picks the 0.8B model, since Safari reports no memory figure; whether a phone's memory ceiling tolerates it is a matter of trying. The local model needs iOS 27: Safari 27 added the WebAssembly promise integration wllama's normal build relies on, and on iOS 26 wllama would reach for a slower compatibility build from a CDN, which this build does not ship. Cloud mode with your own key works on anything. Data lives in the browser on that device; a backup file from the extension restores into the app through Settings.
 
 ## Manifest V3 constraints, and how each is handled
 
@@ -105,7 +117,7 @@ Results from 2026-09-21 on an M-series Mac, Playwright Chromium 153 (new headles
 
 - [x] Build produces an MV3 extension with no `blob:` worker in the newtab bundle
 - [x] 1 MB test model downloads, loads, and streams tokens under the MV3 CSP
-- [x] Warm reload of the same model makes zero GGUF downloads (weights served from OPFS). Two small Hugging Face repo-listing calls still happen on load even with `allowOffline`; making local mode fully network-silent after caching is a Phase 2 item
+- [x] Warm reload of the same model makes zero GGUF downloads (weights served from OPFS). Two small Hugging Face repo-listing calls used to happen on every load, because wllama's `loadModelFromHF` lists the repo before it looks in the cache and `allowOffline` is never read in 3.6.1; since 2026-09-25 the loader goes straight to the file URL, the cache matches on it, and a cached model loads with the network off (`npm run test:web` checks exactly that)
 - [x] WebGPU path works: adapter reported `vendor: apple, architecture: metal-3`, all layers offloaded (`GPU=1`)
 - [x] Multi-thread CPU path works: `Multithread enabled: true, pthreadPoolSize: 8`, so the COOP/COEP manifest keys do their job
 - [x] Qwen3 0.6B Q4 answers a real question. Headless Chromium, CPU, 8 threads: 397 MB cold download and load in about 40 s, warm reload in 1.3 s, first token 355 ms, 104 tokens/s. Also confirmed manually in Chrome with WebGPU
@@ -122,7 +134,7 @@ See [ROADMAP.md](ROADMAP.md) for phases, gates, the recipe gallery plan, and eve
 
 ## Privacy stance
 
-Local mode makes no network requests after the model is cached. Cloud mode sends prompts only to the endpoint the user typed in. No analytics in the extension. This is also the cheapest possible Chrome Web Store data disclosure.
+Local mode makes no network requests after the model is cached. Cloud mode sends prompts only to the endpoint the user typed in. No analytics in the extension. This is also the cheapest possible Chrome Web Store data disclosure. The web app fetches its own files from app.fogar.ai and nothing else goes there; its data stays in that browser.
 
 ## License
 

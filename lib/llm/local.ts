@@ -41,10 +41,14 @@ export class LocalProvider implements Provider {
 
   private async loadWith(model: ModelSpec, gpu: boolean, onProgress: LoadOptions['onProgress']): Promise<void> {
     const wasm = browser.runtime.getURL('/wllama/wllama.wasm');
-    // allowOffline: once a model is cached, skip the Hugging Face listing call so local mode makes no network requests at all.
+    // allowOffline is stored and never read in wllama 3.6.1; the direct file URL below is what makes a cached load network-free.
     this.wllama = new Wllama({ default: wasm }, { parallelDownloads: 3, allowOffline: true });
-    await this.wllama.loadModelFromHF(
-      { repo: model.repo, file: model.file },
+    // Straight to the file, not through the Hugging Face API. wllama's HF helper lists the repo before it looks in the
+    // cache and throws with no network, so a cached model would not load offline; the URL loader looks in the cache
+    // first and matches on this same address, so models already downloaded stay valid. It was also the last request
+    // local mode made after caching: with it gone, a cached model loads with no network at all.
+    await this.wllama.loadModelFromUrl(
+      `https://huggingface.co/${model.repo}/resolve/main/${model.file}`,
       {
         n_ctx: 4096,
         n_gpu_layers: gpu ? 99 : 0,

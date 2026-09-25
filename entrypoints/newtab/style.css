@@ -709,3 +709,8 @@ a.ghost { text-decoration: none; display: inline-flex; align-items: center; }
 .wr-amends { display: grid; gap: 8px; padding-top: 10px; border-top: 1px solid var(--line); }
 .wr-amends > p { margin: 0; font-size: 12.5px; }
 .wr-amend .t { white-space: normal; }
+/* ---- Touch, and the web app on a phone ---- */
+/* No hover on a phone: the widget controls stay visible instead of appearing on hover. */
+@media (hover: none) { .widget-controls { opacity: 1; } }
+/* An installed app: keep the bottom of the page clear of the home indicator. */
+.page { padding-bottom: calc(8vh + env(safe-area-inset-bottom, 0px)); }

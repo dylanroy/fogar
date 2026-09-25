@@ -15,7 +15,10 @@
     "postinstall": "wxt prepare",
     "test:spike": "node scripts/spike-smoke.mjs",
     "shots": "node scripts/screenshot.mjs",
-    "site": "node scripts/build-site.mjs"
+    "site": "node scripts/build-site.mjs",
+    "web": "node scripts/build-web.mjs",
+    "web:deploy": "npm run web && npx wrangler deploy --config wrangler.app.jsonc",
+    "test:web": "node scripts/web-smoke.mjs"
   },
   "dependencies": {
     "@wllama/wllama": "3.6.1",

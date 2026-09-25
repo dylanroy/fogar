@@ -2,6 +2,7 @@ import type { App } from '../app';
 import { $, clear, el } from '@/lib/dom';
 import { applyLayoutAttrs, loadLayout, newInstance, saveLayout, type Layout, type WidgetInstance, type WidgetType } from '@/lib/layout';
 import { isPro, loadTiers, type Tier } from '@/lib/catalog';
+import { isWeb } from '@/lib/platform';
 import type { RecipesUI } from '../ui/recipes';
 import type { TodosUI } from '../ui/todos';
 import type { RemindersUI } from '../ui/reminders';
@@ -50,6 +51,8 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
     for (const extra of actions.querySelectorAll('.widget-extra')) extra.remove();
     const def = widgetDef(inst.type);
     card.querySelector('h2')!.textContent = def.name(inst);
+    // A layout restored from a backup can carry a widget the web app cannot run. Say so instead of failing.
+    if (isWeb() && def.web === false) { body.append(el('p', { class: 'muted' }, `${def.title} is part of the Chrome extension; the web app does not have it yet.`)); return; }
     // Widget-provided header actions (e.g. "Clear done", a model picker) go before the controls. The container
     // is live in the header before render runs, so actions added after an await still land in it.
     const extra = el('span', { class: 'row-actions widget-extra' });
@@ -185,6 +188,7 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
   function paintMenu() {
     clear(menu);
     for (const def of WIDGETS) {
+      if (isWeb() && def.web === false) continue;
       const present = def.single && layout.widgets.some((w) => w.type === def.type);
       const locked = tierOf(def.type) === 'pro' && !pro;
       menu.append(el('button', {

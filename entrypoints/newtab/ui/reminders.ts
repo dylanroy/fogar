@@ -1,7 +1,8 @@
 import type { App } from '../app';
 import { clear, el, fmtTime } from '@/lib/dom';
 import { browser } from 'wxt/browser';
-import { addReminder, loadReminders, parseReminder, removeReminder, type Reminder } from '@/lib/reminders';
+import { addReminder, loadReminders, parseReminder, removeReminder, saveReminders, type Reminder } from '@/lib/reminders';
+import { isWeb } from '@/lib/platform';
 
 /** Zero-permission calendar hand-off: a prefilled Google Calendar event link. No OAuth, nothing to verify. */
 function gcalLink(r: Reminder): string {
@@ -17,6 +18,9 @@ export interface RemindersUI {
   /** Set by the widget host: put the reminders widget back on the page. */
   onNeedMount: (() => Promise<void>) | null;
 }
+
+/** The web app's timer for due reminders; one per page however often the widget mounts. */
+let webTimer: ReturnType<typeof setInterval> | null = null;
 
 export function createRemindersUI(app: App): RemindersUI {
   let list: HTMLElement | null = null; let input: HTMLInputElement | null = null; let confirmBox: HTMLElement | null = null; let empty: HTMLElement | null = null;
@@ -89,16 +93,34 @@ export function createRemindersUI(app: App): RemindersUI {
       const warning = el('p', { id: 'notif-warning', class: 'muted small-note warn', hidden: true });
       const test = el('a', { id: 'notif-test', class: 'link', href: '#' }, 'Send a test notification');
       body.append(form, confirmBox, list, empty, warning,
-        el('p', { class: 'muted small-note' }, 'Reminders fire while Chrome is open. Anything missed shows the next time it starts. ', test));
+        el('p', { class: 'muted small-note' }, isWeb() ? 'Reminders fire while Fogar is open on this device; the Chrome extension fires them in the background. ' : 'Reminders fire while Chrome is open. Anything missed shows the next time it starts. ', test));
       form.onsubmit = (e) => { e.preventDefault(); const text = input!.value.trim(); if (text) ui.capture(text); };
       void loadReminders().then(render);
+
+      // The web app has no background worker or alarms API, so the page fires what comes due while it is open.
+      if (isWeb() && !webTimer) {
+        const tick = async () => {
+          const all = await loadReminders(); const now = Date.now();
+          const due = all.filter((r) => !r.fired && r.when <= now);
+          if (!due.length) return;
+          await saveReminders(all.map((r) => (due.some((d) => d.id === r.id) ? { ...r, fired: true } : r)));
+          for (const r of due) {
+            try { await browser.notifications.create('fogar-reminder:' + r.id, { type: 'basic', iconUrl: browser.runtime.getURL('/icon/128.png'), title: 'Fogar reminder', message: r.label, priority: 2 }); }
+            catch { app.toast(`Reminder: ${r.label}`); }
+          }
+          render(await loadReminders());
+        };
+        webTimer = setInterval(() => void tick(), 30_000);
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) void tick(); });
+        void tick();
+      }
 
       // Chrome can have notifications switched off for the profile or by the OS. Say so where the reminder is set.
       const checkPermission = async () => {
         try {
           const level = await browser.notifications.getPermissionLevel();
           warning.hidden = level !== 'denied';
-          if (level === 'denied') warning.textContent = 'Chrome notifications are turned off for this profile or by the system, so reminders will only appear in this list. Check chrome://settings/content/notifications and your OS notification settings.';
+          if (level === 'denied') warning.textContent = isWeb() ? 'Notifications are blocked for this site, so reminders will only appear in this list. Allow them in the browser’s site settings.' : 'Chrome notifications are turned off for this profile or by the system, so reminders will only appear in this list. Check chrome://settings/content/notifications and your OS notification settings.';
         } catch { /* API unavailable; nothing to warn about */ }
       };
       void checkPermission();

@@ -44,7 +44,7 @@ function setup(body: HTMLElement, inst: WidgetInstance, ctx: WidgetCtx, cancella
 }
 
 export const jira: WidgetDef = {
-  type: 'jira', title: 'Jira', description: 'Your issues from any JQL query, with your own API token.', single: false,
+  type: 'jira', title: 'Jira', description: 'Your issues from any JQL query, with your own API token.', single: false, web: false,
   defaultConfig: () => ({ ...DEFAULT_JIRA_CONFIG() }),
   name: (inst) => inst.config.name || 'Jira',
   async render(body, actions, inst, ctx) {

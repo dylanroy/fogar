@@ -173,7 +173,7 @@ function eventDetail(ev: AgendaEvent, eventUrl: string | undefined): HTMLElement
 }
 
 const agenda: WidgetDef = {
-  type: 'agenda', title: 'Agenda', description: 'Today and tomorrow from any calendar’s iCal feed. No account connection.', single: false,
+  type: 'agenda', title: 'Agenda', description: 'Today and tomorrow from any calendar’s iCal feed. No account connection.', single: false, web: false,
   defaultConfig: () => ({ url: '' }),
   name: () => 'Agenda',
   async render(body, actions, inst, ctx) {
@@ -342,7 +342,7 @@ const weather: WidgetDef = {
 // ---------- Sessions ----------
 const relTime = (ts: number) => { const m = Math.round((Date.now() - ts) / 60e3); if (m < 1) return 'just now'; if (m < 60) return `${m} min ago`; const h = Math.round(m / 60); if (h < 24) return `${h} h ago`; const d = Math.round(h / 24); return d === 1 ? 'yesterday' : `${d} days ago`; };
 const sessions: WidgetDef = {
-  type: 'sessions', title: 'Sessions', description: 'Save your open windows, close them without fear, search and restore later.', single: true, wide: true,
+  type: 'sessions', title: 'Sessions', description: 'Save your open windows, close them without fear, search and restore later.', single: true, wide: true, web: false,
   defaultConfig: () => ({}), name: () => 'Sessions',
   async render(body, _actions, inst, ctx) {
     const { app } = ctx;
