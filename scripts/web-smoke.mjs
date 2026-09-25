@@ -84,13 +84,13 @@ try {
   check('a todo survives a reload (IndexedDB)', await page.evaluate(() => /Pack the charger/.test(document.getElementById('todo-list')?.textContent ?? '')));
 
   // 3. The service worker installs and precaches the app and the model runtime
-  await page.waitForFunction(async () => {
-    if (!(await navigator.serviceWorker.getRegistration())?.active) return false;
-    const keys = await caches.keys(); if (!keys.length) return false;
-    const c = await caches.open(keys[0]);
-    return !!(await c.match('/')) && !!(await c.match('/wllama/wllama.wasm')) && !!(await c.match('/theme-boot.js'));
-  }, null, { timeout: 90000 });
-  check('service worker installed and precached the app', true, await page.evaluate(async () => `${(await (await caches.open((await caches.keys())[0])).keys()).length} entries`));
+  // "active" is set while the worker is still activating and before it claims the page, and the cache exists, empty,
+  // from the moment addAll starts: wait until the page is controlled and the precache has landed. Polled from here,
+  // since waitForFunction does not await an async predicate.
+  const swState = () => page.evaluate(async () => ({ controller: !!navigator.serviceWorker.controller, entries: Math.max(0, ...(await Promise.all((await caches.keys()).map(async (n) => (await (await caches.open(n)).keys()).length)))) }));
+  let sw = await swState();
+  for (const deadline = Date.now() + 90000; (!sw.controller || sw.entries < 20) && Date.now() < deadline; sw = await swState()) await page.waitForTimeout(250);
+  check('service worker in control, app precached', sw.controller && sw.entries >= 20, `${sw.entries} entries`);
 
   // 4. From here on nothing comes from the server: stop it (or go offline against a deploy)
   if (server) { server.close(); for (const s of sockets) s.destroy(); } else await context.setOffline(true);
