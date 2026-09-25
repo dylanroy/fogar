@@ -7,13 +7,14 @@ import { execSync } from 'node:child_process';
 import { join, relative, sep } from 'node:path';
 
 const OUT = '.output/web';
-if (!existsSync('public/wllama/wllama.wasm') || !existsSync('public/tesseract/worker.min.js')) execSync('npm run gen', { stdio: 'inherit' });
+if (!existsSync('public/wllama/wllama.wasm') || !existsSync('public/tesseract/worker.min.js') || !existsSync('web/wllama/wllama-compat.wasm')) execSync('npm run gen', { stdio: 'inherit' });
 // tsconfig.json extends the one WXT writes at install time; a fresh checkout that skipped postinstall has none yet.
 if (!existsSync('.wxt/tsconfig.json')) execSync('npx wxt prepare', { stdio: 'inherit' });
 execSync('npx vite build --config vite.web.config.ts', { stdio: 'inherit' });
 cpSync('web', OUT, { recursive: true });
 
-// Everything the page needs to open and answer offline. The OCR files (8 MB) are left to their first use, and cached then.
+// Everything the page needs to open and answer offline. The OCR files (8 MB) and the compat model runtime (15 MB, Safari
+// before 27) are left to their first use, and cached then.
 const files = [];
 (function walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -22,7 +23,7 @@ const files = [];
   }
 })(OUT);
 const skip = new Set(['/sw.js', '/_headers', '/index.html']);
-const precache = ['/', ...files.filter((f) => !skip.has(f) && !f.startsWith('/tesseract/')).sort()];
+const precache = ['/', ...files.filter((f) => !skip.has(f) && !f.startsWith('/tesseract/') && !/-compat(\.js|\.wasm|$)/.test(f)).sort()];
 const hash = createHash('sha256');
 for (const f of files) if (f !== '/sw.js') hash.update(f).update(readFileSync(join(OUT, f)));
 hash.update(readFileSync('web/sw.js'));

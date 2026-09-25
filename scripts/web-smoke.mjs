@@ -92,6 +92,24 @@ try {
   for (const deadline = Date.now() + 90000; (!sw.controller || sw.entries < 20) && Date.now() < deadline; sw = await swState()) await page.waitForTimeout(250);
   check('service worker in control, app precached', sw.controller && sw.entries >= 20, `${sw.entries} entries`);
 
+  // 3b. The compat build, for browsers without JSPI (Safari before 27): a context that hides the feature must load the
+  //     model from the local compat files, never from a CDN. Before the server goes away: these files are not precached.
+  {
+    const ctx = await browser.newContext({ serviceWorkers: 'allow' });
+    await ctx.addInitScript(() => { delete WebAssembly.Suspending; });
+    const cp = await ctx.newPage();
+    const fetched = new Set(); const cdn = [];
+    cp.on('request', (r) => { const u = r.url(); if (/wllama.*compat/.test(u)) fetched.add(new URL(u).pathname); if (/jsdelivr\.net/.test(u)) cdn.push(u); });
+    cp.on('console', (m) => { if (m.type() !== 'verbose') logs.push(`[compat ${m.type()}] ${m.text().slice(0, 160)}`); });
+    const t1 = Date.now();
+    await cp.goto(`${BASE}/?smoke=1&gpu=0&model=smoke`);
+    try { await cp.waitForFunction(() => ['done', 'error'].includes(document.body.dataset.status ?? ''), null, { timeout: 180000 }); } catch { logs.push('[compat] timed out'); }
+    const st = await cp.evaluate(() => document.body.dataset.status);
+    const ans = await cp.evaluate(() => document.getElementById('answer')?.textContent ?? '');
+    check('the compat build (no JSPI) loads from local files and answers', st === 'done' && ans.length > 0 && fetched.has('/wllama/wllama-compat.wasm') && fetched.has('/wllama/llama-worker-compat.js') && cdn.length === 0, `${Date.now() - t1} ms, ${[...fetched].join(' ')}${cdn.length ? ', CDN: ' + cdn[0] : ''}`);
+    await ctx.close();
+  }
+
   // 4. From here on nothing comes from the server: stop it (or go offline against a deploy)
   if (server) { server.close(); for (const s of sockets) s.destroy(); } else await context.setOffline(true);
   await page.reload(); await shell();

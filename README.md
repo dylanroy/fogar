@@ -52,7 +52,7 @@ The 4B is the first tier that behaves like an assistant, which is why it is reco
 ## Stack
 
 - [WXT](https://wxt.dev) 0.21 for the extension build (Vite 8, MV3 manifest generation, Chrome and Firefox targets).
-- [@wllama/wllama](https://github.com/ngxson/wllama) 3.6.1, pinned. llama.cpp compiled to WebAssembly with WebGPU offload.
+- [@wllama/wllama](https://github.com/ngxson/wllama) 3.6.1, pinned. llama.cpp compiled to WebAssembly with WebGPU offload. `@wllama/wllama-compat` at the same version for the web app on Safari before 27.
 - [tesseract.js](https://github.com/naptha/tesseract.js) 7 for the Notebook's on-device photo reading: worker, two SIMD cores, and English data copied into `public/tesseract/` by `scripts/gen-tesseract.mjs`, about 8 MB unpacked.
 - Vanilla TypeScript for the spike. A small framework (Preact or Svelte) comes in Phase 2 if the UI grows.
 - Playwright for the smoke test that loads the built extension into Chromium.
@@ -80,7 +80,7 @@ After rebuilding, click Reload on the extension card (or bump the version). Chro
 
 Smoke test variants: `HEADED=1` to watch it, `GPU=1` for the WebGPU path, `MODEL=qwen3-0.6b` to use the real 400 MB model, `VERBOSE=1` for every console line, `OCR=1` to also run Tesseract inside the extension on a rendered line of text (slow). The test also covers a warm OPFS reload and cloud mode against a local mock OpenAI server; the same mock stands in for Gmail, feeds, Jira, and the Anthropic Messages API for the widget checks.
 
-`npm run build` first runs `npm run gen`, which regenerates `public/wllama/` from the pinned wllama package and `public/tesseract/` from tesseract.js, fetching the English language data (4 MB, from the tesseract-ocr project at a fixed tag) once and keeping it gzipped. Both directories are gitignored.
+`npm run build` first runs `npm run gen`, which regenerates `public/wllama/` from the pinned wllama package (and `web/wllama/`, the compatibility build for Safari before 27, from `@wllama/wllama-compat` at the same version; only the web app ships it) and `public/tesseract/` from tesseract.js, fetching the English language data (4 MB, from the tesseract-ocr project at a fixed tag) once and keeping it gzipped. Both directories are gitignored.
 
 `npm run gen:icons` re-renders `public/icon/*.png` from the SVG mark in `scripts/gen-icons.mjs`.
 
@@ -92,7 +92,7 @@ The same page runs as an installable web app at [app.fogar.ai](https://app.fogar
 
 What is different on the web. A page cannot make the cross-origin requests an extension's host permissions allow, so the Add menu does not offer Agenda, Feed, Inbox, Jira, or Sessions (`web: false` on the widget definition; a layout restored from a backup says so in their place). Bookmark search and the right-click question are extension features. Reminders fire only while the app is open, from the page itself, since there is no background worker or alarms API; the test notification asks for permission. Everything else is there. One request the user did not point anywhere: the fogar.ai zone injects Cloudflare's Web Analytics beacon into every HTML response, and the app's script policy admits it (decided 2026-09-25) rather than switching the zone setting off; it sets no cookie, and Settings says so under "Your data".
 
-On a phone. Open it once with a connection so the service worker can cache the app, then add it to the home screen (Safari: Share, then Add to Home Screen), which also exempts it from Safari's seven-day storage cleanup. The device check picks the 0.8B model, since Safari reports no memory figure; whether a phone's memory ceiling tolerates it is a matter of trying. The local model needs iOS 27: Safari 27 added the WebAssembly promise integration wllama's normal build relies on, and on iOS 26 wllama would reach for a slower compatibility build from a CDN, which this build does not ship. Cloud mode with your own key works on anything. Data lives in the browser on that device; a backup file from the extension restores into the app through Settings.
+On a phone. Open it once with a connection so the service worker can cache the app, then add it to the home screen (Safari: Share, then Add to Home Screen), which also exempts it from Safari's seven-day storage cleanup. The device check picks the 0.8B model, since Safari reports no memory figure; whether a phone's memory ceiling tolerates it is a matter of trying. On iOS 27 the local model runs wllama's normal build; Safari 27 added the WebAssembly promise integration it relies on. On iOS 26 it runs wllama's compatibility build, shipped from app.fogar.ai itself (`web/wllama/`, from `@wllama/wllama-compat` at the pinned version; 15 MB, fetched at the first load and cached by the service worker), which is slower. Cloud mode with your own key works on anything. Data lives in the browser on that device; a backup file from the extension restores into the app through Settings.
 
 ## Manifest V3 constraints, and how each is handled
 

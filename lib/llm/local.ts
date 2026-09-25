@@ -43,6 +43,11 @@ export class LocalProvider implements Provider {
     const wasm = browser.runtime.getURL('/wllama/wllama.wasm');
     // allowOffline is stored and never read in wllama 3.6.1; the direct file URL below is what makes a cached load network-free.
     this.wllama = new Wllama({ default: wasm }, { parallelDownloads: 3, allowOffline: true });
+    // Browsers without JSPI or Memory64 (Safari before 27) get wllama's compatibility build. From our own origin, not
+    // wllama's CDN default: the web build ships it in web/wllama/, and the worker rewrite in
+    // lib/vite-plugin-wllama-mv3.ts spawns the static compat worker, so the worker code here is only a placeholder.
+    // Chrome has both features and never takes this path.
+    this.wllama.setCompat({ worker: { code: '/* static compat worker: see lib/vite-plugin-wllama-mv3.ts */' }, wasm: browser.runtime.getURL('/wllama/wllama-compat.wasm' as any) });
     // Straight to the file, not through the Hugging Face API. wllama's HF helper lists the repo before it looks in the
     // cache and throws with no network, so a cached model would not load offline; the URL loader looks in the cache
     // first and matches on this same address, so models already downloaded stay valid. It was also the last request
