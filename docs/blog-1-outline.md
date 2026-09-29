@@ -1,4 +1,4 @@
-# Blog post 1 draft: I put a language model inside a Chrome new tab page
+# Blog post 1 outline (the finished post is docs/blog-1-draft.md): I put a language model inside a Chrome new tab page
 
 Target: dylanroy.com. Audience: developers who have heard "LLMs in the browser" and want to know what actually breaks. Voice: first person, one build, real numbers. Working title options at the bottom.
 

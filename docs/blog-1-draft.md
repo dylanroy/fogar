@@ -1,6 +1,6 @@
 # I put a language model inside a Chrome new tab page. Here is what broke.
 
-*Draft for dylanroy.com, written 2026-09-29 from the outline in `docs/blog-1-the-build.md`. Every number is from the
+*Draft for dylanroy.com, written 2026-09-29 from the outline in `docs/blog-1-outline.md`. Every number is from the
 README or the test suite. Things to check before publishing are listed at the end.*
 
 ![I put a language model inside a Chrome new tab page. Here is what broke.](blog-1-featured.png)

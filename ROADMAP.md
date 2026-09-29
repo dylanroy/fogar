@@ -103,7 +103,7 @@ The first paid feature and the account it needs, planned in [docs/pro-sync-admin
 
 ## Next: launch, v0.2
 
-- [ ] Publish blog post one on dylanroy.com. The listing went live 2026-09-24, so this is late. Outline in `docs/blog-1-the-build.md`; a full draft with the measured numbers is in `docs/blog-1-draft.md` (2026-09-29), with a short list of claims to confirm before it goes up.
+- [ ] Publish blog post one on dylanroy.com. The listing went live 2026-09-24, so this is late. Outline in `docs/blog-1-outline.md`; a full draft with the measured numbers is in `docs/blog-1-draft.md` (2026-09-29), with a short list of claims to confirm before it goes up.
 - [ ] Show HN, r/LocalLLaMA, r/chrome_extensions. The hook is "no key, no account, no server".
 - [ ] Triage feedback for two weeks before building anything new.
 - [ ] Measurement is store-side only: installs, weekly users, uninstall rate. Footer links carry `ref=fogar` so each product's own analytics show what the slot sends. No telemetry in the extension, ever.
