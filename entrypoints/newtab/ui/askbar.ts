@@ -61,11 +61,21 @@ export function initAskBar(app: App, deps: AskBarDeps): void {
   ground.checked = app.settings.grounding.byDefault;
 
   // The box grows with what is typed, up to under half the window; the corner where a drag handle would sit now
-  // holds the send button.
-  const grow = () => { prompt.style.height = 'auto'; prompt.style.height = `${Math.min(prompt.scrollHeight, Math.round(window.innerHeight * 0.45))}px`; };
+  // holds the send button. On a phone the window is what the keyboard leaves (the visual viewport), not the screen.
+  const room = () => window.visualViewport?.height ?? window.innerHeight;
+  const grow = () => { prompt.style.height = 'auto'; prompt.style.height = `${Math.min(prompt.scrollHeight, Math.round(room() * 0.45))}px`; };
   prompt.addEventListener('input', grow);
+  const touch = matchMedia('(pointer: coarse)').matches;
+  prompt.enterKeyHint = 'send';
+  // When the keyboard comes up, keep the whole box in what is left of the screen.
+  window.visualViewport?.addEventListener('resize', () => {
+    if (!touch || document.activeElement !== prompt) return;
+    if (prompt.value) grow();
+    frame.scrollIntoView({ block: 'nearest' });
+  });
   const setPrompt = (v: string) => { prompt.value = v; prompt.dispatchEvent(new Event('input', { bubbles: true })); };
-  const reset = () => { prompt.value = ''; prompt.style.height = ''; refreshExamples(); };
+  // On a phone the keyboard would cover the answer, so sending puts it away.
+  const reset = () => { prompt.value = ''; prompt.style.height = ''; refreshExamples(); if (touch) prompt.blur(); };
 
   const webSearch = (q: string) => { location.href = SEARCH_URL + encodeURIComponent(q); };
   let forceSearch = false;

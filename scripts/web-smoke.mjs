@@ -5,7 +5,7 @@
 // with no request allowed); the manifest and icons.
 // Usage: npm run test:web   (SKIP_BUILD=1 to reuse .output/web, HEADED=1 to watch, VERBOSE=1 for every console line)
 // BASE=https://app.fogar.ai runs the same checks against a deploy; there the "server stopped" step goes offline instead.
-import { chromium } from 'playwright';
+import { chromium, devices } from 'playwright';
 import { createServer } from 'node:http';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
@@ -107,6 +107,63 @@ try {
     const st = await cp.evaluate(() => document.body.dataset.status);
     const ans = await cp.evaluate(() => document.getElementById('answer')?.textContent ?? '');
     check('the compat build (no JSPI) loads from local files and answers', st === 'done' && ans.length > 0 && fetched.has('/wllama/wllama-compat.wasm') && fetched.has('/wllama/llama-worker-compat.js') && cdn.length === 0, `${Date.now() - t1} ms, ${[...fetched].join(' ')}${cdn.length ? ', CDN: ' + cdn[0] : ''}`);
+    await ctx.close();
+  }
+
+  // 3c. On a phone: fields at 16px (iOS zooms into anything smaller), tap targets, no hover-only controls, no sideways
+  //     scroll, and widgets reorder by a long press and a drag. Touches go through CDP so they are real touch events
+  //     with pointerType "touch"; a quick swipe on the same title must scroll, not reorder.
+  {
+    const ctx = await browser.newContext({ ...devices['iPhone 13'], serviceWorkers: 'block' });
+    const pp = await ctx.newPage();
+    pp.on('pageerror', (e) => logs.push(`[phone pageerror] ${e.message}`));
+    await pp.goto(`${BASE}/?e2e=1`);
+    await pp.waitForSelector('#recipe-chips .chip');
+    await pp.evaluate(() => document.querySelector('#widget-menu .menu-item[data-widget="links"]')?.click());
+    await pp.waitForSelector('.widget[data-type="links"] .add-link input');
+    await pp.fill('.widget[data-type="links"] .add-link input', 'example.com');
+    await pp.press('.widget[data-type="links"] .add-link input', 'Enter');
+    await pp.waitForSelector('.widget[data-type="links"] .tile');
+    const audit = await pp.evaluate(() => {
+      const shown = (e) => { const b = e.getBoundingClientRect(); return b.width > 0 && !e.closest('[hidden]'); };
+      const smallFields = [...document.querySelectorAll('input:not([type=checkbox]):not([type=range]), textarea, select')].filter(shown).filter((e) => parseFloat(getComputedStyle(e).fontSize) < 16).map((e) => e.id || e.className);
+      const smallCtl = [...document.querySelectorAll('.widget .ctl')].filter(shown).filter((e) => { const b = e.getBoundingClientRect(); return b.width < 34 || b.height < 36; }).length;
+      const hidden = [...document.querySelectorAll('.widget-controls, .tile .x')].filter((e) => getComputedStyle(e).opacity === '0').length;
+      return { smallFields, smallCtl, hidden, sideways: document.documentElement.scrollWidth > innerWidth, enter: document.getElementById('prompt').enterKeyHint };
+    });
+    check('phone: fields at 16px, controls 34×36 or larger, nothing hover-only, no sideways scroll, a send key', !audit.smallFields.length && !audit.smallCtl && !audit.hidden && !audit.sideways && audit.enter === 'send', JSON.stringify(audit));
+
+    const cdp = await ctx.newCDPSession(pp);
+    const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y }] });
+    const order = () => pp.evaluate(() => [...document.querySelectorAll('#widgets .widget')].map((w) => w.dataset.type).join(','));
+    // Drag the second card's title onto the top quarter of the first, both in view: that lands before it.
+    // A swipe leaves a fling running: wait for the page to stop moving before measuring.
+    const settle = async () => { for (let last = -1, now = await pp.evaluate(() => scrollY); now !== last; last = now, now = await pp.evaluate(() => scrollY)) await pp.waitForTimeout(150); };
+    const drag = async (from, onto, hold) => {
+      await settle();
+      await pp.evaluate((o) => scrollTo({ top: scrollY + document.querySelector(`.widget[data-type="${o}"]`).getBoundingClientRect().top - 100, behavior: 'instant' }), onto);
+      await settle();
+      const { a, b } = await pp.evaluate(([f, o]) => {
+        const target = document.querySelector(`.widget[data-type="${o}"]`);
+        const h = document.querySelector(`.widget[data-type="${f}"] h2`).getBoundingClientRect(); const r = target.getBoundingClientRect();
+        return { a: { x: h.left + 20, y: h.top + h.height / 2 }, b: { x: r.left + r.width / 2, y: r.top + r.height * 0.25 } };
+      }, [from, onto]);
+      await touch('touchStart', a.x, a.y);
+      if (hold) await pp.waitForTimeout(500);
+      for (let i = 1; i <= 12; i++) { await touch('touchMove', a.x + ((b.x - a.x) * i) / 12, a.y + ((b.y - a.y) * i) / 12); await pp.waitForTimeout(16); }
+      await touch('touchEnd');
+      await pp.waitForTimeout(300);
+    };
+    const start = await order();
+    const [first, second] = start.split(',');
+    await drag(second, first, false);
+    const afterSwipe = await order();
+    await drag(second, first, true);
+    const afterDrag = await order();
+    await pp.reload(); await pp.waitForSelector('#recipe-chips .chip');
+    const afterReload = await order();
+    const want = [second, first, ...start.split(',').slice(2)].join(',');
+    check('phone: a long press and a drag reorders widgets and persists; a quick swipe does not', afterSwipe === start && afterDrag === want && afterReload === want, `${start} → swipe ${afterSwipe} → drag ${afterDrag} → reload ${afterReload}`);
     await ctx.close();
   }
 

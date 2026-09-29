@@ -717,7 +717,31 @@ a.ghost { text-decoration: none; display: inline-flex; align-items: center; }
 .wr-amend .t { white-space: normal; }
 /* ---- Touch, and the web app on a phone ---- */
 /* No hover on a phone: the widget controls stay visible instead of appearing on hover. */
-@media (hover: none) { .widget-controls { opacity: 1; } }
+/* No hover on a phone: everything that appears on hover stays visible instead. */
+@media (hover: none) {
+  .widget-controls, .tile .x, .item .x, .item .cal, #todo-list .grip { opacity: 1; }
+  .item.editing .x { opacity: 0; }
+}
+/* A finger, not a cursor. Fields at 16px, so iOS does not zoom the page when one takes focus; tap targets near the
+   44px guideline where the layout allows it, and a wider hit area where it does not (the Post-it colour dots). */
+@media (pointer: coarse) {
+  input, textarea, select, .line-input, .item .text, .item input.edit,
+  .field > input, .field > textarea, .field > select, .input-row .field > input, .input-row .field > select,
+  .settings label > input, .settings label > select { font-size: 16px; }
+  .ctl { width: 34px; height: 36px; font-size: 16px; }
+  .widget > .row-head h2 { line-height: 36px; }
+  .small, .chip, .example, .mode-btn { min-height: 40px; }
+  .item { min-height: 44px; }
+  .item .x, .item .cal, .hit .x, .src-row .x, .attachment .x { min-width: 36px; min-height: 36px; }
+  .item input[type="checkbox"], input[type="checkbox"] { width: 22px; height: 22px; }
+  .tile .x { padding: 6px 9px; }
+  .pnote .x { padding: 6px 8px; }
+  .pnote .dot { position: relative; }
+  .pnote .dot::after { content: ""; position: absolute; inset: -8px; }
+  .icon-btn, .send { min-width: 40px; min-height: 40px; }
+  /* Long-press a widget's title to drag it (widgets/index.ts); no text selection or callout on the way. */
+  .widget .row-head h2 { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+}
 /* An installed app: keep the bottom of the page clear of the home indicator. */
 .page { padding-bottom: calc(8vh + env(safe-area-inset-bottom, 0px)); }
 /* The web app in a phone's browser tab: one line on getting it onto the home screen. */

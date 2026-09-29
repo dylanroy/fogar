@@ -92,10 +92,53 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
       e.dataTransfer?.setData('text/plain', inst.id); if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
     });
     title.addEventListener('dragend', () => { dragId = null; card.classList.remove('dragging'); clearDropMarks(); });
-    const side = (e: DragEvent) => {
-      const r = card.getBoundingClientRect();
-      return isWide(inst) ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2;
-    };
+    const side = (e: DragEvent) => before(card, inst, e.clientX, e.clientY);
+
+    // Touch: phones never start an HTML5 drag. A long press on the title picks the card up, then the finger moves it,
+    // and the page scrolls when it nears the top or bottom edge. Moving before the press completes is a scroll.
+    let touchDrag = false; let pressing = false;
+    title.addEventListener('touchmove', (e) => { if (touchDrag) e.preventDefault(); }, { passive: false });
+    title.addEventListener('contextmenu', (e) => { if (touchDrag || pressing) e.preventDefault(); });
+    title.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'touch' || fullscreenId) return;
+      const x0 = e.clientX; const y0 = e.clientY;
+      let x = x0; let y = y0; let target: { id: string; before: boolean } | null = null; let frame = 0;
+      pressing = true;
+      const aim = () => {
+        clearDropMarks(); target = null;
+        const over = document.elementFromPoint(x, y)?.closest<HTMLElement>('.widget');
+        const overInst = over && layout.widgets.find((w) => w.id === over.dataset.id);
+        if (!over || !overInst || overInst.id === inst.id) return;
+        const b = before(over, overInst, x, y);
+        over.classList.add(b ? 'drop-before' : 'drop-after'); target = { id: overInst.id, before: b };
+      };
+      const scroll = () => {
+        const edge = 70; const dy = y < edge ? -(edge - y) / 4 : y > innerHeight - edge ? (y - (innerHeight - edge)) / 4 : 0;
+        if (dy) { scrollBy(0, dy); aim(); }
+        frame = requestAnimationFrame(scroll);
+      };
+      const timer = setTimeout(() => {
+        touchDrag = true; dragId = inst.id; card.classList.add('dragging');
+        navigator.vibrate?.(10); frame = requestAnimationFrame(scroll);
+      }, 350);
+      const move = (ev: PointerEvent) => {
+        if (ev.pointerId !== e.pointerId) return;
+        x = ev.clientX; y = ev.clientY;
+        if (!touchDrag) { if (Math.hypot(x - x0, y - y0) > 8) end(false); return; }
+        aim();
+      };
+      const end = (drop: boolean) => {
+        clearTimeout(timer); cancelAnimationFrame(frame);
+        removeEventListener('pointermove', move); removeEventListener('pointerup', up); removeEventListener('pointercancel', cancel);
+        const was = touchDrag; touchDrag = false; pressing = false;
+        if (!was) return;
+        dragId = null; card.classList.remove('dragging'); clearDropMarks();
+        if (drop && target) void reorder(inst.id, target.id, target.before);
+      };
+      const up = (ev: PointerEvent) => { if (ev.pointerId === e.pointerId) end(true); };
+      const cancel = (ev: PointerEvent) => { if (ev.pointerId === e.pointerId) end(false); };
+      addEventListener('pointermove', move); addEventListener('pointerup', up); addEventListener('pointercancel', cancel);
+    });
     card.addEventListener('dragover', (e) => {
       if (!dragId || dragId === inst.id) return;
       e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
@@ -112,6 +155,13 @@ export async function initWidgets(app: App, deps: { recipes: RecipesUI; todos: T
   }
 
   let dragId: string | null = null;
+  /** Whether a drop at (x, y) lands before `over`. Side by side, the left half is before; stacked (a wide card, or
+   *  one column on a phone), the top half is. */
+  const before = (over: HTMLElement, overInst: WidgetInstance, x: number, y: number): boolean => {
+    const r = over.getBoundingClientRect();
+    const stacked = isWide(overInst) || r.width > grid.clientWidth * 0.75;
+    return stacked ? y < r.top + r.height / 2 : x < r.left + r.width / 2;
+  };
   const clearDropMarks = () => { for (const c of cards.values()) c.classList.remove('drop-before', 'drop-after'); };
   async function reorder(fromId: string, toId: string, before: boolean) {
     const from = layout.widgets.findIndex((w) => w.id === fromId);
