@@ -47,26 +47,43 @@ const links: WidgetDef = {
   render(body, _actions, inst, ctx) {
     const list: Array<{ title: string; url: string }> = inst.config.links ?? [];
     const grid = el('div', { class: 'tiles' });
+    let editing: number | null = null;
     const paint = () => {
       clear(grid);
       for (const [i, l] of list.entries()) {
-        grid.append(el('a', { class: 'tile', href: l.url, title: l.url },
+        grid.append(el('a', { class: `tile${i === editing ? ' editing' : ''}`, href: l.url, title: l.url },
           el('img', { src: favicon(l.url), alt: '' }), el('span', { class: 't' }, l.title || host(l.url)),
-          el('button', { class: 'x', type: 'button', title: 'Remove', onclick: async (e: MouseEvent) => { e.preventDefault(); e.stopPropagation(); list.splice(i, 1); inst.config.links = list; await ctx.save(inst); paint(); } }, '×')));
+          el('button', { class: 'x edit', type: 'button', title: 'Edit', onclick: (e: MouseEvent) => { e.preventDefault(); e.stopPropagation(); edit(i); } }, '✎'),
+          el('button', { class: 'x', type: 'button', title: 'Remove', onclick: async (e: MouseEvent) => {
+            e.preventDefault(); e.stopPropagation();
+            list.splice(i, 1); inst.config.links = list;
+            if (editing === i) reset(); else if (editing !== null && editing > i) editing--;
+            await ctx.save(inst); paint();
+          } }, '×')));
       }
       empty.hidden = list.length > 0;
     };
     const empty = el('p', { class: 'muted empty' }, 'Add a site below.');
     const url = el('input', { class: 'line-input', type: 'text', placeholder: 'example.com or a full URL', autocomplete: 'off' });
     const title = el('input', { class: 'line-input', type: 'text', placeholder: 'Name (optional)', autocomplete: 'off' });
-    const form = el('form', { class: 'add-link' }, url, title, el('button', { class: 'ghost small', type: 'submit' }, 'Add'));
+    const submit = el('button', { class: 'ghost small', type: 'submit' }, 'Add');
+    const cancel = el('button', { class: 'ghost small', type: 'button', hidden: true, onclick: () => { reset(); paint(); } }, 'Cancel');
+    const form = el('form', { class: 'add-link' }, url, title, el('span', { class: 'add-link-actions' }, submit, cancel));
+    const reset = () => { editing = null; url.value = ''; title.value = ''; submit.textContent = 'Add'; cancel.hidden = true; };
+    const edit = (i: number) => {
+      editing = i; url.value = list[i].url; title.value = list[i].title;
+      submit.textContent = 'Save'; cancel.hidden = false; paint(); url.focus(); url.select();
+    };
+    form.onkeydown = (e) => { if (e.key === 'Escape' && editing !== null) { reset(); paint(); } };
     form.onsubmit = async (e) => {
       e.preventDefault();
       let u = url.value.trim(); if (!u) return;
       if (!/^https?:\/\//i.test(u)) u = `https://${u}`;
       try { new URL(u); } catch { ctx.app.toast('That does not look like a URL.'); return; }
-      list.push({ title: title.value.trim(), url: u }); inst.config.links = list;
-      await ctx.save(inst); url.value = ''; title.value = ''; paint();
+      const link = { title: title.value.trim(), url: u };
+      if (editing !== null) list[editing] = link; else list.push(link);
+      inst.config.links = list;
+      await ctx.save(inst); reset(); paint();
     };
     body.append(grid, empty, form);
     paint();

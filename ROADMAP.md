@@ -122,7 +122,7 @@ This is the answer to "should we build a widget marketplace". Yes, in this shape
 
 ## Shipped: declarative widgets
 
-Done on 2026-09-21: Agenda, Todos, Reminders, Links, Notes, Weather, and Recipe as typed widgets configured with data; reorder, configure, remove, add; Focus mode. Todos and Reminders are the first two panels in the system, so the layout is user-controlled from the start. Still no user code. On 2026-09-23: Inbox, Feed, Jira, LLM Chat, Canvas, Notebook, Post-its, and full screen for all of them (Phase 3e above). On 2026-09-24: Writing, in the user's own voice, with registers (Phase 3f).
+Done on 2026-09-21: Agenda, Todos, Reminders, Links, Notes, Weather, and Recipe as typed widgets configured with data; reorder, configure, remove, add; Focus mode. Todos and Reminders are the first two panels in the system, so the layout is user-controlled from the start. Still no user code. On 2026-09-23: Inbox, Feed, Jira, LLM Chat, Canvas, Notebook, Post-its, and full screen for all of them (Phase 3e above). On 2026-09-24: Writing, in the user's own voice, with registers (Phase 3f). On 2026-09-29: Links tiles edit in place (✎ on the tile fills the form, Save or Escape).
 
 **Next for widgets, if asked:** Countdown, Clock, a GitHub notifications panel with a personal token, other languages for the Notebook's on-device reader (fetched from tesseract's CDN with a permission prompt, like model weights). Each is a config form plus a render function.
 

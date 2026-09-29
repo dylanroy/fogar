@@ -405,6 +405,25 @@ await page.waitForSelector('.widget[data-type="links"] .tile');
 const tileText = await page.evaluate(() => document.querySelector('.widget[data-type="links"] .tile .t')?.textContent);
 check('links widget: add from menu, add a site, persists', tileText === 'example.com', `${tileText}`);
 
+// 10a. links widget: edit a tile in place, Escape cancels, the edit persists
+const lw = '.widget[data-type="links"]';
+await page.hover(`${lw} .tile`);
+await page.click(`${lw} .tile .x.edit`);
+const editForm = await page.evaluate((w) => { const f = document.querySelector(`${w} .add-link`); const [u] = f.querySelectorAll('input'); return { url: u.value, submit: f.querySelector('button[type="submit"]').textContent, marked: !!document.querySelector(`${w} .tile.editing`) }; }, lw);
+await page.fill(`${lw} .add-link input:first-of-type`, 'https://example.org/docs');
+await page.fill(`${lw} .add-link input:nth-of-type(2)`, 'Docs');
+await page.press(`${lw} .add-link input:first-of-type`, 'Enter');
+await page.waitForFunction((w) => document.querySelector(`${w} .tile .t`)?.textContent === 'Docs', lw);
+await page.click(`${lw} .tile .x.edit`);
+await page.press(`${lw} .add-link input:first-of-type`, 'Escape');
+const cancelled = await page.evaluate((w) => ({ url: document.querySelector(`${w} .add-link input`).value, submit: document.querySelector(`${w} .add-link button[type="submit"]`).textContent, marked: !!document.querySelector(`${w} .tile.editing`) }), lw);
+await page.reload();
+await page.waitForSelector(`${lw} .tile`);
+const linksEdited = await page.evaluate((w) => [...document.querySelectorAll(`${w} .tile`)].map((t) => `${t.querySelector('.t').textContent}=${t.getAttribute('href')}`), lw);
+check('links widget: edit a tile in place, Escape cancels, the edit persists',
+  editForm.url === 'https://example.com' && editForm.submit === 'Save' && editForm.marked && cancelled.url === '' && cancelled.submit === 'Add' && !cancelled.marked && linksEdited.length === 1 && linksEdited[0] === 'Docs=https://example.org/docs',
+  `${JSON.stringify(editForm)} ${JSON.stringify(cancelled)} ${linksEdited.join(' | ')}`);
+
 // 10b. notes widget saves as you type
 await page.click('#widget-add');
 await page.click('#widget-menu .menu-item[data-widget="notes"]');
