@@ -20,9 +20,11 @@ Fogar replaces the new tab page with an ask box. By default the answer comes fro
 bigger model, you can point it at any OpenAI-compatible endpoint with your own key, and that key stays in the
 browser.
 
-I had two reasons, and I'll be honest about both. I wanted an assistant that doesn't send what I type anywhere. I
-also wanted a small surface for my other projects: the footer links to them, and it says so. And it made a good
-thing to write about.
+I build for my own annoyances. Mine was tabs: dozens open because closing one felt like losing it, and no good way
+to find the one I wanted. So the new tab page saves a window and lets me close it, then finds any tab again as I
+type, open or saved. And once a page is going to be open all day, it may as well answer questions too, from a model
+on my own machine, so nothing I type leaves it. I'll be honest about the other reason: the footer links to my other
+projects, and it says so.
 
 The bet was that the hard part was already done. wllama 3 shipped WebGPU offload and caching in OPFS (the browser's
 private file system), so inference in the browser works. The open question was whether an extension's sandbox would
@@ -143,6 +145,9 @@ panels with data":
   fun part.
 - **Weather** comes from Open-Meteo, which needs no key.
 - **Recipes** are prompt forms stored as JSON, which you can share as a link.
+- **Sessions**, the tabs fix from the top of this post, is the one widget that needs a permission most people
+  would balk at. Chrome labels `tabs` "Read your browsing history", so Fogar never asks for it at install. It's an
+  optional permission, requested when you add the Sessions widget, with the reason stated right there.
 
 The constraint made the product better. Nothing on the page can call out unless you typed the address it calls,
 and a network ledger in Settings lists every request the page has made, so you can check.
@@ -166,6 +171,8 @@ gallery once people make recipes worth sharing.
 
 - **The "weekend" framing.** The outline's hook said "in one weekend". The repository's first commit is 2026-09-21,
   a Monday, and the spike closed that same day. This draft makes no time claim. Add one if it's true.
+- **"Dozens" of tabs, and "I build for my own annoyances".** Swap in your real tab count if you know it, and keep
+  the second line only if it's true of your other products too.
 - **Hook numbers.** The Qwen3 0.6B anecdote (Obama, 432) is from the outline and isn't recorded in the README.
   Confirm you remember it that way.
 - **Screenshots.** A first-screen shot and the network ledger would help. `npm run shots` makes them from the real
