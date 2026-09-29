@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Your calendar, reminders and todos on every new tab · Fogar</title>
-<meta name="description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<link rel="canonical" href="https://fogar.ai/today" />
+<title>Photo of a page to text, sticky notes, a notebook · Fogar</title>
+<meta name="description" content="Ruled pages in Chrome’s new tab. Add a photo of a page and it becomes text: printed text on your device with Tesseract, handwriting through a vision model you connect. Plus sticky notes and a scratchpad that saves as you type." />
+<link rel="canonical" href="https://fogar.ai/notebook" />
 <meta property="og:site_name" content="Fogar" />
-<meta property="og:title" content="Your calendar, reminders and todos on every new tab · Fogar" />
-<meta property="og:description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<meta property="og:url" content="https://fogar.ai/today" />
+<meta property="og:title" content="Photo of a page to text, sticky notes, a notebook · Fogar" />
+<meta property="og:description" content="Photograph the page, get the words. Printed text is read on your device, offline. Handwriting goes to a vision model you choose. Sticky notes and a scratchpad come with it." />
+<meta property="og:url" content="https://fogar.ai/notebook" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://fogar.ai/og.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -282,31 +282,28 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .mock .caret { animation: none; } .toast { transition: none; } }
 </style>
 <style>
-  .corner { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .corner .card { padding: 14px 16px; gap: 10px; font-size: 13px; }
-  .corner .card-h { font-size: 17px; }
-  .corner .box { font-size: 13px; padding: 8px 10px; }
-  .ag-day { display: grid; gap: 4px; }
-  .ag-day h5 { margin: 0 0 2px; font-family: var(--serif); font-weight: 600; font-size: 14px; }
-  .ag-day h5 span { font-weight: 400; color: var(--ash); font-size: 12px; margin-left: 6px; }
-  .ev { display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px; }
-  .ev.now { background: var(--glow-2); box-shadow: inset 3px 0 0 var(--ember); }
-  .ev .when { font-size: 12px; color: var(--ash); }
-  .temp { font-size: 34px; font-weight: 600; line-height: 1; }
-  .days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .days div { background: var(--surface-2); border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
-  .todo { display: flex; gap: 8px; align-items: center; }
-  .todo i { width: 14px; height: 14px; border: 1.5px solid var(--line-2); border-radius: 4px; display: inline-block; flex: 0 0 auto; }
-  .todo.done { text-decoration: line-through; color: var(--ash); }
-  .todo.done i { background: var(--ember); border-color: var(--ember); }
-  .rem { display: flex; justify-content: space-between; gap: 8px; }
-  .rem .note { white-space: nowrap; }
-  .confirm { border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; background: var(--surface-2); }
-  .confirm .acts { justify-content: flex-end; }
-  .tab-date { font-size: 12px; color: var(--ash); margin-top: 2px; }
-  @media (max-width: 520px) { .corner { grid-template-columns: 1fr; } }
+  .nb { display: grid; gap: 10px; }
+  .nb-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nb-tabs span { font-size: 12px; padding: 4px 10px; border-radius: 7px 7px 0 0; border: 1px solid var(--line); border-bottom: 0; color: var(--ash); }
+  .nb-tabs span.on { color: var(--ink); background: var(--surface-2); }
+  .nb-page { border: 1px solid var(--line); border-radius: 0 10px 10px 10px; background: var(--ground); padding: 10px 14px 14px; position: relative; }
+  .nb-page .ttl { font-family: var(--serif); font-weight: 600; font-size: 17px; padding-bottom: 4px; }
+  .nb-text { min-height: 196px; white-space: pre-wrap; font-size: 14px; line-height: 28px; background-image: repeating-linear-gradient(to bottom, transparent 0 27px, var(--line) 27px 28px); }
+  .nb-text:empty::before { content: "Write here, or add a photo of a page below."; color: var(--ash); }
+  .nb-photo { position: absolute; right: 12px; top: 44px; width: 92px; transform: rotate(4deg); border-radius: 4px; background: #f7f3ea; box-shadow: 0 8px 22px -8px rgba(0, 0, 0, 0.5); padding: 8px; opacity: 0; transition: opacity 0.3s, transform 0.3s; }
+  .nb-photo.on { opacity: 1; transform: rotate(-3deg); }
+  .nb-photo svg { display: block; width: 100%; height: auto; }
+  .nb-foot { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .nb-foot .pill { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+  .kinds { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 16px; }
+  .kind { display: grid; gap: 8px; align-content: start; padding: 22px; background: var(--surface); border: 1px solid var(--line-2); border-radius: 14px; }
+  .kind h3 { font-size: 20px; }
+  .kind p { color: var(--ink-2); font-size: 15.5px; }
+  .kind .mono { margin-top: 4px; }
+  .board { position: relative; height: 118px; margin-bottom: 6px; }
+  .pn { position: absolute; width: 96px; height: 92px; padding: 16px 9px 8px; font: 12.5px/1.35 ui-sans-serif, system-ui, sans-serif; color: #2a241d; background: var(--paper); transform: rotate(var(--rot)); box-shadow: 0 6px 14px -8px rgba(0, 0, 0, 0.55); border-top: 7px solid rgba(0, 0, 0, 0.06); }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/today","url":"https://fogar.ai/today","name":"Your calendar, reminders and todos on every new tab · Fogar","description":"Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/today#faq","mainEntity":[{"@type":"Question","name":"Do I need to connect my Google account?","acceptedAnswer":{"@type":"Answer","text":"No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen."}},{"@type":"Question","name":"Which calendars work?","acceptedAnswer":{"@type":"Answer","text":"Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works."}},{"@type":"Question","name":"Is the calendar address safe to paste?","acceptedAnswer":{"@type":"Answer","text":"Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click."}},{"@type":"Question","name":"Will reminders fire when Chrome is closed?","acceptedAnswer":{"@type":"Answer","text":"No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it."}},{"@type":"Question","name":"Does it handle recurring events and time zones?","acceptedAnswer":{"@type":"Answer","text":"Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong."}},{"@type":"Question","name":"Can I show two calendars?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/notebook","url":"https://fogar.ai/notebook","name":"Photo of a page to text, sticky notes, a notebook · Fogar","description":"Ruled pages in Chrome’s new tab. Add a photo of a page and it becomes text: printed text on your device with Tesseract, handwriting through a vision model you connect. Plus sticky notes and a scratchpad that saves as you type.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/notebook#faq","mainEntity":[{"@type":"Question","name":"Can it turn handwriting into text offline?","acceptedAnswer":{"@type":"Answer","text":"Not with the built-in reader, which is made for printed text. It can if you run a vision model in Ollama on the same computer and pick it as the reader: the photo goes to localhost and nowhere else. How well it reads depends on the model."}},{"@type":"Question","name":"Does my photo leave my computer?","acceptedAnswer":{"@type":"Answer","text":"Only if you pick a cloud model as the reader. On this device, and with Ollama on this computer, nothing leaves. With a cloud model, the scaled-down photo goes to that provider’s endpoint with your key."}},{"@type":"Question","name":"Is the photo saved anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Fogar scales it down, reads it, and adds the text to the page. The photo itself is not stored, in the notebook or in the backup."}},{"@type":"Question","name":"What happens when I drag a sticky note onto another card?","acceptedAnswer":{"@type":"Answer","text":"Onto another Post-its board, the note moves there. Onto any other card, such as your todos or the agenda, the note becomes its own Post-its widget next to that card. Drop it back on its own board and it just moves."}},{"@type":"Question","name":"Where are my notes kept?","acceptedAnswer":{"@type":"Answer","text":"In this browser’s extension storage. Notebook pages, sticky notes, and the scratchpad all ride along in the backup file under Settings, and the Notebook also downloads as Markdown. None of it syncs between computers."}}]}]}</script>
 </head>
 <body>
 <div class="wrap">
@@ -328,8 +325,8 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
             <p class="menu-h">Organize</p>
             <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
             <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
-            <a href="/today" aria-current="page"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
-            <a href="/notebook"><b>Notes and handwriting</b><span>Notebook pages, post-its, photos to text</span></a>
+            <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
+            <a href="/notebook" aria-current="page"><b>Notes and handwriting</b><span>Notebook pages, post-its, photos to text</span></a>
             <a href="/draw"><b>Canvas</b><span>Sketch, or tell the model what to draw</span></a>
           </div>
           <div class="menu-col">
@@ -355,150 +352,93 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 
   <header class="hero" id="top">
     <div class="hero-copy">
-      <span class="eyebrow">Agenda, reminders, todos · a new tab for Chrome</span>
-      <h1>Your day, <em>on every new tab.</em></h1>
-      <p class="lead measure">Today and tomorrow from any calendar, a reminder set in plain words, a short todo list, and the weather, on the page you open a hundred times a day. No account to connect. The calendar address you paste is the only thing that leaves, and it goes to your calendar.</p>
+      <span class="eyebrow">Notes · a new tab for Chrome</span>
+      <h1>Photograph the page.<br /><em>Get the words.</em></h1>
+      <p class="lead measure">The Notebook widget gives you ruled pages on every new tab. Add a photo of a printed page, a slide, or a receipt, and its text lands on the page, read on your device with no network at all. For handwriting, pick a vision model you connected. Sticky notes and a plain scratchpad come with it.</p>
       <div class="cta-row">
         <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
-        <a class="btn btn-quiet" href="#agenda">Any calendar, no sign-in</a>
+        <a class="btn btn-quiet" href="#readers">Who reads the photo</a>
       </div>
-      <p class="cta-note">Free. Open source. Widgets are optional; add the ones you want and hit Focus to hide them all.</p>
+      <p class="cta-note">Free. Open source. The on-device reader ships inside the extension.</p>
     </div>
 
-    <div class="stage" aria-label="Agenda, weather, todos and reminders on the new tab, demonstration">
+    <div class="stage" aria-label="The Notebook widget reading a photo, demonstration">
       <div class="tab mock">
         <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
         <div class="tab-body">
-          <div class="tab-top">
-            <div><div class="tab-brand">Fogar</div><div class="tab-date" id="tab-date">Tuesday, September 22</div></div>
-            <div class="tab-actions"><span class="tab-focus">Customize</span><span class="tab-focus">Focus</span></div>
+          <div class="card-h">Notebook <span class="acts"><span class="pill ctl">⎘</span><span class="pill ctl">⇩</span><span class="pill ctl">🗑</span></span></div>
+          <div class="nb">
+            <div class="nb-tabs" aria-hidden="true"><span>Page 1</span><span class="on" id="tab-name">Offsite</span><span>+</span></div>
+            <div class="nb-page">
+              <div class="ttl" id="ttl">Offsite</div>
+              <div class="nb-text" id="text" aria-live="polite"></div>
+              <div class="nb-photo" id="photo" aria-hidden="true">
+                <svg id="print" viewBox="0 0 80 100"><rect x="6" y="8" width="50" height="7" fill="#3a332b"/><g fill="#8a8177"><rect x="6" y="26" width="64" height="4"/><rect x="6" y="38" width="58" height="4"/><rect x="6" y="50" width="66" height="4"/><rect x="6" y="62" width="40" height="4"/></g></svg>
+                <svg id="hand" viewBox="0 0 80 100" hidden><g fill="none" stroke="#2b4a8a" stroke-width="2.2" stroke-linecap="round"><path d="M6 20c6-6 10 4 16-2s9 3 15-1 10 2 16-1 8 3 14 0"/><path d="M6 42c5-5 9 3 14-1s8 4 13 0 9 2 14-1"/><path d="M6 64c6-5 10 4 15 0s9 3 14-1 8 2 13 0 7 3 12 0"/></g></svg>
+              </div>
+            </div>
+            <div class="nb-foot">
+              <span class="pill">📷 Add a photo</span><span class="note">read with</span><span class="pill" id="reader">On this device · printed text, English</span>
+            </div>
+            <div class="note" id="status" aria-live="polite"></div>
           </div>
-          <div class="corner">
-            <div class="card">
-              <div class="card-h">Agenda</div>
-              <div class="ag-day"><h5>Today <span id="d-today">Tue, Sep 22</span></h5>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-                <div class="ev now"><div class="row"><span class="when">2:00–3:00 PM</span><span class="pill primary" title="Join Google Meet">Join</span></div><span>Design review <span class="note">· Room 4</span></span></div>
-              </div>
-              <div class="ag-day"><h5>Tomorrow <span id="d-tomorrow">Wed, Sep 23</span></h5>
-                <div class="ev"><span class="when">All day</span><span>Dentist</span></div>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-              </div>
-              <span class="note">Updated just now · Refresh · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Weather · Denver</div>
-              <div class="row" style="justify-content: flex-start; gap: 12px"><span class="temp">71°</span><span>⛅ Partly cloudy<br /><span class="note">H 78° · L 55° · wind 6 mph</span></span></div>
-              <div class="days"><div>Wed<br />☀️<br />80° / 57°</div><div>Thu<br />🌧️<br />66° / 48°</div><div>Fri<br />☁️<br />70° / 50°</div></div>
-              <span class="note">Updated just now · Use °C · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Todos <span class="pill">Clear done</span></div>
-              <div class="box ph">Add a todo and press Enter</div>
-              <div class="todo"><i></i>Reply to the accountant</div>
-              <div class="todo"><i></i>Book the dentist</div>
-              <div class="todo done"><i></i>Renew the domain</div>
-            </div>
-            <div class="card">
-              <div class="card-h">Reminders</div>
-              <div class="box" id="rem-input"><span class="ph-text" style="color: var(--ash)">Call the dentist tomorrow at 9</span></div>
-              <div class="confirm" id="rem-confirm" hidden></div>
-              <div id="rem-list" style="display: grid; gap: 6px">
-                <div class="rem"><span>Stretch</span><span class="note">today 2:55 PM</span></div>
-                <div class="rem"><span>Call mom</span><span class="note">today 6:00 PM</span></div>
-              </div>
-              <span class="note">Reminders fire while Chrome is open. Anything missed shows the next time it starts.</span>
-            </div>
-          </div>
-          <div class="toast" id="toast" aria-live="polite"></div>
         </div>
       </div>
-      <button class="replay" id="replay" type="button">Set the reminder again</button>
+      <button class="replay" id="replay" type="button">Try handwriting</button>
     </div>
   </header>
 
-  <section id="agenda">
-    <div class="split">
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Agenda</span>
-        <h2>Any calendar. No account connection.</h2>
-        <p class="lead">Every major calendar publishes a private iCal address. Paste it. Fogar asks permission to reach that one address, fetches the feed, and shows today and tomorrow on every new tab. Recurring events, cancellations, and time zones are handled; anything fancier is skipped rather than shown wrong.</p>
-        <p class="lead">When an event carries a Meet, Zoom, Teams, or Webex link, a Join button sits on the row. Click the row and it unfurls: who, where, the notes, and a link to open the event in your calendar. One widget per calendar, so work and home can sit side by side.</p>
-      </div>
-      <div>
-        <ol class="how">
-          <li><b>Google Calendar.</b><p>Settings, pick the calendar, then Integrate calendar. Copy “Secret address in iCal format”.</p></li>
-          <li><b>Outlook.</b><p>Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</p></li>
-          <li><b>iCloud.</b><p>Click the share icon next to the calendar, tick Public Calendar, copy the link. If it starts with <code>webcal://</code>, change that to <code>https://</code>.</p></li>
-          <li><b>Anything else.</b><p>Fastmail, Nextcloud, Proton, your university: if it publishes an .ics feed, paste the address into Add widget, Agenda.</p></li>
-        </ol>
-        <p class="how-note">Treat the address like a password: anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device and sends it only to your calendar provider. If it ever leaks, your provider can reset it.</p>
-      </div>
+  <section id="three">
+    <div class="section-head">
+      <span class="eyebrow">Three places to write</span>
+      <h2 class="measure">Pages, sticky notes, a scratchpad. Add the ones you use.</h2>
+      <p class="lead measure">Each is a widget: add it from Add widget, add it twice if you want two, remove it when you are done. Every one has a full-screen control, and Escape brings the page back.</p>
     </div>
-  </section>
-
-  <section id="reminders">
-    <div class="split">
-      <div>
-        <div class="section-head" style="margin-bottom: 24px">
-          <span class="eyebrow">Reminders</span>
-          <h2>Plain words in. A confirmed time out.</h2>
-          <p class="lead">Type “call the dentist tomorrow at 9” into the Reminders widget, or “remind me to stretch in 20 minutes” into the ask box. Fogar reads the time deterministically, with no model involved, shows you what it understood, and saves only when you confirm.</p>
-          <p class="lead">It fires as a Chrome notification. One click puts it in Google Calendar through a prefilled link, with no account connected and nothing to authorize.</p>
+    <div class="kinds">
+      <div class="kind"><h3>Notebook</h3><p>Ruled pages with tabs and titles. Add a photo with the button, paste a screenshot, or drop an image on the page; the text is added under what you already wrote. Copy a page, or download the whole notebook as Markdown.</p><span class="mono">pages · photo to text · Markdown export</span></div>
+      <div class="kind">
+        <div class="board" aria-hidden="true">
+          <div class="pn" style="--paper:#fff3a3; --rot:-2deg; left:0; top:8px">Call the landlord</div>
+          <div class="pn" style="--paper:#ffc9d6; --rot:1deg; left:14px; top:20px">Book flights</div>
+          <div class="pn" style="--paper:#bfe3ff; --rot:3deg; left:124px; top:4px">Ask Sam for the deck</div>
         </div>
-      </div>
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Phrases it understands</span>
-        <div class="phrases"><span>in 20 minutes</span><span>in an hour</span><span>at 3pm</span><span>at 5</span><span>tomorrow 9am</span><span>friday at 10</span><span>next tuesday</span><span>tonight</span><span>this afternoon</span><span>noon</span><span>midnight</span><span>next week</span></div>
-        <p class="mono" style="margin-top: 8px">“at 5” means 5 pm, because it almost always does. A time already past today rolls to tomorrow. When no time is found, Fogar asks instead of guessing.</p>
-      </div>
+        <h3>Post-its</h3><p>Square notes in six colors on a board. Drag one by its top edge. New notes land on a stack; pull one off and it stays where you let go. Drop it on another board and it moves there. Drop it on any other card and it becomes a widget of its own, right beside that card.</p><span class="mono">drag · stack · pull off</span></div>
+      <div class="kind"><h3>Notes</h3><p>One text box that is there every time you open a tab. No save button: it saves as you type. For the phone number you need in five minutes and the thought you do not want to lose.</p><span class="mono">plain text · saves as you go</span></div>
     </div>
   </section>
 
-  <section id="rest">
+  <section id="readers">
     <div class="section-head">
-      <span class="eyebrow">The rest of your corner</span>
-      <h2 class="measure">Small panels, each a few numbers of configuration.</h2>
-    </div>
-    <div class="features">
-      <div class="feature"><span class="eyebrow">Todos</span><div><h3>A short list, always in front of you</h3><p>Type “todo: buy milk” into the ask box or add one in the widget. Click to edit in place, drag to reorder, tick to finish, Clear done when the week is over.</p></div></div>
-      <div class="feature"><span class="eyebrow">Weather</span><div><h3>Your city, no API key</h3><p>Type a city, pick the match, done. Forecasts come from Open-Meteo, which needs no account. Fahrenheit or Celsius, your choice.</p></div></div>
-      <div class="feature"><span class="eyebrow">Links and Notes</span><div><h3>The sites you open daily, and a scratchpad</h3><p>A grid of favorites with their icons, and a note that saves as you type. Several of each, named as you like.</p></div></div>
-      <div class="feature"><span class="eyebrow">Focus</span><div><h3>One click, and the day is gone</h3><p>Focus hides every widget and leaves the ask box. Click it again to get your corner back. Drag widgets to reorder, or park them in a sidebar on a wide screen.</p></div></div>
-    </div>
-  </section>
-
-  <section id="what">
-    <div class="section-head">
-      <span class="eyebrow">What leaves</span>
-      <h2 class="measure">Two requests, both to services you chose. Everything else stays.</h2>
+      <span class="eyebrow">Who reads the photo</span>
+      <h2 class="measure">You pick the reader. Here is where the photo goes with each.</h2>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Widget</th><th>What leaves your browser</th><th>Where it goes</th></tr></thead>
+        <thead><tr><th>Read with</th><th>Good at</th><th>What leaves your browser</th></tr></thead>
         <tbody>
-          <tr><td class="k">Agenda</td><td>A request for the calendar address you pasted<small>At most every thirty minutes, and only while a new tab with the widget is open. The events are parsed and kept on this device.</small></td><td>Your calendar provider</td></tr>
-          <tr><td class="k">Weather</td><td>The city you typed, then its coordinates<small>Once to find the place, then for each forecast refresh.</small></td><td>Open-Meteo, which needs no account</td></tr>
-          <tr><td class="k">Reminders, Todos, Notes, Links</td><td><span class="zero">Nothing</span><small>Stored in Chrome’s extension storage on this device. The Google Calendar button opens a prefilled event in a new tab; you decide whether to save it.</small></td><td>Nowhere</td></tr>
+          <tr><td class="k">This device</td><td>Printed and typed English: handouts, slides, screenshots, receipts.<small>Tesseract, compiled to WebAssembly and shipped inside Fogar with its English data. Works offline.</small></td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ollama</td><td>Handwriting, as well as the vision model you pulled can read it.<small>Add an Ollama profile in an LLM Chat widget, pull a vision model such as llava or qwen2.5vl, and tick “This model reads images”.</small></td><td><span class="zero">Nothing</span>, it stays on this computer</td></tr>
+          <tr><td class="k">A cloud model</td><td>Handwriting, usually well.<small>A profile for Anthropic, OpenAI, Gemini, or OpenRouter, with your own key.</small></td><td>The photo, to that provider</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="mono" style="margin-top: 18px">Each address is requested as an optional permission when you save it, so the extension can reach that one site and no other.</p>
+    <p class="mono" style="margin-top: 18px">Photos are scaled down to 2000 pixels on the long side and re-encoded before they are read. Fogar keeps the text, never the photo.</p>
   </section>
 
   <section id="honest">
     <div class="honest">
       <div>
         <span class="eyebrow">Straight talk</span>
-        <h2 style="margin-top: 14px">An agenda, not an alarm clock.</h2>
+        <h2 style="margin-top: 14px">Offline reads print. Handwriting needs a model.</h2>
         <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
       </div>
       <div>
         <ul>
-          <li>Calendar feeds refresh on the provider’s schedule, so a new event can take minutes to an hour to appear. Fine for an agenda, wrong for alarms. That is what reminders are for.</li>
-          <li>Reminders fire while Chrome is open. Anything missed shows the next time it starts. On a Mac, Chrome also needs permission in System Settings to show notifications; the widget has a test button.</li>
-          <li>The agenda is read-only. Fogar does not create or edit calendar events. The Google Calendar button opens a prefilled event for you to save yourself.</li>
-          <li>There is no Google sign-in. A read-only connection is on the roadmap; the iCal address works today, for every provider.</li>
+          <li>Tesseract reads printed text, not handwriting. When it finds nothing, the widget says so and points you at a vision model.</li>
+          <li>English only on the device, for now. Other languages are on the roadmap, not in the build.</li>
+          <li>A cloud vision model means the photo goes to that provider, with your key, straight from your browser. There is no Fogar server in between.</li>
+          <li>Plain text only: no formatting, no search across pages, no sync. Everything lives in this browser and rides along in the backup under Settings.</li>
+          <li>The first photo takes a moment while the reader starts. It lets go of its memory after two quiet minutes.</li>
         </ul>
       </div>
     </div>
@@ -510,12 +450,11 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
       <h2>Fair questions, short answers.</h2>
     </div>
     <div class="faq">
-      <details><summary>Do I need to connect my Google account?</summary><p>No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen.</p></details>
-      <details><summary>Which calendars work?</summary><p>Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works.</p></details>
-      <details><summary>Is the calendar address safe to paste?</summary><p>Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click.</p></details>
-      <details><summary>Will reminders fire when Chrome is closed?</summary><p>No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it.</p></details>
-      <details><summary>Does it handle recurring events and time zones?</summary><p>Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong.</p></details>
-      <details><summary>Can I show two calendars?</summary><p>Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address.</p></details>
+      <details><summary>Can it turn handwriting into text offline?</summary><p>Not with the built-in reader, which is made for printed text. It can if you run a vision model in Ollama on the same computer and pick it as the reader: the photo goes to localhost and nowhere else. How well it reads depends on the model.</p></details>
+      <details><summary>Does my photo leave my computer?</summary><p>Only if you pick a cloud model as the reader. On this device, and with Ollama on this computer, nothing leaves. With a cloud model, the scaled-down photo goes to that provider’s endpoint with your key.</p></details>
+      <details><summary>Is the photo saved anywhere?</summary><p>No. Fogar scales it down, reads it, and adds the text to the page. The photo itself is not stored, in the notebook or in the backup.</p></details>
+      <details><summary>What happens when I drag a sticky note onto another card?</summary><p>Onto another Post-its board, the note moves there. Onto any other card, such as your todos or the agenda, the note becomes its own Post-its widget next to that card. Drop it back on its own board and it just moves.</p></details>
+      <details><summary>Where are my notes kept?</summary><p>In this browser’s extension storage. Notebook pages, sticky notes, and the scratchpad all ride along in the backup file under Settings, and the Notebook also downloads as Markdown. None of it syncs between computers.</p></details>
     </div>
   </section>
 
@@ -544,7 +483,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
     </div>
   </section>
   <footer>
-    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today" aria-current="page">Your day</a> · <a href="/notebook">Notes</a> · <a href="/draw">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models">Your models</a></span>
+    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today">Your day</a> · <a href="/notebook" aria-current="page">Notes</a> · <a href="/draw">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models">Your models</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="https://app.fogar.ai">On your phone</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>
@@ -553,46 +492,37 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 <script>
   (function () {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // The agenda shows real dates; so does the demo.
-    var now = new Date(), tmr = new Date(now); tmr.setDate(now.getDate() + 1);
-    var short = { weekday: 'short', month: 'short', day: 'numeric' };
-    document.getElementById('tab-date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-    document.getElementById('d-today').textContent = now.toLocaleDateString([], short);
-    document.getElementById('d-tomorrow').textContent = tmr.toLocaleDateString([], short);
-
-    var input = document.getElementById('rem-input'), confirmBox = document.getElementById('rem-confirm'), list = document.getElementById('rem-list');
-    var toast = document.getElementById('toast'), replay = document.getElementById('replay');
-    var initialList = list.innerHTML, placeholder = input.innerHTML, timer = 0, token = 0, toastTimer = 0;
-    var text = 'Call the dentist tomorrow at 9';
-    var when = new Date(tmr); when.setHours(9, 0, 0, 0);
-    var whenLabel = 'tomorrow ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 3000); }
-    function reset() { clearTimeout(timer); token++; input.innerHTML = placeholder; confirmBox.hidden = true; list.innerHTML = initialList; toast.classList.remove('on'); }
-    function settle() {
-      var row = document.createElement('div'); row.className = 'rem';
-      row.innerHTML = '<span>Call the dentist</span><span class="note">' + whenLabel + '</span>';
-      list.prepend(row); confirmBox.hidden = true; input.innerHTML = placeholder;
-      say('Reminder set for ' + whenLabel);
-    }
-    function run() {
-      var my = token;
-      if (reduce) { input.textContent = text; settle(); return; }
+    var text = document.getElementById('text'), photo = document.getElementById('photo'), status = document.getElementById('status');
+    var reader = document.getElementById('reader'), ttl = document.getElementById('ttl'), tabName = document.getElementById('tab-name'), replay = document.getElementById('replay');
+    var print = document.getElementById('print'), hand = document.getElementById('hand');
+    var acts = [
+      { name: 'Offsite', reader: 'On this device · printed text, English', local: true, lines: ['Q3 offsite agenda', '9:00 Welcome and coffee', '9:30 Roadmap review', '11:00 Customer panel', '12:30 Lunch'], done: 'Read 15 words on this device.' },
+      { name: 'Errands', reader: 'Ollama (this computer) · qwen2.5vl', local: false, lines: ['Call the landlord about the radiator', 'Book flights before Friday', 'Ask Sam for the deck'], done: 'Read 15 words with Ollama (this computer).' },
+    ];
+    var act = 0, timer = 0, token = 0;
+    function play(a) {
+      clearTimeout(timer); token++; var my = token;
+      ttl.textContent = tabName.textContent = a.name; reader.textContent = a.reader; text.textContent = ''; status.textContent = '';
+      print.hidden = !a.local; hand.hidden = a.local;
+      if (reduce) { text.textContent = a.lines.join('\n'); status.textContent = a.done; return; }
+      photo.classList.remove('on');
+      var steps = a.local ? ['Preparing the photo…', 'recognizing text 18%', 'recognizing text 57%', 'recognizing text 91%'] : ['Preparing the photo…', 'Reading with Ollama (this computer)…'];
       var i = 0;
-      (function tick() {
+      timer = setTimeout(function step() {
         if (my !== token) return;
-        i++; input.innerHTML = text.slice(0, i) + '<span class="caret"></span>';
-        if (i < text.length) { timer = setTimeout(tick, 30 + Math.random() * 40); return; }
-        input.textContent = text;
-        timer = setTimeout(function () {
+        photo.classList.add('on');
+        if (i < steps.length) { status.textContent = steps[i++]; timer = setTimeout(step, 650); return; }
+        photo.classList.remove('on');
+        var all = a.lines.join('\n'), n = 0;
+        (function type() {
           if (my !== token) return;
-          confirmBox.innerHTML = '<div>Remind you about “Call the dentist” ' + whenLabel + '?</div><div class="acts"><span class="pill">Cancel</span><span class="pill primary">Save</span></div>';
-          confirmBox.hidden = false;
-          timer = setTimeout(function () { if (my === token) settle(); }, 1500);
-        }, 400);
-      })();
+          n = Math.min(all.length, n + 3); text.textContent = all.slice(0, n);
+          if (n < all.length) timer = setTimeout(type, 24); else status.textContent = a.done;
+        })();
+      }, 900);
     }
-    replay.addEventListener('click', function () { reset(); setTimeout(run, reduce ? 0 : 300); });
-    if (!reduce) timer = setTimeout(run, 1400);
+    replay.addEventListener('click', function () { act = (act + 1) % 2; play(acts[act]); replay.textContent = act ? 'Back to print' : 'Try handwriting'; });
+    if (!reduce) setTimeout(function () { play(acts[0]); }, 1200); else play(acts[0]);
   })();
 </script>
 </body>

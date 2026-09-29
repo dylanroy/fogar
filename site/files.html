@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Your calendar, reminders and todos on every new tab · Fogar</title>
-<meta name="description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<link rel="canonical" href="https://fogar.ai/today" />
+<title>Ask questions about a PDF, privately · Fogar</title>
+<meta name="description" content="Drop a PDF, Word file, or web page on the new tab and ask about it. The file is read inside Chrome, answered by a model on your device, and never uploaded or stored. Works offline." />
+<link rel="canonical" href="https://fogar.ai/files" />
 <meta property="og:site_name" content="Fogar" />
-<meta property="og:title" content="Your calendar, reminders and todos on every new tab · Fogar" />
-<meta property="og:description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<meta property="og:url" content="https://fogar.ai/today" />
+<meta property="og:title" content="Ask questions about a PDF, privately · Fogar" />
+<meta property="og:description" content="Drop a PDF on the new tab and ask about it. Read in the page, answered on your device, never uploaded." />
+<meta property="og:url" content="https://fogar.ai/files" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://fogar.ai/og.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -282,31 +282,18 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .mock .caret { animation: none; } .toast { transition: none; } }
 </style>
 <style>
-  .corner { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .corner .card { padding: 14px 16px; gap: 10px; font-size: 13px; }
-  .corner .card-h { font-size: 17px; }
-  .corner .box { font-size: 13px; padding: 8px 10px; }
-  .ag-day { display: grid; gap: 4px; }
-  .ag-day h5 { margin: 0 0 2px; font-family: var(--serif); font-weight: 600; font-size: 14px; }
-  .ag-day h5 span { font-weight: 400; color: var(--ash); font-size: 12px; margin-left: 6px; }
-  .ev { display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px; }
-  .ev.now { background: var(--glow-2); box-shadow: inset 3px 0 0 var(--ember); }
-  .ev .when { font-size: 12px; color: var(--ash); }
-  .temp { font-size: 34px; font-weight: 600; line-height: 1; }
-  .days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .days div { background: var(--surface-2); border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
-  .todo { display: flex; gap: 8px; align-items: center; }
-  .todo i { width: 14px; height: 14px; border: 1.5px solid var(--line-2); border-radius: 4px; display: inline-block; flex: 0 0 auto; }
-  .todo.done { text-decoration: line-through; color: var(--ash); }
-  .todo.done i { background: var(--ember); border-color: var(--ember); }
-  .rem { display: flex; justify-content: space-between; gap: 8px; }
-  .rem .note { white-space: nowrap; }
-  .confirm { border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; background: var(--surface-2); }
-  .confirm .acts { justify-content: flex-end; }
-  .tab-date { font-size: 12px; color: var(--ash); margin-top: 2px; }
-  @media (max-width: 520px) { .corner { grid-template-columns: 1fr; } }
+  .stage .ledger { margin-top: 14px; }
+  .file-ask { display: grid; gap: 10px; }
+  .atts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .att { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; border: 1px solid var(--line-2); border-radius: 999px; padding: 4px 10px; font-size: 12.5px; color: var(--ink); background: var(--surface-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .att .meta { color: var(--ash); overflow: hidden; text-overflow: ellipsis; }
+  .att.busy { color: var(--ash); background: transparent; border-style: dashed; }
+  .file-ask .q { font-size: 16px; }
+  .drop-hint { position: absolute; inset: 8px; border: 2px dashed var(--ember); border-radius: 12px; display: grid; place-items: center; font-size: 14px; color: var(--ember); background: var(--glow-2); opacity: 0; transition: opacity 0.25s; pointer-events: none; z-index: 2; }
+  .drop-hint.on { opacity: 1; }
+  @media (prefers-reduced-motion: reduce) { .drop-hint { transition: none; } }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/today","url":"https://fogar.ai/today","name":"Your calendar, reminders and todos on every new tab · Fogar","description":"Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/today#faq","mainEntity":[{"@type":"Question","name":"Do I need to connect my Google account?","acceptedAnswer":{"@type":"Answer","text":"No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen."}},{"@type":"Question","name":"Which calendars work?","acceptedAnswer":{"@type":"Answer","text":"Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works."}},{"@type":"Question","name":"Is the calendar address safe to paste?","acceptedAnswer":{"@type":"Answer","text":"Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click."}},{"@type":"Question","name":"Will reminders fire when Chrome is closed?","acceptedAnswer":{"@type":"Answer","text":"No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it."}},{"@type":"Question","name":"Does it handle recurring events and time zones?","acceptedAnswer":{"@type":"Answer","text":"Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong."}},{"@type":"Question","name":"Can I show two calendars?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/files","url":"https://fogar.ai/files","name":"Ask questions about a PDF, privately · Fogar","description":"Drop a PDF, Word file, or web page on the new tab and ask about it. The file is read inside Chrome, answered by a model on your device, and never uploaded or stored. Works offline.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/files#faq","mainEntity":[{"@type":"Question","name":"Is my file uploaded anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. The file is read inside the new tab, with pdf.js for PDFs and an unzipper for Word files, both shipped inside the extension. On this device the model runs in your browser too, so nothing leaves. In Cloud mode the extracted text goes to the endpoint you chose, and nowhere else."}},{"@type":"Question","name":"Why did it only read the first three pages?","acceptedAnswer":{"@type":"Answer","text":"The models on your device have a 4,096-token window shared by the instructions, the conversation, the file, and the answer. About 1,200 words of document fits with room to spare, so Fogar reads until that budget is full and the chip tells you where it stopped. Cloud mode takes 40,000 characters."}},{"@type":"Question","name":"Can it read a scanned PDF?","acceptedAnswer":{"@type":"Answer","text":"Not yet. A scan is a picture of text with no text layer, and the ask box has no OCR. Fogar tells you the file is probably a scan rather than answering from nothing. The Notebook widget can turn a photo of a printed page into text on your device."}},{"@type":"Question","name":"Does it work offline?","acceptedAnswer":{"@type":"Answer","text":"Yes, in Device mode once the model is cached. Reading the file and answering both happen in the browser, so there is nothing to connect to."}},{"@type":"Question","name":"Is the file saved anywhere?","acceptedAnswer":{"@type":"Answer","text":"No. Its text is held in memory for the current conversation, so follow-up questions work. It is never written to extension storage or included in a backup. New conversation or closing the tab drops it."}},{"@type":"Question","name":"What if the answer is not in the file?","acceptedAnswer":{"@type":"Answer","text":"The model is told to answer from the file, quote names and figures exactly as written, and say plainly when the file does not contain the answer. If only part of the file was read, it is told that too, so it can say the answer may be in pages it did not see."}}]}]}</script>
 </head>
 <body>
 <div class="wrap">
@@ -320,7 +307,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
             <p class="menu-h">Ask and write</p>
             <a href="/ask"><b>Private AI</b><span>Ask anything, answered on your device</span></a>
             <a href="/search"><b>Answers with sources</b><span>Search the web, cited, on request</span></a>
-            <a href="/files"><b>PDFs and pages</b><span>Ask about a file or the page you are on</span></a>
+            <a href="/files" aria-current="page"><b>PDFs and pages</b><span>Ask about a file or the page you are on</span></a>
             <a href="/write"><b>Writing</b><span>Rewrite, reply, summarize, on your device</span></a>
             <a href="/voice"><b>Your voice</b><span>Rewrite and draft as yourself, in any register</span></a>
           </div>
@@ -328,7 +315,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
             <p class="menu-h">Organize</p>
             <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
             <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
-            <a href="/today" aria-current="page"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
+            <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
             <a href="/notebook"><b>Notes and handwriting</b><span>Notebook pages, post-its, photos to text</span></a>
             <a href="/draw"><b>Canvas</b><span>Sketch, or tell the model what to draw</span></a>
           </div>
@@ -355,150 +342,102 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 
   <header class="hero" id="top">
     <div class="hero-copy">
-      <span class="eyebrow">Agenda, reminders, todos · a new tab for Chrome</span>
-      <h1>Your day, <em>on every new tab.</em></h1>
-      <p class="lead measure">Today and tomorrow from any calendar, a reminder set in plain words, a short todo list, and the weather, on the page you open a hundred times a day. No account to connect. The calendar address you paste is the only thing that leaves, and it goes to your calendar.</p>
+      <span class="eyebrow">PDFs and pages · a new tab for Chrome</span>
+      <h1>Drop the PDF. <em>Ask it anything.</em></h1>
+      <p class="lead measure">Drag a PDF, a Word file, a saved web page, or any text file onto the new tab and ask about it. Fogar reads the file inside the page and hands the text to a model running in your browser. The lease, the contract, the medical letter: never uploaded, never stored, gone when the conversation ends.</p>
       <div class="cta-row">
         <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
-        <a class="btn btn-quiet" href="#agenda">Any calendar, no sign-in</a>
+        <a class="btn btn-quiet" href="#what">What happens to a file</a>
       </div>
-      <p class="cta-note">Free. Open source. Widgets are optional; add the ones you want and hit Focus to hide them all.</p>
+      <p class="cta-note">Free. Open source. No new permission. Works offline once the model is cached.</p>
     </div>
 
-    <div class="stage" aria-label="Agenda, weather, todos and reminders on the new tab, demonstration">
+    <div class="stage" aria-label="Asking about a dropped file, demonstration">
       <div class="tab mock">
         <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
         <div class="tab-body">
+          <div class="drop-hint" id="drop">Drop to attach · read here, never uploaded</div>
           <div class="tab-top">
-            <div><div class="tab-brand">Fogar</div><div class="tab-date" id="tab-date">Tuesday, September 22</div></div>
-            <div class="tab-actions"><span class="tab-focus">Customize</span><span class="tab-focus">Focus</span></div>
-          </div>
-          <div class="corner">
-            <div class="card">
-              <div class="card-h">Agenda</div>
-              <div class="ag-day"><h5>Today <span id="d-today">Tue, Sep 22</span></h5>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-                <div class="ev now"><div class="row"><span class="when">2:00–3:00 PM</span><span class="pill primary" title="Join Google Meet">Join</span></div><span>Design review <span class="note">· Room 4</span></span></div>
-              </div>
-              <div class="ag-day"><h5>Tomorrow <span id="d-tomorrow">Wed, Sep 23</span></h5>
-                <div class="ev"><span class="when">All day</span><span>Dentist</span></div>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-              </div>
-              <span class="note">Updated just now · Refresh · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Weather · Denver</div>
-              <div class="row" style="justify-content: flex-start; gap: 12px"><span class="temp">71°</span><span>⛅ Partly cloudy<br /><span class="note">H 78° · L 55° · wind 6 mph</span></span></div>
-              <div class="days"><div>Wed<br />☀️<br />80° / 57°</div><div>Thu<br />🌧️<br />66° / 48°</div><div>Fri<br />☁️<br />70° / 50°</div></div>
-              <span class="note">Updated just now · Use °C · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Todos <span class="pill">Clear done</span></div>
-              <div class="box ph">Add a todo and press Enter</div>
-              <div class="todo"><i></i>Reply to the accountant</div>
-              <div class="todo"><i></i>Book the dentist</div>
-              <div class="todo done"><i></i>Renew the domain</div>
-            </div>
-            <div class="card">
-              <div class="card-h">Reminders</div>
-              <div class="box" id="rem-input"><span class="ph-text" style="color: var(--ash)">Call the dentist tomorrow at 9</span></div>
-              <div class="confirm" id="rem-confirm" hidden></div>
-              <div id="rem-list" style="display: grid; gap: 6px">
-                <div class="rem"><span>Stretch</span><span class="note">today 2:55 PM</span></div>
-                <div class="rem"><span>Call mom</span><span class="note">today 6:00 PM</span></div>
-              </div>
-              <span class="note">Reminders fire while Chrome is open. Anything missed shows the next time it starts.</span>
+            <div class="tab-brand">Fogar</div>
+            <div class="tab-mode" aria-label="Where answers come from">
+              <span class="on"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="2.5" y="3" width="11" height="8" rx="1.5"/><path d="M1 13h14"/></svg>Device</span>
+              <span><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5 12.5h6.5a2.5 2.5 0 0 0 .4-4.97A4 4 0 0 0 4.3 7.2 2.7 2.7 0 0 0 5 12.5z"/></svg>Cloud</span>
             </div>
           </div>
-          <div class="toast" id="toast" aria-live="polite"></div>
+          <div class="tab-ask file-ask" aria-live="polite">
+            <div class="atts" id="atts"><span class="att">lease-2026.pdf <span class="meta">· 12 pages · read the first 3</span></span></div>
+            <div class="q" id="q">When can I end the lease early, and what does it cost?</div>
+          </div>
+          <div class="tab-row"><span><b>Ready</b> · Qwen3.5 4B · WebGPU</span><span id="stats"></span></div>
+          <div class="tab-answer" id="answer" aria-live="polite">Section 14 lets you end the lease after the first 12 months with 60 days’ written notice. The fee is one month’s rent, $2,150.</div>
         </div>
       </div>
-      <button class="replay" id="replay" type="button">Set the reminder again</button>
+      <div class="ledger"><span><span class="dot"></span>network <b>0 requests</b></span><span>file <b>read in this tab</b></span><span>stored <b>nowhere</b></span></div>
+      <button class="replay" id="replay" type="button">Drop another file</button>
     </div>
   </header>
 
-  <section id="agenda">
-    <div class="split">
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Agenda</span>
-        <h2>Any calendar. No account connection.</h2>
-        <p class="lead">Every major calendar publishes a private iCal address. Paste it. Fogar asks permission to reach that one address, fetches the feed, and shows today and tomorrow on every new tab. Recurring events, cancellations, and time zones are handled; anything fancier is skipped rather than shown wrong.</p>
-        <p class="lead">When an event carries a Meet, Zoom, Teams, or Webex link, a Join button sits on the row. Click the row and it unfurls: who, where, the notes, and a link to open the event in your calendar. One widget per calendar, so work and home can sit side by side.</p>
-      </div>
-      <div>
-        <ol class="how">
-          <li><b>Google Calendar.</b><p>Settings, pick the calendar, then Integrate calendar. Copy “Secret address in iCal format”.</p></li>
-          <li><b>Outlook.</b><p>Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</p></li>
-          <li><b>iCloud.</b><p>Click the share icon next to the calendar, tick Public Calendar, copy the link. If it starts with <code>webcal://</code>, change that to <code>https://</code>.</p></li>
-          <li><b>Anything else.</b><p>Fastmail, Nextcloud, Proton, your university: if it publishes an .ics feed, paste the address into Add widget, Agenda.</p></li>
-        </ol>
-        <p class="how-note">Treat the address like a password: anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device and sends it only to your calendar provider. If it ever leaks, your provider can reset it.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="reminders">
-    <div class="split">
-      <div>
-        <div class="section-head" style="margin-bottom: 24px">
-          <span class="eyebrow">Reminders</span>
-          <h2>Plain words in. A confirmed time out.</h2>
-          <p class="lead">Type “call the dentist tomorrow at 9” into the Reminders widget, or “remind me to stretch in 20 minutes” into the ask box. Fogar reads the time deterministically, with no model involved, shows you what it understood, and saves only when you confirm.</p>
-          <p class="lead">It fires as a Chrome notification. One click puts it in Google Calendar through a prefilled link, with no account connected and nothing to authorize.</p>
-        </div>
-      </div>
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Phrases it understands</span>
-        <div class="phrases"><span>in 20 minutes</span><span>in an hour</span><span>at 3pm</span><span>at 5</span><span>tomorrow 9am</span><span>friday at 10</span><span>next tuesday</span><span>tonight</span><span>this afternoon</span><span>noon</span><span>midnight</span><span>next week</span></div>
-        <p class="mono" style="margin-top: 8px">“at 5” means 5 pm, because it almost always does. A time already past today rolls to tomorrow. When no time is found, Fogar asks instead of guessing.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="rest">
-    <div class="section-head">
-      <span class="eyebrow">The rest of your corner</span>
-      <h2 class="measure">Small panels, each a few numbers of configuration.</h2>
-    </div>
-    <div class="features">
-      <div class="feature"><span class="eyebrow">Todos</span><div><h3>A short list, always in front of you</h3><p>Type “todo: buy milk” into the ask box or add one in the widget. Click to edit in place, drag to reorder, tick to finish, Clear done when the week is over.</p></div></div>
-      <div class="feature"><span class="eyebrow">Weather</span><div><h3>Your city, no API key</h3><p>Type a city, pick the match, done. Forecasts come from Open-Meteo, which needs no account. Fahrenheit or Celsius, your choice.</p></div></div>
-      <div class="feature"><span class="eyebrow">Links and Notes</span><div><h3>The sites you open daily, and a scratchpad</h3><p>A grid of favorites with their icons, and a note that saves as you type. Several of each, named as you like.</p></div></div>
-      <div class="feature"><span class="eyebrow">Focus</span><div><h3>One click, and the day is gone</h3><p>Focus hides every widget and leaves the ask box. Click it again to get your corner back. Drag widgets to reorder, or park them in a sidebar on a wide screen.</p></div></div>
-    </div>
-  </section>
-
   <section id="what">
     <div class="section-head">
-      <span class="eyebrow">What leaves</span>
-      <h2 class="measure">Two requests, both to services you chose. Everything else stays.</h2>
+      <span class="eyebrow">What happens to a file</span>
+      <h2 class="measure">Read in the page. Kept in memory. Gone with the conversation.</h2>
+      <p class="lead measure">There is no upload step, because there is nowhere to upload to. Each line below happens inside the tab you dropped the file on.</p>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Widget</th><th>What leaves your browser</th><th>Where it goes</th></tr></thead>
+        <thead><tr><th>You drop</th><th>Fogar does</th><th>What leaves</th></tr></thead>
         <tbody>
-          <tr><td class="k">Agenda</td><td>A request for the calendar address you pasted<small>At most every thirty minutes, and only while a new tab with the widget is open. The events are parsed and kept on this device.</small></td><td>Your calendar provider</td></tr>
-          <tr><td class="k">Weather</td><td>The city you typed, then its coordinates<small>Once to find the place, then for each forecast refresh.</small></td><td>Open-Meteo, which needs no account</td></tr>
-          <tr><td class="k">Reminders, Todos, Notes, Links</td><td><span class="zero">Nothing</span><small>Stored in Chrome’s extension storage on this device. The Google Calendar button opens a prefilled event in a new tab; you decide whether to save it.</small></td><td>Nowhere</td></tr>
+          <tr><td class="k">A PDF</td><td>Reads the text layer with pdf.js, page by page, and stops once the budget is full.<small>A 300-page manual costs the time of its first pages. The parser ships inside the extension.</small></td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">A Word file</td><td>Unzips the .docx in the page and takes the paragraphs, text boxes included.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">A web page</td><td>Takes a saved .html file as it reads, one line per block, with scripts and styles removed.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Plain text</td><td>Markdown, CSV, JSON, a log, subtitles, code. Read as it is.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ask, on this device</td><td>Puts the text in front of the model with one instruction: answer from the file, quote names and figures exactly, and say when the file does not contain the answer.</td><td><span class="zero">Nothing</span></td></tr>
+          <tr><td class="k">Ask, in Cloud mode</td><td>The same, with room for more: 40,000 characters instead of 6,500.<small>The model is at the endpoint you typed, so that is where the text goes.</small></td><td>The file’s text, to your provider</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="mono" style="margin-top: 18px">Each address is requested as an optional permission when you save it, so the extension can reach that one site and no other.</p>
+    <p class="mono" style="margin-top: 18px">The text is never written to extension storage or to a backup. New conversation, or closing the tab, drops it.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Drop, read the chip, ask.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Drop it anywhere</h3><p>Anywhere on the new tab, not just the box. Or press + inside the box, or paste a file you copied. Several files share one budget.</p><span class="mono">PDF · .docx · .html · text of any kind</span></div>
+      <div class="step"><h3>Read the chip</h3><p>It says how much fit: “12 pages · read the first 3”, or “read the first 1,150 of 4,020 words”. You always know what the model saw and what it did not.</p><span class="mono">on this device · about 1,200 words</span></div>
+      <div class="step"><h3>Ask, then keep asking</h3><p>The file stays for follow-ups, so “and the deposit?” works. Questions about a file skip the web search. If you want the web too, Dig deeper on the answer adds it, beside the file.</p><span class="mono">stays for the conversation · never stored</span></div>
+    </div>
+  </section>
+
+  <section id="page">
+    <div class="section-head">
+      <span class="eyebrow">Also works on</span>
+      <h2 class="measure">The page you are reading, and the forms you fill.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Right-click</span><div><h3>“Ask Fogar about …”</h3><p>Select text on any web page and right-click. A new tab opens with the page’s title, address, and about 1,500 characters around your selection in front of the model. Chrome’s activeTab and scripting permissions allow this for that one page, that one time.</p></div></div>
+      <div class="feature"><span class="eyebrow">Recipes</span><div><h3>Drop into a field</h3><p>Summarize, Explain simply, and your own recipes take a dropped file in any text area, as if you had pasted it. <a href="/write">More on recipes.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Your voice</span><div><h3>Samples from files</h3><p>The Writing widget learns your voice from things you wrote. Drop a few of them instead of pasting. <a href="/voice">How that works.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Offline</span><div><h3>No connection needed</h3><p>With the model cached and the mode on Device, turn off Wi-Fi. Reading and answering both happen in the browser.</p></div></div>
+    </div>
   </section>
 
   <section id="honest">
     <div class="honest">
       <div>
         <span class="eyebrow">Straight talk</span>
-        <h2 style="margin-top: 14px">An agenda, not an alarm clock.</h2>
+        <h2 style="margin-top: 14px">A small model reads a few pages, not a book.</h2>
         <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
       </div>
       <div>
         <ul>
-          <li>Calendar feeds refresh on the provider’s schedule, so a new event can take minutes to an hour to appear. Fine for an agenda, wrong for alarms. That is what reminders are for.</li>
-          <li>Reminders fire while Chrome is open. Anything missed shows the next time it starts. On a Mac, Chrome also needs permission in System Settings to show notifications; the widget has a test button.</li>
-          <li>The agenda is read-only. Fogar does not create or edit calendar events. The Google Calendar button opens a prefilled event for you to save yourself.</li>
-          <li>There is no Google sign-in. A read-only connection is on the roadmap; the iCal address works today, for every provider.</li>
+          <li>On this device the model gets about 1,200 words, two or three pages, so its 4,096-token window still holds your question and its answer. Past that, only the start of the file is read, and the chip says so.</li>
+          <li>Scanned PDFs have no text layer. Fogar says so instead of guessing, and has no OCR in the ask box yet. The <a href="/notebook">Notebook</a> reads a photo of a page.</li>
+          <li>Images, spreadsheets, slides, and old .doc files are not read. Export a CSV or a PDF. Password-protected PDFs and files over 40 MB are turned away.</li>
+          <li>Finding a fact in text that is in front of it is something even the smallest tier did well in our tests. It can still be wrong. Check the figure before you sign anything.</li>
+          <li>In Cloud mode the file’s text goes to the endpoint you typed. On this device, nothing leaves.</li>
         </ul>
       </div>
     </div>
@@ -510,12 +449,12 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
       <h2>Fair questions, short answers.</h2>
     </div>
     <div class="faq">
-      <details><summary>Do I need to connect my Google account?</summary><p>No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen.</p></details>
-      <details><summary>Which calendars work?</summary><p>Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works.</p></details>
-      <details><summary>Is the calendar address safe to paste?</summary><p>Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click.</p></details>
-      <details><summary>Will reminders fire when Chrome is closed?</summary><p>No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it.</p></details>
-      <details><summary>Does it handle recurring events and time zones?</summary><p>Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong.</p></details>
-      <details><summary>Can I show two calendars?</summary><p>Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address.</p></details>
+      <details><summary>Is my file uploaded anywhere?</summary><p>No. The file is read inside the new tab, with pdf.js for PDFs and an unzipper for Word files, both shipped inside the extension. On this device the model runs in your browser too, so nothing leaves. In Cloud mode the extracted text goes to the endpoint you chose, and nowhere else.</p></details>
+      <details><summary>Why did it only read the first three pages?</summary><p>The models on your device have a 4,096-token window shared by the instructions, the conversation, the file, and the answer. About 1,200 words of document fits with room to spare, so Fogar reads until that budget is full and the chip tells you where it stopped. Cloud mode takes 40,000 characters.</p></details>
+      <details><summary>Can it read a scanned PDF?</summary><p>Not yet. A scan is a picture of text with no text layer, and the ask box has no OCR. Fogar tells you the file is probably a scan rather than answering from nothing. The Notebook widget can turn a photo of a printed page into text on your device.</p></details>
+      <details><summary>Does it work offline?</summary><p>Yes, in Device mode once the model is cached. Reading the file and answering both happen in the browser, so there is nothing to connect to.</p></details>
+      <details><summary>Is the file saved anywhere?</summary><p>No. Its text is held in memory for the current conversation, so follow-up questions work. It is never written to extension storage or included in a backup. New conversation or closing the tab drops it.</p></details>
+      <details><summary>What if the answer is not in the file?</summary><p>The model is told to answer from the file, quote names and figures exactly as written, and say plainly when the file does not contain the answer. If only part of the file was read, it is told that too, so it can say the answer may be in pages it did not see.</p></details>
     </div>
   </section>
 
@@ -544,7 +483,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
     </div>
   </section>
   <footer>
-    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today" aria-current="page">Your day</a> · <a href="/notebook">Notes</a> · <a href="/draw">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models">Your models</a></span>
+    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files" aria-current="page">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today">Your day</a> · <a href="/notebook">Notes</a> · <a href="/draw">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models">Your models</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="https://app.fogar.ai">On your phone</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>
@@ -553,46 +492,47 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 <script>
   (function () {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // The agenda shows real dates; so does the demo.
-    var now = new Date(), tmr = new Date(now); tmr.setDate(now.getDate() + 1);
-    var short = { weekday: 'short', month: 'short', day: 'numeric' };
-    document.getElementById('tab-date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-    document.getElementById('d-today').textContent = now.toLocaleDateString([], short);
-    document.getElementById('d-tomorrow').textContent = tmr.toLocaleDateString([], short);
-
-    var input = document.getElementById('rem-input'), confirmBox = document.getElementById('rem-confirm'), list = document.getElementById('rem-list');
-    var toast = document.getElementById('toast'), replay = document.getElementById('replay');
-    var initialList = list.innerHTML, placeholder = input.innerHTML, timer = 0, token = 0, toastTimer = 0;
-    var text = 'Call the dentist tomorrow at 9';
-    var when = new Date(tmr); when.setHours(9, 0, 0, 0);
-    var whenLabel = 'tomorrow ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 3000); }
-    function reset() { clearTimeout(timer); token++; input.innerHTML = placeholder; confirmBox.hidden = true; list.innerHTML = initialList; toast.classList.remove('on'); }
-    function settle() {
-      var row = document.createElement('div'); row.className = 'rem';
-      row.innerHTML = '<span>Call the dentist</span><span class="note">' + whenLabel + '</span>';
-      list.prepend(row); confirmBox.hidden = true; input.innerHTML = placeholder;
-      say('Reminder set for ' + whenLabel);
-    }
-    function run() {
-      var my = token;
-      if (reduce) { input.textContent = text; settle(); return; }
-      var i = 0;
-      (function tick() {
+    var atts = document.getElementById('atts'), q = document.getElementById('q'), answer = document.getElementById('answer');
+    var stats = document.getElementById('stats'), drop = document.getElementById('drop'), replay = document.getElementById('replay');
+    // The chip text is what the real chip says for a file of that shape.
+    var demos = [
+      { file: 'lease-2026.pdf', meta: '12 pages · read the first 3', q: 'When can I end the lease early, and what does it cost?', a: 'Section 14 lets you end the lease after the first 12 months with 60 days’ written notice. The fee is one month’s rent, $2,150.', t: '1.9 s to first word' },
+      { file: 'offer-letter.docx', meta: '1,184 words', q: 'What is the start date, and how much notice do I owe?', a: 'You start on October 20. Either side can end the job with two weeks’ written notice during the first 90 days, four weeks after that.', t: '1.6 s to first word' },
+      { file: 'lease-2026.pdf', meta: '12 pages · read the first 3', q: 'Is parking included?', a: 'The pages I have do not mention parking. I read the first 3 of 12 pages, so it may be covered later in the lease.', t: '1.8 s to first word' },
+    ];
+    var i = 0, timer = 0, token = 0;
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function chip(d) { return '<span class="att">' + esc(d.file) + ' <span class="meta">· ' + esc(d.meta) + '</span></span>'; }
+    function run(idx) {
+      clearTimeout(timer); token++; var my = token, d = demos[idx % demos.length];
+      if (reduce) { atts.innerHTML = chip(d); q.textContent = d.q; answer.textContent = d.a; stats.textContent = d.t; return; }
+      atts.innerHTML = ''; q.innerHTML = '<span class="caret"></span>'; answer.textContent = ''; stats.textContent = '';
+      drop.classList.add('on');
+      timer = setTimeout(function () {
         if (my !== token) return;
-        i++; input.innerHTML = text.slice(0, i) + '<span class="caret"></span>';
-        if (i < text.length) { timer = setTimeout(tick, 30 + Math.random() * 40); return; }
-        input.textContent = text;
+        drop.classList.remove('on');
+        atts.innerHTML = '<span class="att busy">Reading ' + esc(d.file) + '…</span>';
         timer = setTimeout(function () {
           if (my !== token) return;
-          confirmBox.innerHTML = '<div>Remind you about “Call the dentist” ' + whenLabel + '?</div><div class="acts"><span class="pill">Cancel</span><span class="pill primary">Save</span></div>';
-          confirmBox.hidden = false;
-          timer = setTimeout(function () { if (my === token) settle(); }, 1500);
-        }, 400);
-      })();
+          atts.innerHTML = chip(d);
+          var c = 0;
+          (function type() {
+            if (my !== token) return;
+            c++; q.innerHTML = esc(d.q.slice(0, c)) + '<span class="caret"></span>';
+            if (c < d.q.length) { timer = setTimeout(type, 26 + Math.random() * 36); return; }
+            q.textContent = d.q;
+            var words = d.a.split(' '), w = 0;
+            timer = setTimeout(function stream() {
+              if (my !== token) return;
+              w++; answer.textContent = words.slice(0, w).join(' '); stats.textContent = d.t;
+              if (w < words.length) timer = setTimeout(stream, 55 + Math.random() * 60);
+            }, 800);
+          })();
+        }, 900);
+      }, 900);
     }
-    replay.addEventListener('click', function () { reset(); setTimeout(run, reduce ? 0 : 300); });
-    if (!reduce) timer = setTimeout(run, 1400);
+    replay.addEventListener('click', function () { i++; run(i); });
+    if (!reduce) setTimeout(function () { run(0); }, 1200);
   })();
 </script>
 </body>

@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Your calendar, reminders and todos on every new tab · Fogar</title>
-<meta name="description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<link rel="canonical" href="https://fogar.ai/today" />
+<title>Claude, GPT, or Ollama in your new tab, with your own key · Fogar</title>
+<meta name="description" content="Bring your own key to Chrome’s new tab: Claude, OpenAI, OpenRouter, Gemini, Groq, or Ollama and LM Studio on your computer. Keys stay in your browser and go only to their own endpoint." />
+<link rel="canonical" href="https://fogar.ai/models" />
 <meta property="og:site_name" content="Fogar" />
-<meta property="og:title" content="Your calendar, reminders and todos on every new tab · Fogar" />
-<meta property="og:description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<meta property="og:url" content="https://fogar.ai/today" />
+<meta property="og:title" content="Claude, GPT, or Ollama in your new tab, with your own key · Fogar" />
+<meta property="og:description" content="Claude, GPT, Gemini, or Ollama in your new tab. Your key, sent only to its own endpoint. No Fogar server in between." />
+<meta property="og:url" content="https://fogar.ai/models" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://fogar.ai/og.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -282,31 +282,18 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .mock .caret { animation: none; } .toast { transition: none; } }
 </style>
 <style>
-  .corner { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .corner .card { padding: 14px 16px; gap: 10px; font-size: 13px; }
-  .corner .card-h { font-size: 17px; }
-  .corner .box { font-size: 13px; padding: 8px 10px; }
-  .ag-day { display: grid; gap: 4px; }
-  .ag-day h5 { margin: 0 0 2px; font-family: var(--serif); font-weight: 600; font-size: 14px; }
-  .ag-day h5 span { font-weight: 400; color: var(--ash); font-size: 12px; margin-left: 6px; }
-  .ev { display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px; }
-  .ev.now { background: var(--glow-2); box-shadow: inset 3px 0 0 var(--ember); }
-  .ev .when { font-size: 12px; color: var(--ash); }
-  .temp { font-size: 34px; font-weight: 600; line-height: 1; }
-  .days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .days div { background: var(--surface-2); border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
-  .todo { display: flex; gap: 8px; align-items: center; }
-  .todo i { width: 14px; height: 14px; border: 1.5px solid var(--line-2); border-radius: 4px; display: inline-block; flex: 0 0 auto; }
-  .todo.done { text-decoration: line-through; color: var(--ash); }
-  .todo.done i { background: var(--ember); border-color: var(--ember); }
-  .rem { display: flex; justify-content: space-between; gap: 8px; }
-  .rem .note { white-space: nowrap; }
-  .confirm { border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; background: var(--surface-2); }
-  .confirm .acts { justify-content: flex-end; }
-  .tab-date { font-size: 12px; color: var(--ash); margin-top: 2px; }
-  @media (max-width: 520px) { .corner { grid-template-columns: 1fr; } }
+  .stage .ledger { margin-top: 14px; }
+  .chat-mock { display: grid; gap: 10px; }
+  .chat-mock .card-h .pill { font-family: ui-sans-serif, system-ui, sans-serif; font-weight: 400; max-width: 62%; overflow: hidden; text-overflow: ellipsis; }
+  .log { display: grid; gap: 8px; min-height: 150px; align-content: start; }
+  .msg { max-width: 88%; padding: 8px 12px; border-radius: 12px; font-size: 14px; line-height: 1.5; }
+  .msg.user { justify-self: end; background: var(--surface-2); }
+  .msg.bot { justify-self: start; border: 1px solid var(--line); }
+  .compose { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+  .compose .send { width: 34px; height: 34px; border-radius: 50%; background: var(--ember); color: var(--ember-ink); display: grid; place-items: center; font-weight: 700; }
+  .table-wrap td code { font-family: var(--mono); font-size: 13px; color: var(--ink-2); overflow-wrap: anywhere; }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/today","url":"https://fogar.ai/today","name":"Your calendar, reminders and todos on every new tab · Fogar","description":"Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/today#faq","mainEntity":[{"@type":"Question","name":"Do I need to connect my Google account?","acceptedAnswer":{"@type":"Answer","text":"No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen."}},{"@type":"Question","name":"Which calendars work?","acceptedAnswer":{"@type":"Answer","text":"Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works."}},{"@type":"Question","name":"Is the calendar address safe to paste?","acceptedAnswer":{"@type":"Answer","text":"Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click."}},{"@type":"Question","name":"Will reminders fire when Chrome is closed?","acceptedAnswer":{"@type":"Answer","text":"No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it."}},{"@type":"Question","name":"Does it handle recurring events and time zones?","acceptedAnswer":{"@type":"Answer","text":"Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong."}},{"@type":"Question","name":"Can I show two calendars?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/models","url":"https://fogar.ai/models","name":"Claude, GPT, or Ollama in your new tab, with your own key · Fogar","description":"Bring your own key to Chrome’s new tab: Claude, OpenAI, OpenRouter, Gemini, Groq, or Ollama and LM Studio on your computer. Keys stay in your browser and go only to their own endpoint.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/models#faq","mainEntity":[{"@type":"Question","name":"Does my key or my chat go through a Fogar server?","acceptedAnswer":{"@type":"Answer","text":"No. There is no Fogar server. The new tab sends each request straight to the endpoint you configured, with your key, and to nowhere else. The network ledger in Settings counts every request the page makes, by host."}},{"@type":"Question","name":"Can I use Claude?","acceptedAnswer":{"@type":"Answer","text":"Yes. In the LLM Chat widget, add the Anthropic preset and paste a key from console.anthropic.com. Fogar talks to the Messages API directly from your browser. The Writing and Canvas widgets can pick the same profile. The ask box’s cloud endpoint speaks the OpenAI format, so for Claude there, use OpenRouter."}},{"@type":"Question","name":"Can I use Ollama or LM Studio?","acceptedAnswer":{"@type":"Answer","text":"Yes, with no key. The presets point at localhost:11434 for Ollama and localhost:1234 for LM Studio, and Fetch models lists what is installed or loaded. The Settings cloud endpoint takes Ollama too, so the ask box can use it. The server has to be running."}},{"@type":"Question","name":"Why does Chrome ask for permission when I save?","acceptedAnswer":{"@type":"Answer","text":"Fogar cannot know your endpoint in advance, so it lists none at install. When you save or fetch models, it asks Chrome for access to that one origin, and only that one. If you decline, the profile is still saved, and Fogar says the permission was not granted."}},{"@type":"Question","name":"Where is my key stored?","acceptedAnswer":{"@type":"Answer","text":"In Chrome’s extension storage on this device, unencrypted, like any extension setting. It is sent only to the endpoint it belongs to. Remove the profile, or clear the field in Settings, and it is gone."}},{"@type":"Question","name":"Do conversations persist?","acceptedAnswer":{"@type":"Answer","text":"Yes. Each LLM Chat widget keeps its conversation in extension storage, so it is there on your next tab. It holds the most recent 60 messages or 30,000 characters, whichever comes first. New chat clears it."}}]}]}</script>
 </head>
 <body>
 <div class="wrap">
@@ -328,7 +315,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
             <p class="menu-h">Organize</p>
             <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
             <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
-            <a href="/today" aria-current="page"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
+            <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
             <a href="/notebook"><b>Notes and handwriting</b><span>Notebook pages, post-its, photos to text</span></a>
             <a href="/draw"><b>Canvas</b><span>Sketch, or tell the model what to draw</span></a>
           </div>
@@ -336,7 +323,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
             <p class="menu-h">Connect</p>
             <a href="/news"><b>News and feeds</b><span>RSS, Hacker News, Reddit, merged</span></a>
             <a href="/work"><b>Work inbox</b><span>Gmail unread and Jira, at a glance</span></a>
-            <a href="/models"><b>Your own models</b><span>Claude, OpenAI, Ollama, with your key</span></a>
+            <a href="/models" aria-current="page"><b>Your own models</b><span>Claude, OpenAI, Ollama, with your key</span></a>
           </div>
         </div>
       </details>
@@ -355,150 +342,99 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 
   <header class="hero" id="top">
     <div class="hero-copy">
-      <span class="eyebrow">Agenda, reminders, todos · a new tab for Chrome</span>
-      <h1>Your day, <em>on every new tab.</em></h1>
-      <p class="lead measure">Today and tomorrow from any calendar, a reminder set in plain words, a short todo list, and the weather, on the page you open a hundred times a day. No account to connect. The calendar address you paste is the only thing that leaves, and it goes to your calendar.</p>
+      <span class="eyebrow">Your own models · a new tab for Chrome</span>
+      <h1>Your key, your model. <em>Nobody in between.</em></h1>
+      <p class="lead measure">The model on your device answers by default. When you want a bigger one, bring your own key: Claude, OpenAI, OpenRouter, Gemini, Groq, or Ollama and LM Studio running on your computer. Your browser talks straight to the provider. Fogar has no server, so there is no copy of your key or your conversations anywhere but here.</p>
       <div class="cta-row">
         <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
-        <a class="btn btn-quiet" href="#agenda">Any calendar, no sign-in</a>
+        <a class="btn btn-quiet" href="#where">What it talks to</a>
       </div>
-      <p class="cta-note">Free. Open source. Widgets are optional; add the ones you want and hit Focus to hide them all.</p>
+      <p class="cta-note">Free. Open source. You pay your provider, if anyone. Fogar never sees the bill or the key.</p>
     </div>
 
-    <div class="stage" aria-label="Agenda, weather, todos and reminders on the new tab, demonstration">
+    <div class="stage" aria-label="The LLM Chat widget switching between models, demonstration">
       <div class="tab mock">
         <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
         <div class="tab-body">
-          <div class="tab-top">
-            <div><div class="tab-brand">Fogar</div><div class="tab-date" id="tab-date">Tuesday, September 22</div></div>
-            <div class="tab-actions"><span class="tab-focus">Customize</span><span class="tab-focus">Focus</span></div>
+          <div class="chat-mock">
+            <div class="card-h">Chat <span class="pill" id="pick">Anthropic (Claude) · claude-opus-5 ▾</span></div>
+            <div class="log" id="log" aria-live="polite">
+              <div class="msg user">What does a CORS error mean? Two sentences.</div>
+              <div class="msg bot" id="reply">The browser blocked a request because the server did not say your page’s origin may read its response. Fix it on the server by sending the right Access-Control-Allow-Origin header.</div>
+            </div>
+            <div class="compose"><div class="box ph">Message…</div><span class="send" aria-hidden="true">↑</span></div>
+            <div class="note" id="stats">58 tokens · 61.2 tok/s</div>
           </div>
-          <div class="corner">
-            <div class="card">
-              <div class="card-h">Agenda</div>
-              <div class="ag-day"><h5>Today <span id="d-today">Tue, Sep 22</span></h5>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-                <div class="ev now"><div class="row"><span class="when">2:00–3:00 PM</span><span class="pill primary" title="Join Google Meet">Join</span></div><span>Design review <span class="note">· Room 4</span></span></div>
-              </div>
-              <div class="ag-day"><h5>Tomorrow <span id="d-tomorrow">Wed, Sep 23</span></h5>
-                <div class="ev"><span class="when">All day</span><span>Dentist</span></div>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-              </div>
-              <span class="note">Updated just now · Refresh · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Weather · Denver</div>
-              <div class="row" style="justify-content: flex-start; gap: 12px"><span class="temp">71°</span><span>⛅ Partly cloudy<br /><span class="note">H 78° · L 55° · wind 6 mph</span></span></div>
-              <div class="days"><div>Wed<br />☀️<br />80° / 57°</div><div>Thu<br />🌧️<br />66° / 48°</div><div>Fri<br />☁️<br />70° / 50°</div></div>
-              <span class="note">Updated just now · Use °C · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Todos <span class="pill">Clear done</span></div>
-              <div class="box ph">Add a todo and press Enter</div>
-              <div class="todo"><i></i>Reply to the accountant</div>
-              <div class="todo"><i></i>Book the dentist</div>
-              <div class="todo done"><i></i>Renew the domain</div>
-            </div>
-            <div class="card">
-              <div class="card-h">Reminders</div>
-              <div class="box" id="rem-input"><span class="ph-text" style="color: var(--ash)">Call the dentist tomorrow at 9</span></div>
-              <div class="confirm" id="rem-confirm" hidden></div>
-              <div id="rem-list" style="display: grid; gap: 6px">
-                <div class="rem"><span>Stretch</span><span class="note">today 2:55 PM</span></div>
-                <div class="rem"><span>Call mom</span><span class="note">today 6:00 PM</span></div>
-              </div>
-              <span class="note">Reminders fire while Chrome is open. Anything missed shows the next time it starts.</span>
-            </div>
-          </div>
-          <div class="toast" id="toast" aria-live="polite"></div>
         </div>
       </div>
-      <button class="replay" id="replay" type="button">Set the reminder again</button>
+      <div class="ledger"><span><span class="dot"></span>network <b id="host">api.anthropic.com</b></span><span>key <b id="key">in this browser</b></span><span>via <b>no Fogar server</b></span></div>
+      <button class="replay" id="replay" type="button">Switch model</button>
     </div>
   </header>
 
-  <section id="agenda">
-    <div class="split">
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Agenda</span>
-        <h2>Any calendar. No account connection.</h2>
-        <p class="lead">Every major calendar publishes a private iCal address. Paste it. Fogar asks permission to reach that one address, fetches the feed, and shows today and tomorrow on every new tab. Recurring events, cancellations, and time zones are handled; anything fancier is skipped rather than shown wrong.</p>
-        <p class="lead">When an event carries a Meet, Zoom, Teams, or Webex link, a Join button sits on the row. Click the row and it unfurls: who, where, the notes, and a link to open the event in your calendar. One widget per calendar, so work and home can sit side by side.</p>
-      </div>
-      <div>
-        <ol class="how">
-          <li><b>Google Calendar.</b><p>Settings, pick the calendar, then Integrate calendar. Copy “Secret address in iCal format”.</p></li>
-          <li><b>Outlook.</b><p>Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</p></li>
-          <li><b>iCloud.</b><p>Click the share icon next to the calendar, tick Public Calendar, copy the link. If it starts with <code>webcal://</code>, change that to <code>https://</code>.</p></li>
-          <li><b>Anything else.</b><p>Fastmail, Nextcloud, Proton, your university: if it publishes an .ics feed, paste the address into Add widget, Agenda.</p></li>
-        </ol>
-        <p class="how-note">Treat the address like a password: anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device and sends it only to your calendar provider. If it ever leaks, your provider can reset it.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="reminders">
-    <div class="split">
-      <div>
-        <div class="section-head" style="margin-bottom: 24px">
-          <span class="eyebrow">Reminders</span>
-          <h2>Plain words in. A confirmed time out.</h2>
-          <p class="lead">Type “call the dentist tomorrow at 9” into the Reminders widget, or “remind me to stretch in 20 minutes” into the ask box. Fogar reads the time deterministically, with no model involved, shows you what it understood, and saves only when you confirm.</p>
-          <p class="lead">It fires as a Chrome notification. One click puts it in Google Calendar through a prefilled link, with no account connected and nothing to authorize.</p>
-        </div>
-      </div>
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Phrases it understands</span>
-        <div class="phrases"><span>in 20 minutes</span><span>in an hour</span><span>at 3pm</span><span>at 5</span><span>tomorrow 9am</span><span>friday at 10</span><span>next tuesday</span><span>tonight</span><span>this afternoon</span><span>noon</span><span>midnight</span><span>next week</span></div>
-        <p class="mono" style="margin-top: 8px">“at 5” means 5 pm, because it almost always does. A time already past today rolls to tomorrow. When no time is found, Fogar asks instead of guessing.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="rest">
+  <section id="where">
     <div class="section-head">
-      <span class="eyebrow">The rest of your corner</span>
-      <h2 class="measure">Small panels, each a few numbers of configuration.</h2>
-    </div>
-    <div class="features">
-      <div class="feature"><span class="eyebrow">Todos</span><div><h3>A short list, always in front of you</h3><p>Type “todo: buy milk” into the ask box or add one in the widget. Click to edit in place, drag to reorder, tick to finish, Clear done when the week is over.</p></div></div>
-      <div class="feature"><span class="eyebrow">Weather</span><div><h3>Your city, no API key</h3><p>Type a city, pick the match, done. Forecasts come from Open-Meteo, which needs no account. Fahrenheit or Celsius, your choice.</p></div></div>
-      <div class="feature"><span class="eyebrow">Links and Notes</span><div><h3>The sites you open daily, and a scratchpad</h3><p>A grid of favorites with their icons, and a note that saves as you type. Several of each, named as you like.</p></div></div>
-      <div class="feature"><span class="eyebrow">Focus</span><div><h3>One click, and the day is gone</h3><p>Focus hides every widget and leaves the ask box. Click it again to get your corner back. Drag widgets to reorder, or park them in a sidebar on a wide screen.</p></div></div>
-    </div>
-  </section>
-
-  <section id="what">
-    <div class="section-head">
-      <span class="eyebrow">What leaves</span>
-      <h2 class="measure">Two requests, both to services you chose. Everything else stays.</h2>
+      <span class="eyebrow">What it talks to</span>
+      <h2 class="measure">Eight starting points. Any OpenAI-compatible server.</h2>
+      <p class="lead measure">Add a model in the LLM Chat widget and pick where it lives. Each preset fills in the endpoint and a sensible model; Fetch models asks the endpoint what it actually serves.</p>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Widget</th><th>What leaves your browser</th><th>Where it goes</th></tr></thead>
+        <thead><tr><th>Preset</th><th>Talks to</th><th>Key</th></tr></thead>
         <tbody>
-          <tr><td class="k">Agenda</td><td>A request for the calendar address you pasted<small>At most every thirty minutes, and only while a new tab with the widget is open. The events are parsed and kept on this device.</small></td><td>Your calendar provider</td></tr>
-          <tr><td class="k">Weather</td><td>The city you typed, then its coordinates<small>Once to find the place, then for each forecast refresh.</small></td><td>Open-Meteo, which needs no account</td></tr>
-          <tr><td class="k">Reminders, Todos, Notes, Links</td><td><span class="zero">Nothing</span><small>Stored in Chrome’s extension storage on this device. The Google Calendar button opens a prefilled event in a new tab; you decide whether to save it.</small></td><td>Nowhere</td></tr>
+          <tr><td class="k">Anthropic</td><td>Claude, through the Messages API.<small><code>api.anthropic.com</code> · reads images</small></td><td>console.anthropic.com</td></tr>
+          <tr><td class="k">OpenAI</td><td>GPT models.<small><code>api.openai.com/v1</code> · reads images</small></td><td>platform.openai.com</td></tr>
+          <tr><td class="k">OpenRouter</td><td>Hundreds of models behind one key.<small><code>openrouter.ai/api/v1</code></small></td><td>openrouter.ai</td></tr>
+          <tr><td class="k">Gemini</td><td>Google’s models, through their OpenAI-compatible endpoint.<small>reads images</small></td><td>aistudio.google.com</td></tr>
+          <tr><td class="k">Groq</td><td>Very fast open models.<small><code>api.groq.com/openai/v1</code></small></td><td>console.groq.com</td></tr>
+          <tr><td class="k">Ollama</td><td>Whatever you pulled, on this computer.<small><code>localhost:11434/v1</code></small></td><td><span class="zero">None</span></td></tr>
+          <tr><td class="k">LM Studio</td><td>Whatever you loaded, on this computer.<small><code>localhost:1234/v1</code></small></td><td><span class="zero">None</span></td></tr>
+          <tr><td class="k">Custom</td><td>Any server that answers <code>/v1/chat/completions</code>.</td><td>If it needs one</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="mono" style="margin-top: 18px">Each address is requested as an optional permission when you save it, so the extension can reach that one site and no other.</p>
+    <p class="mono" style="margin-top: 18px">Profiles are shared by every widget that picks a model. Add one once, use it everywhere below.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Paste a key. Chrome asks about one address. Done.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Add the LLM Chat widget</h3><p>Open its settings, choose a preset, and paste your key. For Ollama or LM Studio there is no key; the server just has to be running.</p><span class="mono">keys stored in this browser · sent only to their own endpoint</span></div>
+      <div class="step"><h3>Fetch models</h3><p>Fogar asks the endpoint what it serves, so the list is what your account or your machine actually has, not a list we typed. Start typing to pick one.</p><span class="mono">/v1/models · Ollama lists what is installed</span></div>
+      <div class="step"><h3>Save, and allow one origin</h3><p>Chrome asks for access to that one address when you save or fetch, never at install. Pick the model in the widget’s header; the conversation is kept for your next tab.</p><span class="mono">optional permission · one origin at a time</span></div>
+    </div>
+  </section>
+
+  <section id="uses">
+    <div class="section-head">
+      <span class="eyebrow">Where your models show up</span>
+      <h2 class="measure">One key, several places.</h2>
+    </div>
+    <div class="features">
+      <div class="feature"><span class="eyebrow">Ask box</span><div><h3>Cloud mode</h3><p>Settings has its own cloud endpoint for the ask box, recipes, the bookmark finder, and <a href="/files">attached files</a>. It speaks the OpenAI format: OpenAI, OpenRouter, Groq, or Ollama at localhost all work.</p></div></div>
+      <div class="feature"><span class="eyebrow">Dig deeper</span><div><h3>Ask the other model</h3><p>On any answer, Dig deeper can put the same question and conversation to your cloud model, or back to the one on your device. The better answer replaces the first.</p></div></div>
+      <div class="feature"><span class="eyebrow">Writing</span><div><h3>Your voice, a bigger brain</h3><p>The Writing widget can distill and rewrite with any profile, so Claude can write as you. <a href="/voice">How the voice works.</a></p></div></div>
+      <div class="feature"><span class="eyebrow">Photos</span><div><h3>Handwriting, read</h3><p>Mark a profile as reading images and the <a href="/notebook">Notebook</a> can hand it a photo of a handwritten page. The Canvas can use any profile to <a href="/draw">draw what you describe</a>.</p></div></div>
+    </div>
   </section>
 
   <section id="honest">
     <div class="honest">
       <div>
         <span class="eyebrow">Straight talk</span>
-        <h2 style="margin-top: 14px">An agenda, not an alarm clock.</h2>
+        <h2 style="margin-top: 14px">Your key is yours to guard.</h2>
         <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
       </div>
       <div>
         <ul>
-          <li>Calendar feeds refresh on the provider’s schedule, so a new event can take minutes to an hour to appear. Fine for an agenda, wrong for alarms. That is what reminders are for.</li>
-          <li>Reminders fire while Chrome is open. Anything missed shows the next time it starts. On a Mac, Chrome also needs permission in System Settings to show notifications; the widget has a test button.</li>
-          <li>The agenda is read-only. Fogar does not create or edit calendar events. The Google Calendar button opens a prefilled event for you to save yourself.</li>
-          <li>There is no Google sign-in. A read-only connection is on the roadmap; the iCal address works today, for every provider.</li>
+          <li>Keys are kept in Chrome’s extension storage on this device, like any extension setting. They are not encrypted. Anyone who can use your Chrome profile can find them.</li>
+          <li>The Settings backup file includes your Settings cloud key, because it is your file. Keep it like a password.</li>
+          <li>A cloud provider sees everything you send it, under its own terms. Fogar keeps no copy, but it cannot speak for them. For nothing to leave, use the device model, Ollama, or LM Studio.</li>
+          <li>The ask box’s Settings endpoint speaks only the OpenAI format. Claude through the Messages API lives in the LLM Chat, Writing, and Canvas widgets; for Claude in the ask box, go through OpenRouter.</li>
+          <li>Fogar can be granted any HTTPS address and servers on this computer. A plain-HTTP server elsewhere on your network is outside what it can ask for.</li>
         </ul>
       </div>
     </div>
@@ -510,12 +446,12 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
       <h2>Fair questions, short answers.</h2>
     </div>
     <div class="faq">
-      <details><summary>Do I need to connect my Google account?</summary><p>No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen.</p></details>
-      <details><summary>Which calendars work?</summary><p>Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works.</p></details>
-      <details><summary>Is the calendar address safe to paste?</summary><p>Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click.</p></details>
-      <details><summary>Will reminders fire when Chrome is closed?</summary><p>No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it.</p></details>
-      <details><summary>Does it handle recurring events and time zones?</summary><p>Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong.</p></details>
-      <details><summary>Can I show two calendars?</summary><p>Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address.</p></details>
+      <details><summary>Does my key or my chat go through a Fogar server?</summary><p>No. There is no Fogar server. The new tab sends each request straight to the endpoint you configured, with your key, and to nowhere else. The network ledger in Settings counts every request the page makes, by host.</p></details>
+      <details><summary>Can I use Claude?</summary><p>Yes. In the LLM Chat widget, add the Anthropic preset and paste a key from console.anthropic.com. Fogar talks to the Messages API directly from your browser. The Writing and Canvas widgets can pick the same profile. The ask box’s cloud endpoint speaks the OpenAI format, so for Claude there, use OpenRouter.</p></details>
+      <details><summary>Can I use Ollama or LM Studio?</summary><p>Yes, with no key. The presets point at localhost:11434 for Ollama and localhost:1234 for LM Studio, and Fetch models lists what is installed or loaded. The Settings cloud endpoint takes Ollama too, so the ask box can use it. The server has to be running.</p></details>
+      <details><summary>Why does Chrome ask for permission when I save?</summary><p>Fogar cannot know your endpoint in advance, so it lists none at install. When you save or fetch models, it asks Chrome for access to that one origin, and only that one. If you decline, the profile is still saved, and Fogar says the permission was not granted.</p></details>
+      <details><summary>Where is my key stored?</summary><p>In Chrome’s extension storage on this device, unencrypted, like any extension setting. It is sent only to the endpoint it belongs to. Remove the profile, or clear the field in Settings, and it is gone.</p></details>
+      <details><summary>Do conversations persist?</summary><p>Yes. Each LLM Chat widget keeps its conversation in extension storage, so it is there on your next tab. It holds the most recent 60 messages or 30,000 characters, whichever comes first. New chat clears it.</p></details>
     </div>
   </section>
 
@@ -544,7 +480,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
     </div>
   </section>
   <footer>
-    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today" aria-current="page">Your day</a> · <a href="/notebook">Notes</a> · <a href="/draw">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models">Your models</a></span>
+    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today">Your day</a> · <a href="/notebook">Notes</a> · <a href="/draw">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models" aria-current="page">Your models</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="https://app.fogar.ai">On your phone</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>
@@ -553,46 +489,28 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 <script>
   (function () {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // The agenda shows real dates; so does the demo.
-    var now = new Date(), tmr = new Date(now); tmr.setDate(now.getDate() + 1);
-    var short = { weekday: 'short', month: 'short', day: 'numeric' };
-    document.getElementById('tab-date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-    document.getElementById('d-today').textContent = now.toLocaleDateString([], short);
-    document.getElementById('d-tomorrow').textContent = tmr.toLocaleDateString([], short);
-
-    var input = document.getElementById('rem-input'), confirmBox = document.getElementById('rem-confirm'), list = document.getElementById('rem-list');
-    var toast = document.getElementById('toast'), replay = document.getElementById('replay');
-    var initialList = list.innerHTML, placeholder = input.innerHTML, timer = 0, token = 0, toastTimer = 0;
-    var text = 'Call the dentist tomorrow at 9';
-    var when = new Date(tmr); when.setHours(9, 0, 0, 0);
-    var whenLabel = 'tomorrow ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 3000); }
-    function reset() { clearTimeout(timer); token++; input.innerHTML = placeholder; confirmBox.hidden = true; list.innerHTML = initialList; toast.classList.remove('on'); }
-    function settle() {
-      var row = document.createElement('div'); row.className = 'rem';
-      row.innerHTML = '<span>Call the dentist</span><span class="note">' + whenLabel + '</span>';
-      list.prepend(row); confirmBox.hidden = true; input.innerHTML = placeholder;
-      say('Reminder set for ' + whenLabel);
-    }
-    function run() {
-      var my = token;
-      if (reduce) { input.textContent = text; settle(); return; }
-      var i = 0;
-      (function tick() {
+    var pick = document.getElementById('pick'), reply = document.getElementById('reply'), stats = document.getElementById('stats');
+    var host = document.getElementById('host'), key = document.getElementById('key'), replay = document.getElementById('replay');
+    // Same question, three places it can go. The ledger shows the one host each request reaches.
+    var demos = [
+      { pick: 'Anthropic (Claude) · claude-opus-5', host: 'api.anthropic.com', key: 'in this browser', a: 'The browser blocked a request because the server did not say your page’s origin may read its response. Fix it on the server by sending the right Access-Control-Allow-Origin header.', s: '58 tokens · 61.2 tok/s' },
+      { pick: 'Ollama (this computer) · llama3.2', host: 'localhost:11434', key: 'none needed', a: 'A CORS error means a page tried to read a response from another origin and that server did not allow it. The browser enforces this, so the fix belongs on the server, not in your page.', s: '71 tokens · 38.4 tok/s' },
+      { pick: 'OpenRouter · anthropic/claude-sonnet-4.5', host: 'openrouter.ai', key: 'in this browser', a: 'Your page asked another origin for data, and its response lacked the headers that permit your origin to read it. The request may have succeeded; the browser just refused to hand you the result.', s: '54 tokens · 72.9 tok/s' },
+    ];
+    var i = 0, timer = 0, token = 0;
+    function run(idx) {
+      clearTimeout(timer); token++; var my = token, d = demos[idx % demos.length];
+      pick.textContent = d.pick + ' ▾'; host.textContent = d.host; key.textContent = d.key;
+      if (reduce) { reply.textContent = d.a; stats.textContent = d.s; return; }
+      reply.textContent = '…'; stats.textContent = 'Thinking…';
+      var words = d.a.split(' '), w = 0;
+      timer = setTimeout(function stream() {
         if (my !== token) return;
-        i++; input.innerHTML = text.slice(0, i) + '<span class="caret"></span>';
-        if (i < text.length) { timer = setTimeout(tick, 30 + Math.random() * 40); return; }
-        input.textContent = text;
-        timer = setTimeout(function () {
-          if (my !== token) return;
-          confirmBox.innerHTML = '<div>Remind you about “Call the dentist” ' + whenLabel + '?</div><div class="acts"><span class="pill">Cancel</span><span class="pill primary">Save</span></div>';
-          confirmBox.hidden = false;
-          timer = setTimeout(function () { if (my === token) settle(); }, 1500);
-        }, 400);
-      })();
+        w++; reply.textContent = words.slice(0, w).join(' ');
+        if (w < words.length) timer = setTimeout(stream, 45 + Math.random() * 55); else stats.textContent = d.s;
+      }, 700);
     }
-    replay.addEventListener('click', function () { reset(); setTimeout(run, reduce ? 0 : 300); });
-    if (!reduce) timer = setTimeout(run, 1400);
+    replay.addEventListener('click', function () { i++; run(i); });
   })();
 </script>
 </body>

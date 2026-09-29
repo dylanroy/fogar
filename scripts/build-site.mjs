@@ -35,8 +35,7 @@ const PAGES = [
  * that carries them is live. FOGAR_SHOW_HELD=1 builds them anyway, for a local preview; never deploy that build.
  */
 const HOLD = new Set(process.env.FOGAR_SHOW_HELD === '1' ? [] : [
-  // v0.1.1: attachments, LLM Chat and cloud profiles, Canvas, Notebook and Post-its, Feed, Inbox and Jira
-  '/ask', '/search', '/files', '/models', '/draw', '/notebook', '/news', '/work',
+  // Nothing held: v0.1.1, which carries the eight pages held until now, is live (2026-09-29).
 ]);
 const held = (path) => HOLD.has(path);
 

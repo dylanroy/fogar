@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Your calendar, reminders and todos on every new tab · Fogar</title>
-<meta name="description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<link rel="canonical" href="https://fogar.ai/today" />
+<title>A whiteboard in your new tab, and a model that draws · Fogar</title>
+<meta name="description" content="Sketch in Chrome’s new tab with a pen, highlighter, arrows, boxes, ellipses, and text. Or tell a model what to draw: it answers with shapes as data, checked before anything is drawn. Save a PNG." />
+<link rel="canonical" href="https://fogar.ai/draw" />
 <meta property="og:site_name" content="Fogar" />
-<meta property="og:title" content="Your calendar, reminders and todos on every new tab · Fogar" />
-<meta property="og:description" content="Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to." />
-<meta property="og:url" content="https://fogar.ai/today" />
+<meta property="og:title" content="A whiteboard in your new tab, and a model that draws · Fogar" />
+<meta property="og:description" content="A whiteboard on every new tab. Draw it yourself, or say “add a red arrow from the box to the circle” and a model edits the sheet." />
+<meta property="og:url" content="https://fogar.ai/draw" />
 <meta property="og:type" content="website" />
 <meta property="og:image" content="https://fogar.ai/og.jpg" />
 <meta property="og:image:width" content="1200" />
@@ -282,31 +282,21 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 @media (prefers-reduced-motion: reduce) { .mock .caret { animation: none; } .toast { transition: none; } }
 </style>
 <style>
-  .corner { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .corner .card { padding: 14px 16px; gap: 10px; font-size: 13px; }
-  .corner .card-h { font-size: 17px; }
-  .corner .box { font-size: 13px; padding: 8px 10px; }
-  .ag-day { display: grid; gap: 4px; }
-  .ag-day h5 { margin: 0 0 2px; font-family: var(--serif); font-weight: 600; font-size: 14px; }
-  .ag-day h5 span { font-weight: 400; color: var(--ash); font-size: 12px; margin-left: 6px; }
-  .ev { display: grid; gap: 1px; padding: 6px 8px; border-radius: 8px; }
-  .ev.now { background: var(--glow-2); box-shadow: inset 3px 0 0 var(--ember); }
-  .ev .when { font-size: 12px; color: var(--ash); }
-  .temp { font-size: 34px; font-weight: 600; line-height: 1; }
-  .days { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
-  .days div { background: var(--surface-2); border-radius: 8px; padding: 6px 4px; text-align: center; font-size: 11.5px; color: var(--ink-2); line-height: 1.5; }
-  .todo { display: flex; gap: 8px; align-items: center; }
-  .todo i { width: 14px; height: 14px; border: 1.5px solid var(--line-2); border-radius: 4px; display: inline-block; flex: 0 0 auto; }
-  .todo.done { text-decoration: line-through; color: var(--ash); }
-  .todo.done i { background: var(--ember); border-color: var(--ember); }
-  .rem { display: flex; justify-content: space-between; gap: 8px; }
-  .rem .note { white-space: nowrap; }
-  .confirm { border: 1px solid var(--line-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 8px; background: var(--surface-2); }
-  .confirm .acts { justify-content: flex-end; }
-  .tab-date { font-size: 12px; color: var(--ash); margin-top: 2px; }
-  @media (max-width: 520px) { .corner { grid-template-columns: 1fr; } }
+  .cv { display: grid; gap: 10px; }
+  .cv-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .cv-tool { width: 28px; height: 28px; display: inline-grid; place-items: center; border: 1px solid var(--line-2); border-radius: 7px; font-size: 13px; color: var(--ink-2); }
+  .cv-tool.on { background: var(--ember); color: var(--ember-ink); border-color: transparent; }
+  .cv-sw { display: inline-flex; gap: 4px; flex-wrap: wrap; }
+  .cv-sw i { width: 14px; height: 14px; border-radius: 50%; background: var(--sw); box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18); }
+  .cv-sw i.on { box-shadow: 0 0 0 2px var(--surface), 0 0 0 3.5px var(--ember); }
+  .cv svg { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); }
+  .cv svg .ai { opacity: 0; transition: opacity 0.35s; }
+  .cv svg .ai.in { opacity: 1; }
+  .cv-chat { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 6px; align-items: center; }
+  .cv-chat .box { font-size: 13px; min-height: 38px; }
+  @media (max-width: 520px) { .cv-chat { grid-template-columns: minmax(0, 1fr) auto; } .cv-chat .box { grid-column: 1 / -1; } }
 </style>
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/today","url":"https://fogar.ai/today","name":"Your calendar, reminders and todos on every new tab · Fogar","description":"Today and tomorrow from any calendar, reminders in plain words, a todo list and the weather on your Chrome new tab. No account to connect. Nothing to sign in to.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/today#faq","mainEntity":[{"@type":"Question","name":"Do I need to connect my Google account?","acceptedAnswer":{"@type":"Answer","text":"No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen."}},{"@type":"Question","name":"Which calendars work?","acceptedAnswer":{"@type":"Answer","text":"Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works."}},{"@type":"Question","name":"Is the calendar address safe to paste?","acceptedAnswer":{"@type":"Answer","text":"Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click."}},{"@type":"Question","name":"Will reminders fire when Chrome is closed?","acceptedAnswer":{"@type":"Answer","text":"No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it."}},{"@type":"Question","name":"Does it handle recurring events and time zones?","acceptedAnswer":{"@type":"Answer","text":"Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong."}},{"@type":"Question","name":"Can I show two calendars?","acceptedAnswer":{"@type":"Answer","text":"Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address."}}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"WebSite","@id":"https://fogar.ai/#website","name":"Fogar","url":"https://fogar.ai/"},{"@type":"WebPage","@id":"https://fogar.ai/draw","url":"https://fogar.ai/draw","name":"A whiteboard in your new tab, and a model that draws · Fogar","description":"Sketch in Chrome’s new tab with a pen, highlighter, arrows, boxes, ellipses, and text. Or tell a model what to draw: it answers with shapes as data, checked before anything is drawn. Save a PNG.","isPartOf":{"@id":"https://fogar.ai/#website"},"about":{"@type":"SoftwareApplication","@id":"https://fogar.ai/#app","name":"Fogar","url":"https://fogar.ai/"}},{"@type":"FAQPage","@id":"https://fogar.ai/draw#faq","mainEntity":[{"@type":"Question","name":"Which models can draw?","acceptedAnswer":{"@type":"Answer","text":"Any model that answers with the shape list Fogar asks for. In practice that is the Qwen3.5 4B on this device or a cloud model such as Claude, GPT, or Gemini through your own key. The smaller device models often answer with prose instead; when that happens the canvas stays as it was and the widget says so."}},{"@type":"Question","name":"Does my drawing leave my computer?","acceptedAnswer":{"@type":"Answer","text":"Not with the device model. With a cloud model, the list of shapes goes as text to the endpoint you chose, along with your instruction. Your freehand strokes are described only by an id and a bounding box, never their points."}},{"@type":"Question","name":"What if the model wrecks my drawing?","acceptedAnswer":{"@type":"Answer","text":"Press undo. A model’s reply is a single undo step, and the last sixty changes are kept. The model also cannot move or redraw your own strokes: it can keep them, recolor them, or leave them out."}},{"@type":"Question","name":"How do I get the drawing out?","acceptedAnswer":{"@type":"Answer","text":"Save PNG, in the card’s corner, downloads the sheet at 1600 by 1000 pixels on a paper background. The drawing itself also rides along in Fogar’s backup file."}},{"@type":"Question","name":"Can I draw with a pen or tablet?","acceptedAnswer":{"@type":"Answer","text":"The canvas listens to pointer events, so a mouse, a trackpad, a touch screen, or a stylus all draw. Pressure is not used; stroke width comes from the width menu."}}]}]}</script>
 </head>
 <body>
 <div class="wrap">
@@ -328,9 +318,9 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
             <p class="menu-h">Organize</p>
             <a href="/tabs"><b>Tabs</b><span>Save windows, close them, find any tab later</span></a>
             <a href="/bookmarks"><b>Bookmarks</b><span>Find one by typing, or by asking</span></a>
-            <a href="/today" aria-current="page"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
+            <a href="/today"><b>Your day</b><span>Agenda, reminders, todos, weather</span></a>
             <a href="/notebook"><b>Notes and handwriting</b><span>Notebook pages, post-its, photos to text</span></a>
-            <a href="/draw"><b>Canvas</b><span>Sketch, or tell the model what to draw</span></a>
+            <a href="/draw" aria-current="page"><b>Canvas</b><span>Sketch, or tell the model what to draw</span></a>
           </div>
           <div class="menu-col">
             <p class="menu-h">Connect</p>
@@ -355,150 +345,106 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 
   <header class="hero" id="top">
     <div class="hero-copy">
-      <span class="eyebrow">Agenda, reminders, todos · a new tab for Chrome</span>
-      <h1>Your day, <em>on every new tab.</em></h1>
-      <p class="lead measure">Today and tomorrow from any calendar, a reminder set in plain words, a short todo list, and the weather, on the page you open a hundred times a day. No account to connect. The calendar address you paste is the only thing that leaves, and it goes to your calendar.</p>
+      <span class="eyebrow">Canvas · a new tab for Chrome</span>
+      <h1>A whiteboard on every tab.<br /><em>Say what to draw.</em></h1>
+      <p class="lead measure">Open a tab and sketch: pen, highlighter, arrows, boxes, ellipses, text. Or type what you want, “turn this into a flow: idea, draft, review, ship”, and a model answers with shapes as data. Fogar checks every shape before it draws one, and an answer that is not shapes changes nothing.</p>
       <div class="cta-row">
         <a class="btn btn-ember" href="https://chromewebstore.google.com/detail/fogar/cepnifpajfejaghhhaheadokfofcmoia">Add to Chrome</a>
-        <a class="btn btn-quiet" href="#agenda">Any calendar, no sign-in</a>
+        <a class="btn btn-quiet" href="#how">How it works</a>
       </div>
-      <p class="cta-note">Free. Open source. Widgets are optional; add the ones you want and hit Focus to hide them all.</p>
+      <p class="cta-note">Free. Open source. Drawings are kept in this browser.</p>
     </div>
 
-    <div class="stage" aria-label="Agenda, weather, todos and reminders on the new tab, demonstration">
+    <div class="stage" aria-label="The Canvas widget, demonstration">
       <div class="tab mock">
         <div class="tab-chrome"><span></span><span></span><span></span><div class="url">chrome://newtab</div></div>
         <div class="tab-body">
-          <div class="tab-top">
-            <div><div class="tab-brand">Fogar</div><div class="tab-date" id="tab-date">Tuesday, September 22</div></div>
-            <div class="tab-actions"><span class="tab-focus">Customize</span><span class="tab-focus">Focus</span></div>
+          <div class="card-h">Canvas <span class="pill">Save PNG</span></div>
+          <div class="cv">
+            <div class="cv-bar" aria-hidden="true">
+              <span class="cv-tool on">✎</span><span class="cv-tool">▮</span><span class="cv-tool">➚</span><span class="cv-tool">╲</span><span class="cv-tool">▭</span><span class="cv-tool">◯</span><span class="cv-tool">T</span><span class="cv-tool">⌫</span>
+              <span class="cv-sw"><i class="on" style="--sw:#1f1a17"></i><i style="--sw:#d7263d"></i><i style="--sw:#f07b1a"></i><i style="--sw:#f2c230"></i><i style="--sw:#2f9e5b"></i><i style="--sw:#2b6fd6"></i><i style="--sw:#7d4fd1"></i><i style="--sw:#ffffff"></i></span>
+              <span class="pill ctl">Normal</span><span class="pill ctl">↶</span><span class="pill ctl">↷</span>
+            </div>
+            <svg viewBox="0 0 800 500" role="img" aria-label="A sketch: a handwritten title, then four boxes joined by arrows">
+              <rect x="0" y="0" width="800" height="500" rx="6" fill="#fbf7ef" />
+              <text x="44" y="96" fill="#1f1a17" font-size="38" font-family="ui-sans-serif, system-ui, sans-serif">Launch plan</text>
+              <path d="M40 116 C120 110 200 122 262 112 S300 118 312 114" stroke="#d7263d" stroke-width="4" fill="none" stroke-linecap="round" />
+              <path d="M600 60 C640 40 720 50 730 90 C738 130 660 150 620 128 C592 112 596 80 612 70" stroke="#f2c230" stroke-width="18" opacity="0.4" fill="none" stroke-linecap="round" />
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="40" y="220" width="150" height="80" rx="2" stroke="#2b6fd6" fill="#2b6fd6" fill-opacity="0.25" /><text x="86" y="268" fill="#1f1a17" stroke="none">Idea</text>
+              </g>
+              <g class="ai"><line x1="190" y1="260" x2="220" y2="260" stroke="#1f1a17" stroke-width="3" /><polygon points="232,260 217,252 217,268" fill="#1f1a17" /></g>
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="232" y="220" width="150" height="80" rx="2" stroke="#2b6fd6" fill="#2b6fd6" fill-opacity="0.25" /><text x="276" y="268" fill="#1f1a17" stroke="none">Draft</text>
+              </g>
+              <g class="ai"><line x1="382" y1="260" x2="412" y2="260" stroke="#1f1a17" stroke-width="3" /><polygon points="424,260 409,252 409,268" fill="#1f1a17" /></g>
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="424" y="220" width="150" height="80" rx="2" stroke="#f07b1a" fill="#f07b1a" fill-opacity="0.25" /><text x="462" y="268" fill="#1f1a17" stroke="none">Review</text>
+              </g>
+              <g class="ai"><line x1="574" y1="260" x2="604" y2="260" stroke="#1f1a17" stroke-width="3" /><polygon points="616,260 601,252 601,268" fill="#1f1a17" /></g>
+              <g class="ai" font-family="ui-sans-serif, system-ui, sans-serif" font-size="22" stroke-width="3">
+                <rect x="616" y="220" width="150" height="80" rx="2" stroke="#2f9e5b" fill="#2f9e5b" fill-opacity="0.25" /><text x="668" y="268" fill="#1f1a17" stroke="none">Ship</text>
+              </g>
+            </svg>
+            <div class="cv-chat">
+              <div class="box" id="ask" aria-live="polite"><span class="caret"></span></div>
+              <span class="pill">Fogar’s current model (this device)</span>
+              <button class="pill primary" type="button" id="go">Draw</button>
+            </div>
+            <div class="note" id="status" aria-live="polite"></div>
           </div>
-          <div class="corner">
-            <div class="card">
-              <div class="card-h">Agenda</div>
-              <div class="ag-day"><h5>Today <span id="d-today">Tue, Sep 22</span></h5>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-                <div class="ev now"><div class="row"><span class="when">2:00–3:00 PM</span><span class="pill primary" title="Join Google Meet">Join</span></div><span>Design review <span class="note">· Room 4</span></span></div>
-              </div>
-              <div class="ag-day"><h5>Tomorrow <span id="d-tomorrow">Wed, Sep 23</span></h5>
-                <div class="ev"><span class="when">All day</span><span>Dentist</span></div>
-                <div class="ev"><span class="when">9:30–9:45 AM</span><span>Standup</span></div>
-              </div>
-              <span class="note">Updated just now · Refresh · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Weather · Denver</div>
-              <div class="row" style="justify-content: flex-start; gap: 12px"><span class="temp">71°</span><span>⛅ Partly cloudy<br /><span class="note">H 78° · L 55° · wind 6 mph</span></span></div>
-              <div class="days"><div>Wed<br />☀️<br />80° / 57°</div><div>Thu<br />🌧️<br />66° / 48°</div><div>Fri<br />☁️<br />70° / 50°</div></div>
-              <span class="note">Updated just now · Use °C · Change</span>
-            </div>
-            <div class="card">
-              <div class="card-h">Todos <span class="pill">Clear done</span></div>
-              <div class="box ph">Add a todo and press Enter</div>
-              <div class="todo"><i></i>Reply to the accountant</div>
-              <div class="todo"><i></i>Book the dentist</div>
-              <div class="todo done"><i></i>Renew the domain</div>
-            </div>
-            <div class="card">
-              <div class="card-h">Reminders</div>
-              <div class="box" id="rem-input"><span class="ph-text" style="color: var(--ash)">Call the dentist tomorrow at 9</span></div>
-              <div class="confirm" id="rem-confirm" hidden></div>
-              <div id="rem-list" style="display: grid; gap: 6px">
-                <div class="rem"><span>Stretch</span><span class="note">today 2:55 PM</span></div>
-                <div class="rem"><span>Call mom</span><span class="note">today 6:00 PM</span></div>
-              </div>
-              <span class="note">Reminders fire while Chrome is open. Anything missed shows the next time it starts.</span>
-            </div>
-          </div>
-          <div class="toast" id="toast" aria-live="polite"></div>
         </div>
       </div>
-      <button class="replay" id="replay" type="button">Set the reminder again</button>
+      <button class="replay" id="replay" type="button">Play it again</button>
     </div>
   </header>
 
-  <section id="agenda">
-    <div class="split">
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Agenda</span>
-        <h2>Any calendar. No account connection.</h2>
-        <p class="lead">Every major calendar publishes a private iCal address. Paste it. Fogar asks permission to reach that one address, fetches the feed, and shows today and tomorrow on every new tab. Recurring events, cancellations, and time zones are handled; anything fancier is skipped rather than shown wrong.</p>
-        <p class="lead">When an event carries a Meet, Zoom, Teams, or Webex link, a Join button sits on the row. Click the row and it unfurls: who, where, the notes, and a link to open the event in your calendar. One widget per calendar, so work and home can sit side by side.</p>
-      </div>
-      <div>
-        <ol class="how">
-          <li><b>Google Calendar.</b><p>Settings, pick the calendar, then Integrate calendar. Copy “Secret address in iCal format”.</p></li>
-          <li><b>Outlook.</b><p>Settings, Calendar, Shared calendars, Publish a calendar. Copy the ICS link.</p></li>
-          <li><b>iCloud.</b><p>Click the share icon next to the calendar, tick Public Calendar, copy the link. If it starts with <code>webcal://</code>, change that to <code>https://</code>.</p></li>
-          <li><b>Anything else.</b><p>Fastmail, Nextcloud, Proton, your university: if it publishes an .ics feed, paste the address into Add widget, Agenda.</p></li>
-        </ol>
-        <p class="how-note">Treat the address like a password: anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device and sends it only to your calendar provider. If it ever leaks, your provider can reset it.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="reminders">
-    <div class="split">
-      <div>
-        <div class="section-head" style="margin-bottom: 24px">
-          <span class="eyebrow">Reminders</span>
-          <h2>Plain words in. A confirmed time out.</h2>
-          <p class="lead">Type “call the dentist tomorrow at 9” into the Reminders widget, or “remind me to stretch in 20 minutes” into the ask box. Fogar reads the time deterministically, with no model involved, shows you what it understood, and saves only when you confirm.</p>
-          <p class="lead">It fires as a Chrome notification. One click puts it in Google Calendar through a prefilled link, with no account connected and nothing to authorize.</p>
-        </div>
-      </div>
-      <div class="section-head" style="margin-bottom: 0">
-        <span class="eyebrow">Phrases it understands</span>
-        <div class="phrases"><span>in 20 minutes</span><span>in an hour</span><span>at 3pm</span><span>at 5</span><span>tomorrow 9am</span><span>friday at 10</span><span>next tuesday</span><span>tonight</span><span>this afternoon</span><span>noon</span><span>midnight</span><span>next week</span></div>
-        <p class="mono" style="margin-top: 8px">“at 5” means 5 pm, because it almost always does. A time already past today rolls to tomorrow. When no time is found, Fogar asks instead of guessing.</p>
-      </div>
-    </div>
-  </section>
-
-  <section id="rest">
-    <div class="section-head">
-      <span class="eyebrow">The rest of your corner</span>
-      <h2 class="measure">Small panels, each a few numbers of configuration.</h2>
-    </div>
-    <div class="features">
-      <div class="feature"><span class="eyebrow">Todos</span><div><h3>A short list, always in front of you</h3><p>Type “todo: buy milk” into the ask box or add one in the widget. Click to edit in place, drag to reorder, tick to finish, Clear done when the week is over.</p></div></div>
-      <div class="feature"><span class="eyebrow">Weather</span><div><h3>Your city, no API key</h3><p>Type a city, pick the match, done. Forecasts come from Open-Meteo, which needs no account. Fahrenheit or Celsius, your choice.</p></div></div>
-      <div class="feature"><span class="eyebrow">Links and Notes</span><div><h3>The sites you open daily, and a scratchpad</h3><p>A grid of favorites with their icons, and a note that saves as you type. Several of each, named as you like.</p></div></div>
-      <div class="feature"><span class="eyebrow">Focus</span><div><h3>One click, and the day is gone</h3><p>Focus hides every widget and leaves the ask box. Click it again to get your corner back. Drag widgets to reorder, or park them in a sidebar on a wide screen.</p></div></div>
-    </div>
-  </section>
-
   <section id="what">
     <div class="section-head">
-      <span class="eyebrow">What leaves</span>
-      <h2 class="measure">Two requests, both to services you chose. Everything else stays.</h2>
+      <span class="eyebrow">What a drawing is</span>
+      <h2 class="measure">A list of shapes. Never code, never a picture the model painted.</h2>
+      <p class="lead measure">Everything on the sheet is a box, an ellipse, a line, an arrow, a piece of text, or one of your strokes. That list is what Fogar saves, what the model reads, and what it has to send back.</p>
     </div>
     <div class="table-wrap">
       <table>
-        <thead><tr><th>Widget</th><th>What leaves your browser</th><th>Where it goes</th></tr></thead>
+        <thead><tr><th>You do</th><th>Fogar does</th><th>It lives</th></tr></thead>
         <tbody>
-          <tr><td class="k">Agenda</td><td>A request for the calendar address you pasted<small>At most every thirty minutes, and only while a new tab with the widget is open. The events are parsed and kept on this device.</small></td><td>Your calendar provider</td></tr>
-          <tr><td class="k">Weather</td><td>The city you typed, then its coordinates<small>Once to find the place, then for each forecast refresh.</small></td><td>Open-Meteo, which needs no account</td></tr>
-          <tr><td class="k">Reminders, Todos, Notes, Links</td><td><span class="zero">Nothing</span><small>Stored in Chrome’s extension storage on this device. The Google Calendar button opens a prefilled event in a new tab; you decide whether to save it.</small></td><td>Nowhere</td></tr>
+          <tr><td class="k">Draw</td><td>Saves each stroke, box, arrow, or word as numbers when you lift the pointer.<small>Eight colors, four widths. The highlighter is a wide, see-through pen.</small></td><td>This browser</td></tr>
+          <tr><td class="k">Ask</td><td>Sends the shape list as text with your instruction. Your strokes go as an id and a bounding box, not point by point.<small>The reply has to be a list of shapes. Each shape is checked: a known type, real numbers pulled back near the sheet, a real color or plain ink. Anything else is dropped.</small></td><td>The model you picked</td></tr>
+          <tr><td class="k">Undo, redo</td><td>Steps back through the last sixty changes. A model’s reply is one step.</td><td>This browser</td></tr>
+          <tr><td class="k">Save PNG</td><td>Renders the sheet at twice its size, 1600 by 1000, on the paper color.</td><td>A file you own</td></tr>
         </tbody>
       </table>
     </div>
-    <p class="mono" style="margin-top: 18px">Each address is requested as an optional permission when you save it, so the extension can reach that one site and no other.</p>
+    <p class="mono" style="margin-top: 18px">Drawings ride along in the backup under Settings. On the device model, no request leaves the browser for any of this.</p>
+  </section>
+
+  <section id="how">
+    <div class="section-head">
+      <span class="eyebrow">How it works</span>
+      <h2 class="measure">Add the widget. Draw. Ask when drawing is slower than saying.</h2>
+    </div>
+    <div class="steps">
+      <div class="step"><h3>Add a Canvas</h3><p>Add widget, then Canvas. It takes a full row. Add a second one for a second sheet; each has its own title. The ⛶ control fills the window, and Escape brings the page back.</p><span class="mono">no permission · no account</span></div>
+      <div class="step"><h3>Draw like you annotate a screen</h3><p>Pen, highlighter, line, arrow, box, ellipse, text. The eraser removes whole shapes. Clear empties the sheet, and undo brings it back.</p><span class="mono">800 by 500 · scales to the card</span></div>
+      <div class="step"><h3>Tell the model</h3><p>“Add a red arrow from the box to the circle.” “Label the boxes.” “Make it a flowchart.” Pick which model draws: Fogar’s current one, or any profile from an <a href="/models">LLM Chat</a> widget.</p><span class="mono">the model edits the list · your strokes come back untouched</span></div>
+    </div>
   </section>
 
   <section id="honest">
     <div class="honest">
       <div>
         <span class="eyebrow">Straight talk</span>
-        <h2 style="margin-top: 14px">An agenda, not an alarm clock.</h2>
+        <h2 style="margin-top: 14px">Diagrams, not art.</h2>
         <p class="mono" style="margin-top: 22px">The rest of Fogar is a new tab that answers from a model running in your browser. <a href="/#ledger">See what leaves in each mode.</a></p>
       </div>
       <div>
         <ul>
-          <li>Calendar feeds refresh on the provider’s schedule, so a new event can take minutes to an hour to appear. Fine for an agenda, wrong for alarms. That is what reminders are for.</li>
-          <li>Reminders fire while Chrome is open. Anything missed shows the next time it starts. On a Mac, Chrome also needs permission in System Settings to show notifications; the widget has a test button.</li>
-          <li>The agenda is read-only. Fogar does not create or edit calendar events. The Google Calendar button opens a prefilled event for you to save yourself.</li>
-          <li>There is no Google sign-in. A read-only connection is on the roadmap; the iCal address works today, for every provider.</li>
+          <li>The model draws boxes, ellipses, lines, arrows, and text. It cannot make freehand strokes, so “draw a cat” gets you a cat made of ellipses.</li>
+          <li>Small models often miss the format. On the 0.8B and 2B device models, expect “The model did not answer with shapes” more often than a drawing. The 4B, or a cloud model, follows it.</li>
+          <li>With a cloud model, the shape list and your instruction go to that provider, because that is where the model is. On the device, nothing leaves.</li>
+          <li>One sheet per widget, a fixed size. No infinite canvas, no layers, no sharing, no sync.</li>
         </ul>
       </div>
     </div>
@@ -510,12 +456,11 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
       <h2>Fair questions, short answers.</h2>
     </div>
     <div class="faq">
-      <details><summary>Do I need to connect my Google account?</summary><p>No. Paste your calendar’s private iCal address instead. It is read-only, works for Google, Outlook, iCloud, and anything else that publishes a feed, and needs no sign-in or authorization screen.</p></details>
-      <details><summary>Which calendars work?</summary><p>Google Calendar, Outlook and Microsoft 365, iCloud, Fastmail, Nextcloud, Proton, and any other calendar that publishes an iCal (.ics) feed. If you can copy an address that ends in .ics, or one that starts with webcal://, it works.</p></details>
-      <details><summary>Is the calendar address safe to paste?</summary><p>Treat it like a password, because anyone holding it can read that calendar. Fogar keeps it in Chrome’s extension storage on this device, like an API key, and sends it only to your calendar provider. If it leaks, your provider can reset it in a click.</p></details>
-      <details><summary>Will reminders fire when Chrome is closed?</summary><p>No. Reminders use Chrome’s alarms, which run while Chrome is open. Anything missed shows in the list the next time Chrome starts. For something that must wake you, use the one-click Google Calendar button and let your phone do it.</p></details>
-      <details><summary>Does it handle recurring events and time zones?</summary><p>Yes. Daily, weekly, monthly, and yearly rules, including “every Tuesday and Thursday”, intervals, counts, end dates, and exceptions; cancelled and moved occurrences; time zones by name, including the Windows names Outlook uses. Anything fancier is skipped rather than shown wrong.</p></details>
-      <details><summary>Can I show two calendars?</summary><p>Yes. Add the Agenda widget once per calendar. Work and home can sit side by side, each with its own address.</p></details>
+      <details><summary>Which models can draw?</summary><p>Any model that answers with the shape list Fogar asks for. In practice that is the Qwen3.5 4B on this device or a cloud model such as Claude, GPT, or Gemini through your own key. The smaller device models often answer with prose instead; when that happens the canvas stays as it was and the widget says so.</p></details>
+      <details><summary>Does my drawing leave my computer?</summary><p>Not with the device model. With a cloud model, the list of shapes goes as text to the endpoint you chose, along with your instruction. Your freehand strokes are described only by an id and a bounding box, never their points.</p></details>
+      <details><summary>What if the model wrecks my drawing?</summary><p>Press undo. A model’s reply is a single undo step, and the last sixty changes are kept. The model also cannot move or redraw your own strokes: it can keep them, recolor them, or leave them out.</p></details>
+      <details><summary>How do I get the drawing out?</summary><p>Save PNG, in the card’s corner, downloads the sheet at 1600 by 1000 pixels on a paper background. The drawing itself also rides along in Fogar’s backup file.</p></details>
+      <details><summary>Can I draw with a pen or tablet?</summary><p>The canvas listens to pointer events, so a mouse, a trackpad, a touch screen, or a stylus all draw. Pressure is not used; stroke width comes from the width menu.</p></details>
     </div>
   </section>
 
@@ -544,7 +489,7 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
     </div>
   </section>
   <footer>
-    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today" aria-current="page">Your day</a> · <a href="/notebook">Notes</a> · <a href="/draw">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models">Your models</a></span>
+    <span class="foot-cases">Use cases · <a href="/ask">Private AI</a> · <a href="/search">Sources</a> · <a href="/files">PDFs</a> · <a href="/write">Writing</a> · <a href="/voice">Your voice</a> · <a href="/tabs">Tabs</a> · <a href="/bookmarks">Bookmarks</a> · <a href="/today">Your day</a> · <a href="/notebook">Notes</a> · <a href="/draw" aria-current="page">Canvas</a> · <a href="/news">News</a> · <a href="/work">Work</a> · <a href="/models">Your models</a></span>
     <span>Fogar · <em>fogar</em>, Galician for hearth.</span>
     <span><a href="#top">Top</a> · <a href="https://app.fogar.ai">On your phone</a> · <a href="/privacy">Privacy</a> · <a href="https://dylanroy.com/?ref=fogar">dylanroy.com</a> · <a href="/#honest">Sponsorship</a></span>
   </footer>
@@ -553,46 +498,35 @@ button.pill[disabled] { opacity: 0.45; cursor: default; }
 <script>
   (function () {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    // The agenda shows real dates; so does the demo.
-    var now = new Date(), tmr = new Date(now); tmr.setDate(now.getDate() + 1);
-    var short = { weekday: 'short', month: 'short', day: 'numeric' };
-    document.getElementById('tab-date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' });
-    document.getElementById('d-today').textContent = now.toLocaleDateString([], short);
-    document.getElementById('d-tomorrow').textContent = tmr.toLocaleDateString([], short);
-
-    var input = document.getElementById('rem-input'), confirmBox = document.getElementById('rem-confirm'), list = document.getElementById('rem-list');
-    var toast = document.getElementById('toast'), replay = document.getElementById('replay');
-    var initialList = list.innerHTML, placeholder = input.innerHTML, timer = 0, token = 0, toastTimer = 0;
-    var text = 'Call the dentist tomorrow at 9';
-    var when = new Date(tmr); when.setHours(9, 0, 0, 0);
-    var whenLabel = 'tomorrow ' + when.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-    function say(t) { toast.textContent = t; toast.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(function () { toast.classList.remove('on'); }, 3000); }
-    function reset() { clearTimeout(timer); token++; input.innerHTML = placeholder; confirmBox.hidden = true; list.innerHTML = initialList; toast.classList.remove('on'); }
-    function settle() {
-      var row = document.createElement('div'); row.className = 'rem';
-      row.innerHTML = '<span>Call the dentist</span><span class="note">' + whenLabel + '</span>';
-      list.prepend(row); confirmBox.hidden = true; input.innerHTML = placeholder;
-      say('Reminder set for ' + whenLabel);
+    var ask = document.getElementById('ask'), go = document.getElementById('go'), status = document.getElementById('status'), replay = document.getElementById('replay');
+    var parts = [].slice.call(document.querySelectorAll('.cv svg .ai'));
+    var q = 'turn this into a flow: idea, draft, review, ship';
+    var timer = 0, token = 0;
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function reset() { clearTimeout(timer); token++; parts.forEach(function (p) { p.classList.remove('in'); }); ask.innerHTML = '<span class="caret"></span>'; status.textContent = ''; go.disabled = false; }
+    // The model answers with the whole list: the title and strokes kept by id, four boxes, four labels, three arrows.
+    function draw(my) {
+      go.disabled = true; status.textContent = 'Drawing…';
+      var i = 0;
+      timer = setTimeout(function step() {
+        if (my !== token) return;
+        if (i < parts.length) { parts[i++].classList.add('in'); timer = setTimeout(step, reduce ? 0 : 160); return; }
+        ask.innerHTML = '<span class="caret"></span>'; status.textContent = '14 shapes on the canvas.'; go.disabled = false;
+      }, reduce ? 0 : 1400);
     }
     function run() {
-      var my = token;
-      if (reduce) { input.textContent = text; settle(); return; }
-      var i = 0;
+      reset(); var my = token;
+      if (reduce) { ask.textContent = q; draw(my); return; }
+      var n = 0;
       (function tick() {
         if (my !== token) return;
-        i++; input.innerHTML = text.slice(0, i) + '<span class="caret"></span>';
-        if (i < text.length) { timer = setTimeout(tick, 30 + Math.random() * 40); return; }
-        input.textContent = text;
-        timer = setTimeout(function () {
-          if (my !== token) return;
-          confirmBox.innerHTML = '<div>Remind you about “Call the dentist” ' + whenLabel + '?</div><div class="acts"><span class="pill">Cancel</span><span class="pill primary">Save</span></div>';
-          confirmBox.hidden = false;
-          timer = setTimeout(function () { if (my === token) settle(); }, 1500);
-        }, 400);
+        n++; ask.innerHTML = esc(q.slice(0, n)) + '<span class="caret"></span>';
+        if (n < q.length) timer = setTimeout(tick, 30 + Math.random() * 40); else { ask.textContent = q; timer = setTimeout(function () { draw(my); }, 350); }
       })();
     }
-    replay.addEventListener('click', function () { reset(); setTimeout(run, reduce ? 0 : 300); });
-    if (!reduce) timer = setTimeout(run, 1400);
+    go.addEventListener('click', run);
+    replay.addEventListener('click', run);
+    if (!reduce) setTimeout(run, 1400); else run();
   })();
 </script>
 </body>
