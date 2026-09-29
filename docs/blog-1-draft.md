@@ -3,6 +3,8 @@
 *Draft for dylanroy.com, written 2026-09-29 from the outline in `docs/blog-1-the-build.md`. Every number is from the
 README or the test suite. Things to check before publishing are listed at the end.*
 
+![I put a language model inside a Chrome new tab page. Here is what broke.](blog-1-featured.png)
+
 ---
 
 Every new tab I open is a blank page asking me what I want. Fogar makes it answer back, from a model running on my
@@ -168,6 +170,8 @@ gallery once people make recipes worth sharing.
 ---
 
 ## Before publishing
+
+- **Featured image.** `docs/blog-1-featured.png`, 2400×1260 (1200×630 at 2×), which also works as the social card. Regenerate with `node scripts/blog-image.mjs`.
 
 - **The "weekend" framing.** The outline's hook said "in one weekend". The repository's first commit is 2026-09-21,
   a Monday, and the spike closed that same day. This draft makes no time claim. Add one if it's true.
