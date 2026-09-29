@@ -30,7 +30,7 @@ const PROMO: Array<[label: string, href: string]> = [
   ['UseSQL: run SQL across Google Sheets, APIs and files', 'https://www.usesql.com/?ref=fogar'],
   ['TickerPal: stock prices on demand in Slack', 'https://tickerpal.com/?ref=fogar'],
   ['Kumkuat: know how every audience reacts before you say a word', 'https://kumkuat.ai/?ref=fogar'],
-  ['Read how Fogar was built', 'https://dylanroy.com/?ref=fogar'],
+  ['Read how Fogar was built', 'https://dylanroy.com/i-put-a-language-model-inside-a-chrome-new-tab-page-here-is-what-broke/?ref=fogar'],
 ];
 
 async function main() {

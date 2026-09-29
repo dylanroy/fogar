@@ -103,7 +103,7 @@ The first paid feature and the account it needs, planned in [docs/pro-sync-admin
 
 ## Next: launch, v0.2
 
-- [ ] Publish blog post one on dylanroy.com. The listing went live 2026-09-24, so this is late. Outline in `docs/blog-1-outline.md`; a full draft with the measured numbers is in `docs/blog-1-draft.md` (2026-09-29), with a short list of claims to confirm before it goes up.
+- [x] Publish blog post one on dylanroy.com: live at dylanroy.com/i-put-a-language-model-inside-a-chrome-new-tab-page-here-is-what-broke/ (2026-09-29), five days after the listing. The homepage's “Read how it was built” button and the extension's footer line point at it, with `ref=fogar`. Text in `docs/blog-1-draft.md`, outline in `docs/blog-1-outline.md`.
 - [ ] Show HN, r/LocalLLaMA, r/chrome_extensions. The hook is "no key, no account, no server".
 - [ ] Triage feedback for two weeks before building anything new.
 - [ ] Measurement is store-side only: installs, weekly users, uninstall rate. Footer links carry `ref=fogar` so each product's own analytics show what the slot sends. No telemetry in the extension, ever.
