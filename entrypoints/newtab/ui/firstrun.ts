@@ -1,11 +1,14 @@
 import type { App } from '../app';
 import { $ } from '@/lib/dom';
+import { isMac, isWeb } from '@/lib/platform';
 
 /** Three honest choices, once. Everything is still reachable from Settings afterwards. */
 export function initFirstRun(app: App): void {
   const card = $('firstrun');
   if (app.settings.onboarded) return;
   card.hidden = false;
+  // Reminders are silent on a Mac until Chrome has the system's permission, and nothing in Chrome can read that.
+  $('firstrun-mac').hidden = !(isMac() && !isWeb());
   if (app.recommended) {
     const r = app.recommended;
     $('firstrun-rec').textContent = `Downloads ${r.label.replace(/^\w+: /, '')} once (${r.approxMB >= 1000 ? `${(r.approxMB / 1000).toFixed(1)} GB` : `${r.approxMB} MB`}), the right size for this machine. After that nothing you type leaves this browser.`;

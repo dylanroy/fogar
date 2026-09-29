@@ -2,7 +2,7 @@ import type { App } from '../app';
 import { clear, el, fmtTime } from '@/lib/dom';
 import { browser } from 'wxt/browser';
 import { addReminder, loadReminders, parseReminder, removeReminder, saveReminders, type Reminder } from '@/lib/reminders';
-import { isWeb } from '@/lib/platform';
+import { isMac, isWeb } from '@/lib/platform';
 
 /** Zero-permission calendar hand-off: a prefilled Google Calendar event link. No OAuth, nothing to verify. */
 function gcalLink(r: Reminder): string {
@@ -93,7 +93,7 @@ export function createRemindersUI(app: App): RemindersUI {
       const warning = el('p', { id: 'notif-warning', class: 'muted small-note warn', hidden: true });
       const test = el('a', { id: 'notif-test', class: 'link', href: '#' }, 'Send a test notification');
       body.append(form, confirmBox, list, empty, warning,
-        el('p', { class: 'muted small-note' }, isWeb() ? 'Reminders fire while Fogar is open on this device; the Chrome extension fires them in the background. ' : 'Reminders fire while Chrome is open. Anything missed shows the next time it starts. ', test));
+        el('p', { class: 'muted small-note' }, isWeb() ? 'Reminders fire while Fogar is open on this device; the Chrome extension fires them in the background. ' : `Reminders fire while Chrome is open. Anything missed shows the next time it starts. ${isMac() ? 'On a Mac, Chrome also needs permission in System Settings → Notifications. ' : ''}`, test));
       form.onsubmit = (e) => { e.preventDefault(); const text = input!.value.trim(); if (text) ui.capture(text); };
       void loadReminders().then(render);
 

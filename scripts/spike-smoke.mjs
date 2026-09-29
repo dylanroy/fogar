@@ -353,6 +353,21 @@ while (Date.now() - tFire < 25000 && !fired) {
 const shown = await page.evaluate(() => chrome.notifications.getAll().catch(() => ({})));
 check('reminder alarm fires and is marked done', fired, `${Date.now() - tFire} ms after scheduling; ${Object.keys(shown).length} notification(s) visible to the API`);
 
+// 7d. macOS: Chrome cannot read the system's notification permission, so the first-run card and the Reminders
+// widget say where it lives. Only on a Mac; the check follows the machine the suite runs on.
+const mac = process.platform === 'darwin';
+const macNote = await page.evaluate(() => /System Settings/.test(document.querySelector('.widget[data-type="reminders"]')?.textContent ?? ''));
+const prevUrl = page.url();
+const prevSettings = await page.evaluate(async () => (await chrome.storage.local.get('fogar.settings'))['fogar.settings']);
+await page.evaluate(async (s) => { await chrome.storage.local.set({ 'fogar.settings': { ...s, onboarded: false } }); }, prevSettings);
+await page.goto(base);
+await page.waitForSelector('#firstrun:not([hidden])');
+const firstRunMac = await page.evaluate(() => !document.getElementById('firstrun-mac').hidden);
+await page.evaluate(async (s) => { await chrome.storage.local.set({ 'fogar.settings': s }); }, prevSettings);
+await page.goto(prevUrl);
+await page.waitForSelector('#prompt');
+check('macOS notification note: in the first-run card and the Reminders widget, only on a Mac', firstRunMac === mac && macNote === mac, `platform=${process.platform} firstrun=${firstRunMac} widget=${macNote}`);
+
 // 8. bookmarks
 await page.evaluate(() => chrome.bookmarks.create({ title: 'Fogar Test Bookmark', url: 'https://example.com/fogar' }));
 await page.fill('#prompt', 'Fogar Test');

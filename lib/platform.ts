@@ -5,3 +5,6 @@
  * reminders fire, and the words that name the host. Everything else is shared.
  */
 export const isWeb = (): boolean => typeof (globalThis as any).chrome?.runtime?.getURL !== 'function';
+
+/** macOS, where Chrome's notifications also need the system's permission, which no Chrome API can read. */
+export const isMac = (): boolean => /mac/i.test((navigator as any).userAgentData?.platform ?? navigator.platform ?? '');

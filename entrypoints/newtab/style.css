@@ -91,6 +91,7 @@ button:disabled { opacity: 0.4; cursor: default; }
 .choice:hover { border-color: var(--accent); }
 .choice strong { font-size: 15px; }
 .choice span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+.firstrun .small-note { margin: 0; }
 
 /* ask */
 .ask form { display: grid; gap: 12px; }
